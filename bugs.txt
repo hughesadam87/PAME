@@ -1,0 +1,44 @@
+Bugs:
+
+11/29
+When changing material in nanosphere shell, when volume fraction is changed, mview shows shell material not core/shell.  
+This also is probably responsible for the strange scattering cross sections
+
+Fixed:  No
+
+
+CompositeMaterials/Specparms?: Changing the xunit causes everything to go crazy in the mixer
+
+Fixed: No
+
+mview/AllViews:  Even though everything is updated, if user is looking a a material when that material is changed, the plot doesn't refresh (module is updating) but user had to click off view to 
+refresh.  This is also happening for mview.
+
+
+Hazards:
+11/29
+basic_material:
+	file_x and file_n used to store data from files, but not file_e exists.  earray is updated automatically from narray, but there's never an instance of file_e,
+	so if reading file type with dielectric data, need to update the basic_file module
+
+11/29
+DrudeNew, DrudeNP_corrected:
+	Need to set property "Nanomaterial" in self (that is, self.Nanomaterial=self) because the object is a NanoSphere, even though drude should just describe a raw material.
+	The problem is that the dielectric is dependent on R for size correction
+
+NanoSphereShell:
+	The medium material and shell material solvent are being syncronized!
+	Everything's so muddled that the core object is not necessarily being sent into mie
+
+12/2
+Mie: Bessel function is warning of taking real arguments, does this mean the bessel functions aren't using the complex arguments for the nps?
+
+12/4
+Specparms:  When changing units, xstart/xend change but then don't change back if change again it seems...
+
+
+Next Version Cleanups:
+-Need to cleanup conv/main_parms since it's weird how main_parms uses lambdas to initialize conv and interact with it.
+-Instead of syncing specparms and modeltree (especially modeltree) should be able to initialize with it because these should not change (Although if
+using copied traits, do these ever get copied and changed?  Should copy these as shallow references or not at all)
+
