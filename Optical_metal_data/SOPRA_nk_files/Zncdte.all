@@ -1,0 +1,44 @@
+ 7
+ZNCDTE0,0
+ZNCDTE1,0.1
+ZNCDTE3,0.3
+ZNCDTE5,0.5
+ZNCDTE7,0.7
+ZNCDTE9,0.9
+ZNCDTE10,1.0
+5
+2.28,-0.7,0,0
+3.2,-0.65,0,0
+3.78,-0.23,0,0
+4.34,-0.21,0,0
+5.23,-0.1,0,0
+
+
+'Comments:
+These are data for alloy modelization: 
+the first number represents the number of files which are used
+then comes the list of the files with the corresponding concentrations
+then the number of critical points which are used in the calculation
+then the coefficients of third order polynomials describing the dependance 
+of the critical points with the concentration 
+(from top to bottom: increasing order of the critical point, 
+from left to right: increasing power of concentration for a given critical point)
+
+IMPORTANT: the name of this file MUST be the generic name of the index files 
+(six first characters) plus the extension .ALL .
+
+
+CPs are:  E0, E0 + Delta0, E1 , E1 + Delta1 , E2
+material is Zn(1-x)Cd(x)Te
+
+
+DATA prepared after the paper :
+References and bibliography:
+
+T.Toshifumi, S. Adachi , H. Nakanishi. , and K. Ohtsuka. "Optical constants 
+of Zn1-xCdxTe Ternary alloys : Experiment and Modeling ". 
+Jpn. Appl. Phys. Vol 32 (1993) pp.3496-3501.
+Part 1, N° 8, August 1993.
+
+
+

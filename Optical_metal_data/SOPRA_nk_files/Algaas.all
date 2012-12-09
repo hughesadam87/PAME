@@ -1,0 +1,37 @@
+10
+AlGaAs0,0
+AlGaAs1,0.099
+AlGaAs2,0.198
+AlGaAs3,0.315
+AlGaAs4,0.419
+AlGaAs5,0.491
+AlGaAs6,0.59
+AlGaAs7,0.7
+AlGaAs8,0.804
+AlGaAs9,1
+3
+1.424,1.721,-1.437,1.310
+2.924,0.808,-0.778,0.935
+4.8,0,0,0
+
+'Comments:
+These are data for alloy modelization: 
+the first number represents the number of files which are used
+then comes the list of the files with the corresponding concentrations
+then the number of critical points which are used in the calculation
+then the coefficients of third order polynomials describing the dependance 
+of the critical points with the concentration 
+(from top to bottom: increasing order of the critical point, 
+from left to right: increasing power of concentration for a given critical point)
+
+IMPORTANT: the name of this file MUST be the generic name of the index files 
+(six first characters) plus the extension .ALL .
+
+The DATA are described in:
+"Optical Properties of AlxGa(1-x)As" 
+D.E.Aspnes, S.M.Kelso, R.A.Logan, R.Bhat
+J.Appl.Phys.60(2)(1986)754-767.
+For AlAs data, see: 
+Handbook of Optical Constants of Solids II
+Edited by E.D.Palik, Academic Press, 1985.
+

@@ -1,0 +1,28 @@
+4
+RInGas0,0
+RInGas10,0.1
+RinGas20,0.2
+RInGas24,0.24
+3
+2.91,-0.91,0.5,0
+3.13,-0.83,0.47,0
+4.85,0,0,0
+
+'Comments:
+These are data for alloy modelization: 
+the first number represents the number of files which are used
+then comes the list of the files with the corresponding concentrations
+then the number of critical points which are used in the calculation
+then the coefficients of third order polynomials describing the dependance 
+of the critical points with the concentration 
+(from top to bottom: increasing order of the critical point, 
+from left to right: increasing power of concentration for a given critical point)
+
+IMPORTANT: the name of this file MUST be the generic name of the index files 
+(six first characters) plus the extension .ALL .
+
+The DATA are described in:
+C.Pickering, R.Carline, and M.T.Elmeny, N.S.Garawal, and L.K.Howard
+"Dielectric functions and critical points of strained InxGa(1-x)As on GaAs"
+Appl.Phys.Lett., 60(19), (1992) 2412-2414.
+

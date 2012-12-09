@@ -1,0 +1,31 @@
+14
+GaAs031t,31.0
+GaAs041t,41.0
+GaAs081t,81.0
+GaAs103t,103.0
+GaAs150t,150.0
+GaAs199t,199.0
+GaAs249t,249.0
+GaAs297t,297.0
+GaAs320t,320.0
+GaAs367t,367.0
+GaAs391t,391.0
+GaAs443t,443.0
+GaAs488t,488.0
+GaAs634t,634.0
+2
+2.9343,-0.00065,0,0
+3.1295,-0.00053,0,0
+
+'Comments:
+These are data for temperature variation of GaAs using alloy modelization: 
+the first number represents the number of files which are used
+then comes the list of the files with the corresponding temperatures
+then the number of critical points which are used in the calculation
+then the coefficients of third order polynomials describing the dependance 
+of the critical points with the temperature
+(from top to bottom: increasing order of the critical point, 
+from left to right: increasing power of concentration for a given critical point)
+
+The DATA are described in:
+

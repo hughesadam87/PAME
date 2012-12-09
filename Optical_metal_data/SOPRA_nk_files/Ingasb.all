@@ -1,0 +1,43 @@
+7
+INGASB0,0
+INGASB1,0.1
+INGASB3,0.3
+INGASB5,0.5
+INGASB7,0.7
+INGASB9,0.9
+INGASB10,1.0
+6
+1.93,-0.18,0.38,0
+2.44,-0.14,0.28,0
+3.26,0,0,0
+3.63,0,0,0
+3.92,-0.1,0.24,0
+5.3,0.15,0,0
+
+'Comments:
+These are data for alloy modelization: 
+the first number represents the number of files which are used
+then comes the list of the files with the corresponding concentrations
+then the number of critical points which are used in the calculation
+then the coefficients of third order polynomials describing the dependance 
+of the critical points with the concentration 
+(from top to bottom: increasing order of the critical point, 
+from left to right: increasing power of concentration for a given critical point)
+
+IMPORTANT: the name of this file MUST be the generic name of the index files 
+(six first characters) plus the extension .ALL .
+
+
+CPs are:  E1, E1 + Delta1, E0' , E0' + Delta0' , E2, E1'
+material is In(1-x)Ga(x)Sb
+
+
+DATA prepared after the paper :
+References and bibliography:
+
+S.IMAI, S. Adachi ." Optical constants of In1-xGaxSb Ternary 
+alloys : Experiment and Modeling ".Jpn. Appl. Phys. Vol 32 (1993)
+ pp.3860-3865.Part 1, N° 9A, September 1993.
+
+
+

@@ -1,0 +1,26 @@
+4
+SInGas0,0
+SInGas10,0.1
+SinGas20,0.2
+SInGas24,0.24
+3
+2.91,-0.603,0.066,0
+3.126,-0.467,0.883,0
+4.85,0,0,0
+
+'Comments:
+These are data for alloy modelization: 
+the first number represents the number of files which are used
+then comes the list of the files with the corresponding concentrations
+then the number of critical points which are used in the calculation
+then the coefficients of third order polynomials describing the dependance 
+of the critical points with the concentration 
+(from top to bottom: increasing order of the critical point, 
+from left to right: increasing power of concentration for a given critical point)
+
+IMPORTANT: the name of this file MUST be the generic name of the index files 
+(six first characters) plus the extension .ALL .
+
+The DATA are described in:
+Pickering( pers. comm.)
+

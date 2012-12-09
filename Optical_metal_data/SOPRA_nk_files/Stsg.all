@@ -1,0 +1,44 @@
+5
+STSG0,0
+STSG064,0.064
+STSG123,0.123
+STSG169,0.169
+STSG229,0.229
+5
+1.1053,-0.896,0.396,0
+3.31,-0.28,0,0
+3.393,-1.335,0.0365,0
+3.423,-0.794,0.193,0
+4.42,-0.03,0,0
+
+'Comments:
+These are data for alloy modelization: 
+the first number represents the number of files which are used
+then comes the list of the files with the corresponding concentrations
+then the number of critical points which are used in the calculation
+then the coefficients of third order polynomials describing the dependance 
+of the critical points with the concentration 
+(from top to bottom: increasing order of the critical point, 
+from left to right: increasing power of concentration for a given critical point)
+
+IMPORTANT: the name of this file MUST be the generic name of the index files 
+(six first characters) plus the extension .ALL .
+
+DATA prepared after Pickering's results for strained SixGe(1-x):
+x has to be less than 0.029
+CPs are:  Eindgap, E1, E1+d1, E2
+
+References:
+
+R.T.Carline,C.Pickering,D.J.Robbins,W.Y.Leong, A.D.Pitt, and A.G.Cullis
+"Dielectric functions and critical points of strained SixGe(1-x) on Si (100)"
+Appl.Phys.Lett.(submitted)
+
+R.M.Sieg, S.A.Alterovitz, E.T.Croke and M.J.Harrell
+"Ellipsometric study of Si(0.5)Ge(0.5)/Si strained-layer superlattices"
+Appl.Phys.Lett.62(14) (1993) 1626-1628.
+
+"Near Band-Gap photoluminescence from pseudomorphic Si(1-x)Ge(x) single layers on silicon"
+D.J.Robbins, L.T.Canham, S.J.Barnett, A.D.Pitt, and P.Calcott
+J.Appl.Phys. 71(3) (1992) 1407-1414.
+

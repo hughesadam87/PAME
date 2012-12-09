@@ -282,6 +282,14 @@ class sphere_shell(sphere_full, shell):
 #	Qabs=Cscatt * math.pi * self.r_core**2           #* pi a^2    
 
 
-#if __name__ == '__main__':
-#	from material_traits_v3 import DrudeNew, Dispwater, Constant, Sellmeir  #For testing purposes
+if __name__ == '__main__':
+	from material_models import DrudeBulk, Dispwater, Constant, Sellmeir  #For testing purposes
+	from main_parms import SpecParms
+	spec=SpecParms()
+	core=DrudeBulk(specparms=spec)
+	med=Dispwater(specparms=spec)
+	miesphere=sphere(specparms=spec, rcore=12.0, CoreMaterial=core, MediumMaterial=med)
+	miesphere.update_cross()
+
+	miesphere.configure_traits()
 

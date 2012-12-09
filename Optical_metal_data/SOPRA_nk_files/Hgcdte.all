@@ -1,0 +1,36 @@
+ 3
+HGCDTE0,0
+HGCDTE2,0.2
+HGCDTE3,0.29
+3
+2.147,0.44,0.7,0
+2.778,0.47,0.6,0
+4.468,0.66,-0.06,0
+
+
+
+'Comments:
+These are data for alloy modelization: 
+the first number represents the number of files which are used
+then comes the list of the files with the corresponding concentrations
+then the number of critical points which are used in the calculation
+then the coefficients of third order polynomials describing the dependance 
+of the critical points with the concentration 
+(from top to bottom: increasing order of the critical point, 
+from left to right: increasing power of concentration for a given critical point)
+
+IMPORTANT: the name of this file MUST be the generic name of the index files 
+(six first characters) plus the extension .ALL .
+
+DATA prepared after Handbook of optical constants of solids II(Academic Press 1991)
+CPs are:  E1, E1+d1, E2
+material is Hg(1-x)Cd(x)Te
+
+References and bibliography:
+H.Arwin, D.E.Aspnes 
+J.Vac.Sci.Technol.A 2,1316(1984)
+
+L.Vin~a, C.Umbach, M.Cardona, and L.Vodopyanov
+Phys.Rev.B29,6752(1984).
+
+

@@ -1,0 +1,41 @@
+9
+RESIGE0,0.0
+RESIGE22,0.218
+RESIGE39,0.389
+RESIGE51,0.513
+RESIGE64,0.635
+RESIGE75,0.75
+RESIGE83,0.831
+RESIGE91,0.914
+RESIGE1,1.0
+4
+3.31,-0.28,0,0
+3.395,-1.44,0.153,0
+3.428,-1.194,0.062,0
+4.42,-0.03,0,0
+
+'Comments:
+These are data for alloy modelization: 
+the first number represents the number of files which are used
+then comes the list of the files with the corresponding concentrations
+then the number of critical points which are used in the calculation
+then the coefficients of third order polynomials describing the dependance 
+of the critical points with the concentration 
+(from top to bottom: increasing order of the critical point, 
+from left to right: increasing power of concentration for a given critical point)
+
+IMPORTANT: the name of this file MUST be the generic name of the index files 
+(six first characters) plus the extension .ALL .
+
+References:
+
+For initial spectra:
+J.Humlicek, M.Carriga, M.I.Alonso, and M.Cardona
+"Optical spectra of SixGe(1-x) alloys"
+J.Appl.Phys., 65(7) (1989) 2827-2832.
+
+For critical point polynomials:  
+C.Pickering, R.T.Carline D.J.Robbins, W.Y.Leong, S.J.Barnett, A.D.Pitt
+"Spectroscopic Ellipsometry characterization of strained and relaxed Si(1-x)Gex epitaxial layers"
+J.Appl.Phys.73(1)(1993) 239-250.
+

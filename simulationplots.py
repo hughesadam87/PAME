@@ -50,11 +50,14 @@ class MaterialViewList(GeneralViewList):
 class SimViewList(GeneralViewList):
 	plot_storage=Instance(SimView,())   #Instance Sim View, used for storing reflectance simulations
 
-
 class CurveAnalysisStorage(GeneralSimStorage):
+	''' Old version to store dictionaries of arrays in curve analysis programs.  Going to update to store Series
+	and work with pyuvvis.'''
 
 	### Curve analysis required imports ###
-	sys.path.append("/home/glue/Dropbox/Curve_Analysis_Traits/Curve_analysis_traits_v3")
+	names=['glue','reeves','hugadams']
+	for name in names:
+		sys.path.append("/home/"+name+"/Dropbox/Curve_Analysis_Traits/Old_versions/Curve_analysis_traits_v3")
 	from rundata import RunData
 	from spec_data import spec_dtype
 	from numpy import array
@@ -82,7 +85,8 @@ class CurveAnalysisStorage(GeneralSimStorage):
 				Item('data_column'),
 				Item('curve_storage', style='simple'), 
 				),
-			)
+			)	
+
 
 class ReflectanceStorage(CurveAnalysisStorage):
 	data_column=Enum(4, [1,2,3,4]) #0= xarray,  1=angles, 2=RefArray, 3=TransArray, 4=AvgArray] (1,2,3 are not average so they probably wont work anyway)

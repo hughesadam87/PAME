@@ -1,0 +1,33 @@
+9
+sicr-t02,0.2
+sicr-t10,1
+sicr-t15,1.5
+sicr-t20,2
+sicr-t25,2.5
+sicr-t30,3
+sicr-t35,3.5
+sicr-t40,4
+sicr-t45,4.5
+2
+3.43,-0.028,0,0
+4.23,-0.035,0,0
+
+'Comments:
+These are data for alloy modelization: 
+the first number represents the number of files which are used
+then comes the list of the files with the corresponding concentrations
+then the number of critical points which are used in the calculation
+then the coefficients of third order polynomials describing the dependance 
+of the critical points with the concentration 
+(from top to bottom: increasing order of the critical point, 
+from left to right: increasing power of concentration for a given critical point)
+
+IMPORTANT: the name of this file MUST be the generic name of the index files 
+(six first characters) plus the extension .ALL .
+
+The DATA are described in:
+"Temperature dependance of the dielectric function of silicon using in-situ spectroscopic ellipsometry"
+G.Vuye,S.Fisson,V.Nguyen Van,Y.Wang, J.Rivory,F.Abeles
+Thin Solid Films, 233(1993)166-170
+
+the critical points were calculated from the first derivatives of these spectra
