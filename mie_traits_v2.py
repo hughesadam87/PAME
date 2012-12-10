@@ -50,7 +50,11 @@ class Mie(HasTraits):
 	sviewbutton=Button
 
 	#View groups
-	basic_group=Group( Item('sviewbutton', label='View Cross Section'), HGroup(Item('cutoff_criteria', name='Convergence Criteria'), Item('bessmax')), )
+	basic_group=HGroup(
+	                Item('cutoff_criteria', name='Convergence Criteria'), 
+	                Item('bessmax'),
+	                Item('sviewbutton', label='Cross Section', show_label=False)	                
+	             )
 
 	traits_view=View(Include('basic_group'))
 
@@ -58,7 +62,7 @@ class Mie(HasTraits):
         	super(Mie, self).__init__(*args, **kwargs)
 		self.on_trait_change(self.update_cross, 'CoreMaterial, MediumMaterial, ecore, emedium, bessmax, cutoff_criteria') 
 		self.update_sview()  #Update sview because mie_compare_plot listens to it
-		print 'initializing'
+		print 'Initialized Mie Theory'
 	
 	def _Cext_default(self): return empty(self.ecore.shape[0], dtype='float')   
 	def _Cabs_default(self): return empty(self.ecore.shape[0], dtype='float')   
@@ -170,11 +174,20 @@ class sphere_electrostatics(sphere):
 class sphere_full(sphere):
 	'''Full mie solution to plain sphere'''
 
-	sphere_full_group=Group(Include('basic_group'), Include('basic_sphere_group'))
-	traits_view=View(Include('sphere_full_group'), Item('specparms', style='custom'), 
-		         Item('MediumMaterial', editor=InstanceEditor(), style='simple'),
-		 	 Item('CoreMaterial', editor=InstanceEditor(), style='simple'),
-					 buttons=[ 'OK', 'Cancel', 'Undo', 'Help'])
+	sphere_full_group=Group(Include('basic_group'), 
+	                        HGroup(
+	                                Item('r_core', label='Core Radius'), 
+	                                Item('r_shell', label='Shell Radius')
+	                               ), 
+	                        )
+	traits_view=View(VGroup(
+	                 Include('sphere_full_group'), 
+	           #      Item('specparms', style='custom'), 
+	                 HGroup(
+		             Item('MediumMaterial', editor=InstanceEditor(), style='simple', show_label=False),
+		 	     Item('CoreMaterial', editor=InstanceEditor(), style='simple', show_label=False),
+	                       )), buttons=[ 'OK', 'Cancel', 'Undo', 'Help']
+	                  )
 	def update_cross(self):
 		for i in range(self.ecore.shape[0]):   #Can't get rid of this because bessel functions can't generate with full arrays
 			ext_term=0.0  ; scatt_term=0.0 ; ext_old=50
@@ -217,12 +230,17 @@ class sphere_full(sphere):
 
 class sphere_shell(sphere_full, shell):
 	'''This is a sphere with a surrounding shell; inherits from basic sphere'''
-	sphere_shell_group=Group(Include('sphere_full_group'), Include('basic_shell_group') )
-	traits_view=View(Include('sphere_shell_group'),
-			Item('MediumMaterial', style='simple', show_label=False),
-			Item('CoreMaterial', style='simple', show_label=False),             #FOR TESTING PURPOSES
-			Item('ShellMaterial', style='simple', show_label=False),
-		buttons=[ 'OK', 'Cancel', 'Undo', 'Help'])
+	sphere_shell_group=Group(Include('sphere_full_group') )
+
+	traits_view=View(VGroup(
+	                Include('sphere_shell_group'),
+			HGroup(
+	                    Item('MediumMaterial', style='simple', show_label=False),
+			    Item('CoreMaterial', style='simple', show_label=False),             #FOR TESTING PURPOSES
+			    Item('ShellMaterial', style='simple', show_label=False),
+	                       ),
+	                ), buttons=[ 'OK', 'Cancel', 'Undo', 'Help'] 
+	                )
 
 	def update_cross(self):
 		for i in range(self.ecore.shape[0]):

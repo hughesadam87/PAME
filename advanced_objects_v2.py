@@ -211,7 +211,8 @@ class NanoSphereShell(NanoSphere):
     )
 
     compnpgroup=Group(
-        HGroup(Item('r_core'), Item('r_shell'), Item('specparms', style='custom'), Item('mviewbutton', label='Show Full material', show_label=False)),
+        HGroup(Item('r_core'), Item('r_shell'), #Item('specparms', style='custom'), 
+               Item('mviewbutton', label='Show Full material', show_label=False)),
         Group(
             Tabbed(
                 Include('coregroup'),
@@ -219,7 +220,7 @@ class NanoSphereShell(NanoSphere):
                 Item('ShellMaterial', editor=InstanceEditor(),style='custom', label='Shell Material', show_label=False),
                 Include('opticalgroup'),
                 Item('CoreShellComposite', style='custom', label='CoreShellComposite Mix', show_label=False),
-                Item('TotalMix', style='custom', label='TOTAL MIX'),
+                Item('TotalMix', style='custom', label='Surface Coverage', show_label=False),
                 label='Constituent Materials and Optical Properties' ), 
             ),
 

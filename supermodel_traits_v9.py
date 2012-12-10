@@ -12,7 +12,8 @@ from gensim import LayerVfrac, GeneralSim
 import copy
 import pickle
 
-### Used to present a summary of the state of the program.   This may be deprecated or unuseful and is not all that important I think ###
+### Used to present a summary of the state of the program.   ###
+###This may be deprecated or unuseful and is not all that important I think ###
 
 state_editor =\
     TableEditor(
@@ -62,7 +63,7 @@ class GlobalScene(HasTraits):
         TableEditor(
             auto_size=False,  #Set in View
             columns=[
-                ExpressionColumn(expression='object.time', label='Simulation Time'),
+                ExpressionColumn(expression='object.runname', label='Simulation Time'),
                 ExpressionColumn(expression='object.inc', label='Number of points in the sim'),
                 ExpressionColumn(expression='object.sim_traits_list', label='Traits being simulated'), #Perhaps present start, end values to user somehow
                 ObjectColumn(name='notes', label='Notes'),
@@ -96,6 +97,7 @@ class GlobalScene(HasTraits):
     )                      
 
     fibergroup=Group(
+        Item('angle_avg', label='Angle Averaging Method',show_label=False),
         Item('fiberparms', editor=InstanceEditor(), style='custom', show_label=False),
         Item('fview', style='custom', show_label=False),
         label='Fiber'
@@ -113,20 +115,20 @@ class GlobalScene(HasTraits):
     summarygroup=Group(
         Item('statedata', editor=state_editor, show_label=False),  #If not in view, delegation trips out!?
         Item('simulations', editor=sims_editor, show_label=False),
-        Item('angle_avg', show_label=False),
         label='Parameter Summary'
     )
 
-    simgroup=Group( Item('selected_sim', style='custom', editor=InstanceEditor(),show_label=False), label='Simulations')
+    simgroup=Group( Item('selected_sim', style='custom', editor=InstanceEditor(),
+                         show_label=False), label='Simulations')
 
 
 
     fullgroup=Group(VSplit(
-        HGroup(HSplit(
-
+        
+               HSplit(
             Item('specparms',show_label=False, style='custom'),
             Include('summarygroup'),
-            )    ),
+            ),
         Tabbed(
             Include('fibergroup'), 
             Include('layergroup'),
@@ -138,7 +140,9 @@ class GlobalScene(HasTraits):
 
 
 
-    Mainview = View(Include('fullgroup'), Item('save'), Item('load'), menubar=mainmenu,
+    Mainview = View(Include('fullgroup'), 
+             #       Item('save'), Item('load'),  #FOR SAVING ENTIRE STATE OF SIMULATION
+                    menubar=mainmenu,
                     resizable=True, buttons=['Undo'], title='SIM X')
 
     def __init__(self, *args, **kwargs):
@@ -152,12 +156,12 @@ class GlobalScene(HasTraits):
         self.sync_trait('fiberparms', self.statedata, 'fiberparms')
         self.sync_trait('layereditor', self.statedata, 'layereditor')
 
-#	   self.simulations.append(LayerVfracEpsilon(base_app=self))   #Pass self to a simulation environment
+      #self.simulations.append(LayerVfracEpsilon(base_app=self))   #Pass self to a simulation environment
         self.simulations.append(LayerVfrac(base_app=self))   #Pass self to a simulation environment
 
     ### Store copy of current simulation 
     def store_sim(self): self.simulations.append(self.selected_sim)
-    def save_sim(self): self.selected_sim.output_simulation('testsim.txt')
+    def save_sim(self): self.selected_sim.output_simulation('./Simulations')
 
     ### Show Reflectance ###
     def conf_ref(self):

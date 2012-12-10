@@ -1,3 +1,7 @@
+''' A set of plotting components for Fiber Reflectance, Dielectric material, scattering cross section.
+They each have special get/set methods for communicating with simulations in gensim and other
+getters and setter model components.'''
+
 from enable.api import Component, ComponentEditor
 from traits.api import HasTraits, Instance, Array, Property, CArray, Str, Float, Tuple, Any, Dict, List, Enum, Bool, cached_property, implements
 from traitsui.api import Item, Group, View, Tabbed, Action, HGroup, InstanceEditor, VGroup, ListStrEditor
@@ -11,10 +15,14 @@ from enable.colors import color_table
 from chaco.tools.api import RangeSelection, RangeSelectionOverlay
 from scipy.integrate import simps  #Simpson integration
 
+from pandas import DataFrame
+import numpy as np
+
 color_list=color_table.keys()  #Color table is a dic "red":(1,0,0) for example, so this just returns names which plots understand"
 
 class SimView(HasTraits):
-
+    ''' Used for plotting fiber data.  Either reflectance, transmittance or averaged
+    reflectance.  Should really be called FiberView or something.'''
     implements(IView)
 
     name=Str('Test')
@@ -109,12 +117,32 @@ class SimView(HasTraits):
     ### Probably a smart way to change all of these update methods to a simplier dictionary notation ###
 
     def get_sexy_data(self):
-        '''Returns the data in a list that can be immediately read back in another instance of simview.  Note this is not the same as the arrayplotdata getdata() function'''
+        '''Returns the data in a list that can be immediately read back in another instance of simview.  
+        Note this is not the same as the arrayplotdata getdata() function'''
         return [self.xarray, self.angles, self.RefArray, self.TransArray, self.AvgArray]
 
     def set_sexy_data(self, data_list):
         '''Takes in data formatted deliberately from "get_sexy_data" and forces an update'''
         self.update(data_list[0], data_list[1], data_list[2], data_list[3], data_list[4])
+        
+    def get_dataframe(self):
+        ''' Returns dataframe of data for easier concatenation into a runpanel dataframe used by
+        simulations'''
+
+        delim='_' #Separate R,T modes (R1, R2 for each mode)
+        d={}
+        for theta, i in enumerate(self.angles):
+            d['R'+delim+str(theta)+delim+str(i)]=self.RefArray[i]
+            d['T'+delim+str(theta)+delim+str(i)]=self.TransArray[i]
+
+        #rowwise mean of reflectance at various angles (Note, avgarray is the angles used
+        tavg=np.mean(self.TransArray, axis=0)    
+        ravg=np.mean(self.RefArray, axis=0)
+        d.update({'Ravg':ravg, 'Tavg':tavg})
+        return DataFrame(d, index=self.xarray)
+        
+        
+                
 
 class MaterialView(HasTraits):
 
@@ -218,6 +246,12 @@ class MaterialView(HasTraits):
     def set_sexy_data(self, data_list):
         '''Takes in data formatted deliberately from "get_sexy_data" and forces an update'''
         self.update(data_list[0], data_list[1], data_list[2], data_list[3])
+        
+    def get_dataframe(self):
+        ''' Returns dataframe of data for easier concatenation into a runpanel dataframe used by
+        simulations'''
+        d = {'er' : self.ereal, 'nr':self.nreal, 'ei':self.eimag, 'ni':self.nimag}   
+        return DataFrame(d, index=self.xarray)
 
 class ScatterView(HasTraits):
     '''Used to view scattering cross sections and other relevant parameters from mie scattering program'''
@@ -335,3 +369,9 @@ class ScatterView(HasTraits):
     def set_sexy_data(self, data_list):
         '''Takes in data formatted deliberately from "get_sexy_data" and forces an update'''
         self.update(data_list[0], data_list[1], data_list[2], data_list[3])
+        
+    def get_dataframe(self):
+        ''' Returns dataframe of data for easier concatenation into a runpanel dataframe used by
+        simulations'''
+        d = {'ext' : self.extarray, 'scatt':self.scatarray, 'abs':self.absarray}   
+        return DataFrame(d, index=self.xarray)

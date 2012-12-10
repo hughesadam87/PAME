@@ -134,9 +134,17 @@ class CompositeMaterial_Equiv(CompositeMaterial):
 	r_shell=Float(2)
 	MixingStyle=Enum('Equivalence', 'Custom Equiv') 
 
-	traits_view=View=View(Item('r_particle'), Item('mviewbutton', label='Show Material'),
-				 Item('Mix', style='custom'), Item('MixingStyle'), Item('selectmat1'), Item('Material1'),
-				Item('selectmat2'), Item('Material2'))
+	traits_view=View=View(Item('r_particle'), 
+	                  HGroup(
+	                         Item('mviewbutton', label='Show Material'),
+	                         Item('MixingStyle')
+	                         ),
+	                  Item('Mix', style='custom'),  
+	                  HGroup(
+	                      Item('selectmat1'), Item('selectmat2'),
+	                      Item('Material1'), Item('Material2')
+	                        )
+	                   )
 
 	def __init__(self, *args, **kwargs):
 	        super(CompositeMaterial_Equiv, self).__init__(*args, **kwargs)
@@ -247,20 +255,28 @@ class SphericalInclusions_Disk(SphericalInclusions):
 	def __init__(self, *args, **kwargs):
 	        super(SphericalInclusions_Disk, self).__init__(*args, **kwargs)
 
-	def _r_platform_default(self): return 31250.0
+	def _r_platform_default(self): return 31250.0 #62.5uM diameter
 
 	#@cached_property
 	def _get_VT(self): return round( math.pi * self.r_platform**2 * self.shell_thickness, 2)
 
 	inclusionsgroup=Group(
-				HGroup(Item('particle_type', style='readonly'), Item('platform_type', style='readonly')), 
+				HGroup(Item('particle_type', style='readonly'), 
+	                               Item('platform_type', style='readonly')), 
 				 HGroup( 
-					Item('r_particle', label='Particle Size'), Item('r_platform'),
+					Item('r_particle', label='Particle Radius'),
+	                                Item('r_platform', label='Platform Radius'),
 					),
-
-				HGroup(Item('coverage', label='Shell Coverage %'),Item('vinc_occ', label='Total inclusion volume', style='readonly') ),
-				HGroup(Item('N_occ', label='Occupied Sites     '), Item('N_tot', label='Total Sites', style='readonly')),
-				HGroup(Item('vshell_occ', label='Shell volume occupied'), Item('VT', label='Total shell volume', style='readonly')),
+				HGroup(
+	                               Item('coverage', label='Disk Coverage %'),
+	                               #Item('vinc_occ', label='Volume of inclusions', style='readonly') ),
+	                                Item('N_occ', label='Occupied Sites     '), 
+	                                Item('N_tot', label='Total Sites', style='readonly')
+	                              ),
+				HGroup(
+	                                Item('vshell_occ', label='Shell volume occupied'), 
+	                                Item('VT', label='Total shell volume', style='readonly')
+	                              ),
 				Include('mixgroup'),
 				label='Layer Inclusions and Mixing'    )
 

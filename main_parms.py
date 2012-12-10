@@ -74,9 +74,9 @@ class FiberParms(HasTraits):
 	Config=Enum('Reflection', 'Transmission')
 	Mode=Enum('TE', 'TM', 'Mixed')
 	Lregion=Float(1500) #um or cm
-	Dcore=Float(125)  #um
+	Dcore=Float(62.5)  #um
 	Rcore=Property(Float, depends_on=['Dcore'])
-	NA=Float(.24)
+	NA=Float(.275)
 	theta_max=Property(Float, depends_on=['NA'])
 
 	angle_start=Float(.5);  angle_stop=Float();	angle_inc=Float(.5)
@@ -92,9 +92,15 @@ class FiberParms(HasTraits):
 	ca=Property(Array, depends_on='angles') 
 
 
-        SharedGroup = Group(Item('Config'), Item('Mode'),
-                   HGroup(Item(name='NA', label='Numerical Aperature'), Item('theta_max', label='Critical Angle')),
-			VGroup(
+        SharedGroup =Group(
+	             HGroup(
+	              Item('Config'), Item('Mode')
+	                   ),
+                     HGroup(
+	                  Item(name='NA', label='Numerical Aperature'), 
+	                  Item('theta_max', label='Critical Angle')
+	                  ),
+			HGroup(
 				Item('angle_start', label='Angle Start'), 
 				Item('angle_stop', label='Angle End'), 
 				Item('angle_inc', label='Angle Increment'),
@@ -102,19 +108,20 @@ class FiberParms(HasTraits):
                    show_border = True, #group border
 		   )
 
-	RefGroup=Group(
-		      Item(name = 'Rcore', label='Core Radius (nm)'),Item(name = 'Dcore', label='Core Diameter(um)')
+	RefGroup=HGroup(
+		      Item(name = 'Rcore', label='Core Radius (nm)'),
+	              Item(name = 'Dcore', label='Core Diameter(um)')
 		      )
 
 	TransGroup=Group(
-			Item(name='Lregion', label='Length of Exposed Region (um)', enabled_when='Config==Transmission'), Item('N', style='readonly'), 
+			Item(name='Lregion', label='Length of Exposed Region (um)',
+	                     enabled_when='Config==Transmission'), 
+	                Item('N', style='readonly'), 
 			Item('angles', style='readonly'),
 			)
 
 	traits_view=View(
-		        Group(
-        		    SharedGroup, RefGroup, TransGroup
-       			     )
+		        Group(SharedGroup, RefGroup, TransGroup)
 			)
 
 	def _angle_stop_default(self): return self.theta_max

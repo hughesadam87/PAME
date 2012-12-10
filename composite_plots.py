@@ -1,3 +1,5 @@
+''' Containers to store multiple instances of plots from basicplots.py'''
+
 from traits.api import Str, Dict, Property, cached_property, Enum, Bool, HasTraits, List, Instance, implements, on_trait_change
 from traitsui.api import View, HGroup, Item, VGroup, ListStrEditor, InstanceEditor, CheckListEditor
 from interfaces import IMaterial, ICompositeView

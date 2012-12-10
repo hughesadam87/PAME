@@ -1,3 +1,10 @@
+''' All of these classes are used for visualizing and plotting simulations.  The actual
+simulation data is made in the gensim.py file, where each simulation is stored as a dictionary
+of arrays.  That later is passed to this file as the trials_dic trait.  These are later used to
+set chaco plot interfaces (SimView, MaterialView etc...).  At this point, its best to just
+output the data to dataframes and rely on pyuvvis to do the visualization and analysis.  This
+can be resurrected when in-house visualization and realtime chaco plotting is important.'''
+
 from traits.api import Dict, Property, Any, Instance, HasTraits, List, cached_property, Int, Enum, Str
 from traitsui.api import Item, View, VGroup, ListStrEditor, HGroup
 from basicplots import SimView, MaterialView
@@ -52,7 +59,8 @@ class SimViewList(GeneralViewList):
 
 class CurveAnalysisStorage(GeneralSimStorage):
 	''' Old version to store dictionaries of arrays in curve analysis programs.  Going to update to store Series
-	and work with pyuvvis.'''
+	and work with pyuvvis.
+	'''
 
 	### Curve analysis required imports ###
 	names=['glue','reeves','hugadams']
