@@ -1,7 +1,9 @@
 from traits.api import *
 
 class A(HasTraits):
-    a=Instance(Str)
+    c=Dict(Str, Dict)
     
-test=A()
-print test.a
+c={'2':{3:3}}
+b=A(c=c)
+
+print b

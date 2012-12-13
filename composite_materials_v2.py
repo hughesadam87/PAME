@@ -55,6 +55,9 @@ class CompositeMaterial(BasicMaterial):
 		self.sync_trait('Material1', self.Mix, 'solutematerial')	
 		self.sync_trait('Material2', self.Mix, 'solventmaterial') 
 		self.update_allplots()
+
+	def get_usefultraits(self):
+		return {'Material':self.mat_name, 'Solute':self.Material1, 'Solvent':self.Material2, 'Vfrac':self.Vfrac}
  
 #	def update_allplots(self): 
 #			self.allplots={'Dielectric '+str(self.Material1.mat_name):self.Material1.eplot,  'Dielectric '+str(self.Material2.mat_name):self.Material2.eplot, 
@@ -172,7 +175,8 @@ class SphericalInclusions(CompositeMaterial):
 
 	r_particle=Float(2.0)     #Radius parameters for r_particle and r_platform respectively
 	r_platform=Float(12.0)
-	shell_thickness=Property(Float, depends_on='r_particle')  #Thickness of shell determined by 2r inclusion
+	
+	shell_thickness=Property(Float, depends_on='r_particle')  #Thickness of shell determined by 2r inclusion	
 
 	vbox=Property(Float, depends_on='r_particle')           #Box defined by diameter of sphere
 	unitvolume=Property(Float, depends_on='r_particle')     #Total amount of volume occupied by the sphere 
@@ -188,34 +192,26 @@ class SphericalInclusions(CompositeMaterial):
 
 	def __init__(self, *args, **kwargs):
 	        super(SphericalInclusions, self).__init__(*args, **kwargs)
-
-	#@cached_property
-	def _get_shell_thickness(self): return 2.0*self.r_particle
-
-	#@cached_property
+	
+	def _get_shell_thickness(self): return 2.0*self.r_particle #Shell thickness is d_particle
+	
 	def _get_vbox(self): return 8.0*(self.r_particle**3)           #Square boxes of volumes
-
-	#@cached_property
+	
 	def _get_vinc_occ(self): return self.N_occ*self.unitvolume
-
-	#@cached_property
+	
 	def _get_vshell_occ(self): return self.N_occ*self.vbox
-
-	#@cached_property
+	
 	def _get_unitvolume(self): 
 		value=(4.0*math.pi/3.0)*self.r_particle**3  #THIS IS ONLY VALID FOR SPHERE
 		return round(value, 2)
-
-	#@cached_property
+	
 	def _get_N_tot(self): return int(self.VT/self.vbox)   #Total number of available boxes is Vbox/VT
 
-	#@cached_property
 	def _get_N_occ(self): return  int((self.Vfrac * self.VT)/(self.unitvolume))
 
 	def _set_N_occ(self, Nocc): 
 		self.Vfrac= (Nocc * self.unitvolume)/self.VT 
-
-	#@cached_property
+	
 	def _get_coverage(self): return round ( (float(self.N_occ) / float(self.N_tot) )*100.0 , 4)	
 	def _set_coverage(self, coverage):
 		self.N_occ=int( (coverage * self.N_tot) / 100.0	)
@@ -227,7 +223,8 @@ class SphericalInclusions_Shell(SphericalInclusions):
 
 	inclusionsgroup=Group(
 				HGroup(Item('particle_type', style='readonly'), Item('platform_type', style='readonly')), 
-				 HGroup( Item('r_particle', label='Inclusion radius'), Item('shell_thickness', style='readonly')),
+				 HGroup( 
+	                                 Item('r_particle', label='Inclusion radius'), Item('shell_thickness', style='readonly')),
 				(Item('r_platform')),
 
 				HGroup(Item('coverage', label='Shell Coverage %'),Item('vinc_occ', label='Total inclusion volume') ),
@@ -243,7 +240,7 @@ class SphericalInclusions_Shell(SphericalInclusions):
 	def __init__(self, *args, **kwargs):
 	        super(SphericalInclusions_Shell, self).__init__(*args, **kwargs)
 
-	#@cached_property
+	
 	def _get_VT(self): return round ( (4.0*math.pi/3.0) * (  (self.r_platform+2.0*self.r_particle)**3 - self.r_platform**3 ) , 2)
 
 
@@ -251,19 +248,32 @@ class SphericalInclusions_Disk(SphericalInclusions):
 
 	platform_type=Str('Disk')                 #Fiber endface
 	particle_type=Str('Spherical Particles')  #Nanoparticles
+	
+	### For easier use when playing w/ research results
+	d_particle=Property(Float, depends_on='r_particle')
+	d_platform=Property(Float, depends_on='r_platform')		
 
 	def __init__(self, *args, **kwargs):
 	        super(SphericalInclusions_Disk, self).__init__(*args, **kwargs)
 
 	def _r_platform_default(self): return 31250.0 #62.5uM diameter
 
-	#@cached_property
+	def _get_d_particle(self): return 2.0*self.r_particle
+	def _get_d_platform(self): return 2.0*self.r_platform
+	
+	def _set_d_particle(self, d): self.r_particle = d/2.0
+	def _set_d_platform(self, d): self.r_platform = d/2.0
+	
+
+	
 	def _get_VT(self): return round( math.pi * self.r_platform**2 * self.shell_thickness, 2)
 
 	inclusionsgroup=Group(
 				HGroup(Item('particle_type', style='readonly'), 
 	                               Item('platform_type', style='readonly')), 
 				 HGroup( 
+	                                Item('d_particle', label='Particle Diameter'),
+                                        Item('d_platform', label='Platform Diameter'),	                                 
 					Item('r_particle', label='Particle Radius'),
 	                                Item('r_platform', label='Platform Radius'),
 					),

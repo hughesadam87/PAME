@@ -1,3 +1,6 @@
+import copy, pickle, os
+
+### Enthought imports
 from traits.api import *
 from traitsui.api import *
 from enable.component_editor import ComponentEditor
@@ -9,8 +12,6 @@ from interfaces import ISim, ILayer, IMaterial, IStorage
 from fiberview import FiberView
 from modeltree_v2 import Main
 from gensim import LayerVfrac, GeneralSim
-import copy
-import pickle
 
 ### Used to present a summary of the state of the program.   ###
 ###This may be deprecated or unuseful and is not all that important I think ###
@@ -47,12 +48,18 @@ class GlobalScene(HasTraits):
 
     save=Button
     load=Button
+    
+    ## For simulations
+    outdir=Directory 
 
     def _load_fired(self):
         self.simulations=pickle.load(open("test.p", "rb") )
 
     def _save_fired(self):
         pickle.dump(self.simulations , open( "test.p", "wb" ) )
+        
+    def _outdir_default(self):
+        return os.path.join( os.path.abspath('.'),'Simulations')
 
     ####Simulation Stuff ####
 
@@ -82,14 +89,10 @@ class GlobalScene(HasTraits):
     selected_d=DelegatesTo('layereditor')
     angle_avg=DelegatesTo('current_state')
 
-
-
     ####Stack Actions####
     showreflectance=Action(name="Interface View", action="conf_ref")  #PHASE THIS OUT LATER WITH UNIFIED VIEW FRAMEWORK
     appendsim=Action(name="Store Current Simulation", action="store_sim")
     savesim=Action(name="Save Simulation", action="save_sim")  #action gets underscore
-
-
 
     mainmenu=MenuBar(
         Menu(showreflectance, name='Layer Options'), 	
@@ -113,8 +116,10 @@ class GlobalScene(HasTraits):
     )            
 
     summarygroup=Group(
-        Item('statedata', editor=state_editor, show_label=False),  #If not in view, delegation trips out!?
         Item('simulations', editor=sims_editor, show_label=False),
+
+        ### Can't remove this or program trips, so I just hide it permanently
+        Item('statedata', editor=state_editor, show_label=False, visible_when='8==9'),
         label='Parameter Summary'
     )
 
@@ -123,12 +128,14 @@ class GlobalScene(HasTraits):
 
 
 
-    fullgroup=Group(VSplit(
-        
-               HSplit(
-            Item('specparms',show_label=False, style='custom'),
-            Include('summarygroup'),
-            ),
+    fullgroup=VSplit(
+                HSplit(
+                  VGroup(
+                    Item('specparms',show_label=False, style='custom'),
+                    Item('outdir', label='Output Directory'),
+                      ),
+                    Include('summarygroup'),
+                    ),
         Tabbed(
             Include('fibergroup'), 
             Include('layergroup'),
@@ -136,7 +143,7 @@ class GlobalScene(HasTraits):
             Include('simgroup'),
             ),
 
-    )       )
+           )
 
 
 
@@ -151,6 +158,7 @@ class GlobalScene(HasTraits):
         self.sync_trait('specparms', self.layereditor, 'specparms')
         self.sync_trait('modeltree', self.layereditor, 'modeltree')
 
+        ### NEED TO RENAME AND REWRITE THIS... ITS NOT "STATEDATA"
         self.statedata=BasicReflectance()
         self.sync_trait('specparms', self.statedata, 'specparms')
         self.sync_trait('fiberparms', self.statedata, 'fiberparms')
@@ -158,10 +166,10 @@ class GlobalScene(HasTraits):
 
       #self.simulations.append(LayerVfracEpsilon(base_app=self))   #Pass self to a simulation environment
         self.simulations.append(LayerVfrac(base_app=self))   #Pass self to a simulation environment
-
+        
     ### Store copy of current simulation 
     def store_sim(self): self.simulations.append(self.selected_sim)
-    def save_sim(self): self.selected_sim.output_simulation('./Simulations')
+    def save_sim(self): self.selected_sim.output_simulation(self.outdir)
 
     ### Show Reflectance ###
     def conf_ref(self):

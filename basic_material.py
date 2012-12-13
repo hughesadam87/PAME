@@ -75,6 +75,10 @@ class BasicMaterial(HasTraits):
 		self.eplot=self.mview.eplot
 		self.nplot=self.mview.nplot
 
+	def get_usefultraits(self):
+		''' Returns a dictionary of various traits that are useful for outputting as parameters. Overwrite
+		with personal tastes.'''
+		return {'Material':self.mat_name}
 	
 	def update_allplots(self): 
 		self.allplots={'KEY':self.eplot, }#'ni': self.nplot}  #Format is better than _allplots_defaults() for composite objects

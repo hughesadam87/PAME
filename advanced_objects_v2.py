@@ -25,6 +25,11 @@ class NanoSphere(SphericalInclusions_Disk):
 
     r_core=Float(12)
 
+    d_core=Property(Float, depends_on='r_core')
+
+    def _get_d_core(self): return 2.0*self.r_core
+    def _set_d_core(self, d): self.r_core=d/2.0
+
     def __init__(self, *args, **kwds):
         super(NanoSphere, self).__init__(*args, **kwds)
         self.sync_trait('CoreMaterial', self, 'Material1')
@@ -189,6 +194,11 @@ class NanoSphereShell(NanoSphere):
 
     r_shell=Float(2)	
 
+    d_shell=Property(Float, depends_on='r_shell')
+
+    def _get_d_shell(self): return 2.0*self.r_shell
+    def _set_d_shell(self, d): self.r_shell=d/2.0    
+
     opticalgroup=Group(
         Tabbed(
             Item('FullMie', editor=InstanceEditor(), style='custom', label='Full Shell Particle', show_label=False, ),
@@ -211,8 +221,11 @@ class NanoSphereShell(NanoSphere):
     )
 
     compnpgroup=Group(
-        HGroup(Item('r_core'), Item('r_shell'), #Item('specparms', style='custom'), 
-               Item('mviewbutton', label='Show Full material', show_label=False)),
+        HGroup(            
+            Item('d_core', label='NP Core diameter'), Item('d_shell', label='NP Shell diameter'),
+            Item('r_core', label='NP Core radius'), Item('r_shell', label='NP Shell radius'), 
+            #Item('specparms', style='custom'), 
+            Item('mviewbutton', label='Show Full material', show_label=False)),
         Group(
             Tabbed(
                 Include('coregroup'),
@@ -269,6 +282,13 @@ class NanoSphereShell(NanoSphere):
 #	def update_allplots(self): 
 #		''' I replaced this with doublescattview anyway'''
 #		self.allplots={'full':self.FullMie.sview, 'comp':self.CompositeMie.sview}
+
+    def get_usefultraits(self):
+        ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
+        ### Eventually, make complex materials liked mixed shell call down levels of this.  aka self.shellmaterial.get_usefultraits()
+        return {'Core Material':self.CoreMaterial.mat_name, 'Shell Inclusion':self.ShellMaterial.mat_name,
+                'Medium Material':self.MediumMaterial.mat_name, 'Core Diameter':self.d_core, 'Shell Thickness':self.d_shell}
+
 
 if __name__ == '__main__':
 #	NanoSphereShell().configure_traits()

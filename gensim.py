@@ -1,26 +1,39 @@
+''' Simulation program. '''
+
+### Python imports
 import sys, os
+import time
+import copy
+
+### ETS imports
 from traits.api import * 
 from traitsui.api import *
-from numpy import array, empty
-import matplotlib.pyplot as plt
-from interfaces import IMaterial, ISim
 from numpy import linspace, divide, savetxt
-import copy
-from simulationplots import ReflectanceStorage, ScattStorage, MaterialStorage
-from main_parms import SpecParms
-from layer_editor import LayerEditor
-import time
 from traits.trait_base import xsetattr, xgetattr
 
+###3rd party imports
 from pandas import concat, Panel
+from numpy import array, empty
+import matplotlib.pyplot as plt
+
+### Local imports
+from handlers import FileOverwriteDialog, BasicDialog
+from simparser import SimParser
+from simulationplots import ReflectanceStorage, ScattStorage, MaterialStorage
+from main_parms import SpecParms
+from interfaces import IMaterial, ISim
+from layer_editor import LayerEditor
+
+
 
 class SimObject(HasTraits):
     '''Basic editor for editing traits and values in these simulations, an adapter basically.  Stores an array for
        incremental updating.'''
     trait_name=Str('add trait name')
-    inc=Range(low=0,high=20,value=3)
-    start=Float(0.0)
-    end=Float(0.5)
+    ### THESE VALUES ARE SET WHEN BY CLASSES THAT CONTROL THE SIMS
+    inc=Int() 
+    start=Float()
+    end=Float()
     trait_array=Property(Array, depends_on='start, end, inc')
 
     @cached_property
@@ -37,30 +50,41 @@ class GeneralSim(HasTraits):
        Contains methods to make sure traits that are being iterated over exist, and can be restored easily.  
        Simulation variables can be added quickly by changing the simulation_traits attributed'''
 
+    base_app=Any  #THIS IS AN INSTANCE OF GLOBAL SCENE, ALL TRAITS WILL DELEGATE TO THIS.  
+
     start=Button
     time=Str('Sim not started')   #Stores time that simulation ended
     outname=Str('Testsim') #Output name, can be overwritten when output called
+    outdir=DelegatesTo('base_app')
 
-    outpanel=Instance(Panel)
     implements(ISim)
-    inc=Range(low=0,high=20,value=3)
+    inc=Range(low=1,high=20,value=1)
     
-
-    notes=Str('Add description')
+    notes=Str('Run Notes:')
 
     key_title=Str('Trial')  #This is used to give each increment a name rather than 1,2,3
     key_delimiter=Str('%')	#Needed to put in this way to ensure proper sorting in simulationplots.py
     ## Also set to % in composite plots but that doesn't seem to be a problem
 
-    base_app=Any  #THIS IS AN INSTANCE OF GLOBAL SCENE, ALL TRAITS WILL DELGATE TO THIS.  
+    ### Restore all traits to original values after simulation is over
+    restore_status=Bool(True) 
+    
+    ### Used to store most common simulation names in a user-readable fashion, Enum for dropdown list.
+    translator=Dict()
+    translist=Property(List, depends_on='translator')
+    tvals=Enum(values='translist')
 
+    ### Output Storage Objects
+    outpanel=Instance(Panel) 
+    csvout=Bool(True)  
+    sparser=Instance(SimParser)
+
+    ### Table for selecting objects
     selected_traits=Instance(SimObject) 
-
-    restore_status=Bool(True) #Restore all traits to original values after simulation is over
 
     sim_obs=List(SimObject)
     simulation_traits=Dict  #Dictionary of required trait names, with start, end values in tuple form for iteration.  For example "Volume": (13.2, 120.0)"
-    sim_traits_list=Property(List, depends_on='simulations_traits')  #Only used for presenting a nice view to user
+    sim_traits_list=Property(List, depends_on='simulation_traits')  #Only used for presenting a nice view to user
     original_values=Dict
     missing_taits=List
     warning=Str
@@ -83,7 +107,33 @@ class GeneralSim(HasTraits):
         )
 
     @cached_property
-    def _get_sim_traits_list(self): return self.simulations_traits.keys()
+    def _get_sim_traits_list(self): return self.simulation_traits.keys()
+    
+    def get_usefultraits(self):
+	'''Method for returning parameters/metadata about the simulation'''
+	return {'Simulation Name':self.outname, 'Steps':self.inc, 'Run Time':self.time, 'Run Notes':self.notes,
+	        'Simulated Traits':self.sim_traits_list}
+    
+    def get_alltraits(self):
+	''' Aggregates all interesting simulation-wide parameters for output'''
+	dic={}
+	### Keys must be single string for correct attribute promotion if desirable ###
+	dic['Simulation_Parameters']=self.get_usefultraits()
+	dic['Selected_Material_Parameters']=(self.base_app.selected_material.get_usefultraits())
+	dic['Spectral_Parameters']=(self.base_app.specparms.get_usefultraits())
+	dic['Fiber_Parameters']=(self.base_app.fiberparms.get_usefultraits())
+	### Layer editor is already KEY:List, so already has proper heirarchy
+#	dic.update(self.base_app.layer_editor.get_usefultraits())
+	return dic
+	
+	
+    
+    def _tvals_changed(self): 
+	''' Set current layer from the name translator for more clear use. '''	
+	self.selected_traits.trait_name=self.translator[self.tvals]
+    
+    ### Need to make a class tot
+    def _get_translist(self): return self.translator.keys()  
 
     def _sim_obs_default(self): return []
 
@@ -124,7 +174,7 @@ class GeneralSim(HasTraits):
 
     def runsim(self): pass
 
-    def output_simulation(self, outpath, outname=None):
+    def output_simulation(self, outpath=None, outname=None):
         ''' Method to output a data file with parameters, name and results so that it can be loaded back into this
             program, or easily read into my data analysis programs through a RunData interface class.  As of
             now, this program stores all the trait/sim data in the variable header.  The reflectance of each
@@ -133,37 +183,52 @@ class GeneralSim(HasTraits):
             rowwise storage natively; however, because savetxt lacks a header feature in v 1.6, I decided
             to just turn the arrays to strings and output them as one big string (arraystring) '''
 
-        wp_ext='.pickle' #.pickle 
-        md_ext='.mdat'   #metadata
+        md_ext='.mdat'   #metadata extensions
 
+	### Make sure simulation has taken place
         if self.outpanel == None:
-            print 'Cannot save simulation; outpanel trait is None.  Was a simulation run yet?'
+            message('Cannot save selected simulation; outpanel trait is None. \
+	    Perhaps simulation was not run yet?', title='Warning')
             return
 
+	### If no explicitly passed, outname and outpath delegate to stored defaults
         if outname == None:
             outname=self.outname
+	else:
+	    self.outname=outname  #Not sure if I'll ever use, but useful for overwriting
+	    
+	if outpath == None:
+	    outpath=self.outdir #delegate from base_app
         
         ### If outname has file extension, and its not pickle, convert it
         sout, ext=os.path.splitext(outname)
-        if ext !='' and ext != wp_ext:
-            print 'Dropping file extension %s, please dont use a file extension.'%ext
-        outpanel=sout+wp_ext
-        outmeta=sout+md_ext
+        if ext !='' and ext != md_ext:
+            message('Dropping file extension %s, please enter a root filename.'%ext, title='Warning')
+        outdata=sout+md_ext
 
-        ### Save runpanel    
-        outfile=os.path.join(outpath, outpanel)
-        self.outpanel.save(outfile)
-        
-        ### Save metadata
-        outfile=os.path.join(outpath, outmeta)
-        with open(outfile, 'w') as o:
-            o.write('Put some shit in here')
-        
-        print '\nSimulation %s saved\n'%outname
-        
-        
+        ### Ceck for file overwriting    
+        outfile=os.path.join(outpath, outdata)
+	if os.path.exists(outfile):
+            test=FileOverwriteDialog(file_name=outfile)
+	    ui=test.edit_traits(kind='modal')
+	    ### break out and don't save###
+	    if ui.result==False:
+		return
 
+	    
 
+	### Translator is actually reversed in scope of use in simparser
+        trans_rev=dict((v,k) for k,v in self.translator.items())
+	
+	### Assign proper traits (avoid delegation because that class needs to stand alone)  
+	self.sparser=SimParser(translator=trans_rev, results=self.outpanel,
+	                  simparms=self.simulation_traits, parms=self.get_alltraits())
+	
+	###Save entire object
+	self.sparser.save(outfile)
+        
+        message('Simulation data  saved to file %s'%outdata, title='Success')
+        
 
     def _start_fired(self): 
         self.runsim()
@@ -172,12 +237,14 @@ class GeneralSim(HasTraits):
         self.time=time.asctime( time.localtime(time.time()))
 
     basic_group=VGroup(
-        HGroup(Item('restore_status'),Item('inc'), 
-               Item('start', enabled_when='warning=="Simulation ready: all traits found"'), 
-               Item('time', label='Sim Start Time', style='readonly')
+        HGroup(Item('restore_status', label='Restore state after simulation' ),
+               Item('inc',label='Steps'), 
+               Item('start', enabled_when='warning=="Simulation ready: all traits found"', show_label=False), 
+               Item('time', label='Sim Start Time', style='readonly'), 
+               Item('tvals', label='Common traits'),
                ),
         HGroup(
-            Item('warning', style='readonly', label='Warning(s):'),Item('outname',label='Run Name'),
+            Item('outname',label='Run Name'), Item('warning', style='readonly', label='Warning(s):'),
             ),
         Item('sim_obs', editor=simeditor, show_label=False),
         Item('notes', style='custom'),
@@ -192,13 +259,18 @@ class LayerVfrac(GeneralSim):
     M_list=Instance(MaterialStorage) #Stores dielectric plots per iteration
     Scatt_list=Instance(ScattStorage)  
     selected_material=DelegatesTo('base_app') #Just for convienence in variable calling
+    selected_layer=DelegatesTo('base_app')
 
     ## Need to make a way for the plot types to be modular.  For example, I can pipe a scatt plot out or
     ## a reflectance plot, but this program needs to recognize that scattering plots only exist
     ## for nanoparticle objects for example
 
-    ### Non modular adhoc solution 4_21
 
+    def _translator_default(self):	
+	return{'Layer Fill Fraction':'selected_material.Vfrac',
+	       'Layer Thickness':'selected_layer.d',
+	       'NP Core radius':'selected_material.r_core',
+	       'NP Shell Fill Fraction':'selected_material.CoreShellComposite.Vfrac' }
 
 #	def _R_list_default(self):=return SimViewList(trials_delimiter=self.key_delimiter)      #Stores reflectance plots per iteration
     def _R_list_default(self): return ReflectanceStorage(trials_delimiter=self.key_delimiter)
@@ -212,10 +284,11 @@ class LayerVfrac(GeneralSim):
     def _selected_material_changed(self): self.update_storage()
 
     def _sim_obs_default(self):
+	''' Initial traits to start with '''
         obs=[]
-    #	obs.append(SimObject(trait_name='selected_material.Vfrac', start=0.0, end=0.32, inc=self.inc)),  
-    #	obs.append(SimObject(trait_name='selected_material.TotalMix.r_shell', start=0.0, end=10, inc=self.inc)),
-        obs.append(SimObject(trait_name='selected_material.r_shell', start=0.0, end=10.0, inc=self.inc)),
+    	obs.append(SimObject(trait_name='selected_material.Vfrac', start=0.0, end=0.1, inc=self.inc)),  
+    	obs.append(SimObject(trait_name='selected_layer.d', start=50., end=100., inc=self.inc)),
+        obs.append(SimObject(trait_name='selected_material.r_core', start=25., end=50., inc=self.inc)),
         return obs 
 
     def runsim(self): 
@@ -254,15 +327,24 @@ class LayerVfrac(GeneralSim):
             ### Concatenate rowwise
             paneldic[key]=concat([mvl_df, svl_df, scatt_df], axis=1)         
 
-            print "Iteration\t", i, "\t of \t", self.inc, "\t completed"
+            print "Iteration\t", i+1, "\t of \t", self.inc, "\t completed"
 
         ### Make a full panel out of paneldic with trials as the items
         self.outpanel=Panel.from_dict(paneldic, orient='minor')
 
+	####################################
+	### DEPRECATE #####################
         ### Update old plotstorage dict objects
-        self.Scatt_list.trials_dic=scatt_dic
-        self.R_list.trials_dic=svl_dic
-        self.M_list.trials_dic=mvl_dic
+	###################################
+        #self.Scatt_list.trials_dic=scatt_dic
+        #self.R_list.trials_dic=svl_dic
+        #self.M_list.trials_dic=mvl_dic
+	
+	### Prompt user to save?
+	popup=BasicDialog(message='Simulation complete.  Would you like to save now?')
+	ui=popup.edit_traits(kind='modal')
+	if ui.result == True:
+	    self.output_simulation()
 
     ####################################
     ### This view is for interactive plotting simulations

@@ -723,130 +723,125 @@ S'Constant Material Array: No Dispersion'
 p136
 sS'Core Diameter'
 p137
-cnumpy.core.multiarray
-scalar
-p138
-(g99
-S'\x00\x00\x00\x00\x00\x00I@'
-tRp139
+F24
 sS'Core Material'
-p140
+p138
 S''
 sS'Medium Material'
-p141
+p139
 S'Dispersive Water'
-p142
+p140
 sS'Shell Thickness'
-p143
+p141
 F4
-stRp144
-(dp145
+stRp142
+(dp143
 g115
 S'parms_items'
-p146
+p144
 sg117
 g131
 sbsS'Simulation_Parameters'
-p147
+p145
 g9
 (g104
 g105
-(dp148
+(dp146
 S'Simulated Traits'
-p149
-(lp150
+p147
+(lp148
 g107
 ag109
 ag111
 asS'Run Time'
-p151
-S'Sim not started'
-p152
+p149
+S'Wed Dec 12 19:56:43 2012'
+p150
 sS'Steps'
-p153
+p151
 I1
 sS'Simulation Name'
-p154
+p152
 S'Layersim'
-p155
+p153
 sS'Run Notes'
-p156
+p154
 S'Run Notes:'
-p157
-stRp158
-(dp159
+p155
+stRp156
+(dp157
 g115
 S'parms_items'
-p160
+p158
 sg117
 g131
 sbsS'Fiber_Parameters'
-p161
+p159
 g9
 (g104
 g105
-(dp162
+(dp160
 S'Strip Region'
-p163
+p161
 S'N/A'
-p164
+p162
 sS'Critical Angle'
-p165
+p163
 F15.960000000000001
 sS'Optical Configuration'
-p166
+p164
 S'Reflection'
-p167
+p165
 sS'Angle Min'
-p168
+p166
 F0.5
 sS'Numerical Aperature'
-p169
+p167
 F0.27500000000000002
 sS'Mode'
-p170
+p168
 S'TM'
-p171
+p169
 sS'Angle Max'
-p172
+p170
 F15.960000000000001
 sS'Core Diameter'
-p173
+p171
 F62.5
 sS'Angle Inc.'
-p174
+p172
 F0.5
-stRp175
-(dp176
+stRp173
+(dp174
 g115
 S'parms_items'
-p177
+p175
 sg117
 g131
 sbsS'Spectral_Parameters'
-p178
+p176
 g9
 (g104
 g105
-(dp179
+(dp177
 S'x_increment'
-p180
+p178
 F1.6666666666666667
 sS'x_samples'
-p181
+p179
 I300
-stRp182
-(dp183
+stRp180
+(dp181
 g115
 S'parms_items'
-p184
+p182
 sg117
 g131
-sbstRp185
-(dp186
+sbstRp183
+(dp184
 g115
 S'parms_items'
-p187
+p185
 sg117
 g131
 sbsb.
