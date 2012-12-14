@@ -222,7 +222,7 @@ class NanoSphereShell(NanoSphere):
 
     compnpgroup=Group(
         HGroup(            
-            Item('d_core', label='NP Core diameter'), Item('d_shell', label='NP Shell diameter'),
+            Item('d_core', label='NP Core diameter'), Item('d_shell', label='NP Shell thickness'),
             Item('r_core', label='NP Core radius'), Item('r_shell', label='NP Shell radius'), 
             #Item('specparms', style='custom'), 
             Item('mviewbutton', label='Show Full material', show_label=False)),

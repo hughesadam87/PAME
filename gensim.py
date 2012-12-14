@@ -292,6 +292,8 @@ class LayerVfrac(GeneralSim):
         return obs 
 
     def runsim(self): 
+	
+	### At some point, make better interface to return all this stuff together into the paneldic
         svl_dic={}  #Dictionary that stores relevant data by variable
         mvl_dic={}
         scatt_dic={}
