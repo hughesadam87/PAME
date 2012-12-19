@@ -233,7 +233,7 @@ class GeneralSim(HasTraits):
         ###Save entire object
         self.sparser.save(outfile)
 
-        if confirmwindow:
+        if confirmwindow==True:
             message('Simulation data saved to file %s'%outdata, title='Success')
 
 
