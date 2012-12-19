@@ -1,4 +1,5 @@
-from traits.api import HasTraits, File, Str
+import os
+from traits.api import HasTraits, File, Str, Property
 from traitsui.api import View, Item, OKCancelButtons
 
 ### Envoke as follows
@@ -16,17 +17,28 @@ class BasicDialog(HasTraits):
           buttons=OKCancelButtons, kind='popup', title='Notification',
      )     
 
+class WarningDialog(BasicDialog):
+     ''' Basic yes/no popup.'''
+
+     traits_view = View(
+          Item('message', style='readonly', show_label=False),
+          buttons=OKCancelButtons, kind='popup', title='Warning',
+     )  
 
 class FileOverwriteDialog(BasicDialog):
      filename = File
+     _shortname=Property(depends_on='filename')
 
      traits_view = View(
           Item('message', style='readonly', label='Warning', show_label=True),
-          buttons=OKCancelButtons, kind='popup', title='File already exists',
+          buttons=OKCancelButtons, kind='popup', title='File already exists.',
      )
+     
+     def _get__shortname(self):
+          return os.path.split(self.filename)[1]
 
      def _message_default(self):
-          return '"%s" file will be overwritten, are you sure you want to continue?'%self.filename
+          return '"%s" file will be overwritten, are you sure you want to continue?'%self._shortname
 
 
 

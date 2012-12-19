@@ -12,6 +12,7 @@ from interfaces import ISim, ILayer, IMaterial, IStorage
 from fiberview import FiberView
 from modeltree_v2 import Main
 from gensim import LayerVfrac, GeneralSim
+from handlers import WarningDialog
 
 ### Used to present a summary of the state of the program.   ###
 ###This may be deprecated or unuseful and is not all that important I think ###
@@ -70,9 +71,9 @@ class GlobalScene(HasTraits):
         TableEditor(
             auto_size=False,  #Set in View
             columns=[
-                ExpressionColumn(expression='object.runname', label='Simulation Time'),
-                ExpressionColumn(expression='object.inc', label='Number of points in the sim'),
-                ExpressionColumn(expression='object.sim_traits_list', label='Traits being simulated'), #Perhaps present start, end values to user somehow
+                ObjectColumn(name='outname', label='Sim Name'),
+                ExpressionColumn(expression='object.inc', label='Increments'),
+                ExpressionColumn(expression='object.time', label='Start Time'),
                 ObjectColumn(name='notes', label='Notes'),
                 ],
             deletable=True,
@@ -91,12 +92,15 @@ class GlobalScene(HasTraits):
 
     ####Stack Actions####
     showreflectance=Action(name="Interface View", action="conf_ref")  #PHASE THIS OUT LATER WITH UNIFIED VIEW FRAMEWORK
-    appendsim=Action(name="Store Current Simulation", action="store_sim")
-    savesim=Action(name="Save Simulation", action="save_sim")  #action gets underscore
+    appendsim=Action(name="Add Simulation", action="new_sim")
+    savesim=Action(name="Save Selected Simulation", action="save_sim")  #action gets underscore
+    savesim_all=Action(name="Save All Simulations", action="save_allsims")  #action gets underscore
+    
 
+    ### Make Menubar
     mainmenu=MenuBar(
         Menu(showreflectance, name='Layer Options'), 	
-        Menu(appendsim, savesim, name='Simulations'), 	
+        Menu(appendsim, savesim, savesim_all, name='Simulation Options'), 	
     )                      
 
     fibergroup=Group(
@@ -165,11 +169,39 @@ class GlobalScene(HasTraits):
         self.sync_trait('layereditor', self.statedata, 'layereditor')
 
       #self.simulations.append(LayerVfracEpsilon(base_app=self))   #Pass self to a simulation environment
-        self.simulations.append(LayerVfrac(base_app=self))   #Pass self to a simulation environment
+        self.simulations.append(LayerVfrac(base_app=self, outname='Layersim0'))   #Pass self to a simulation environment
         
     ### Store copy of current simulation 
-    def store_sim(self): self.simulations.append(self.selected_sim)
+    def new_sim(self): self.simulations.append(LayerVfrac(base_app=self, outname='Layersim'+str(len(self.simulations))))
     def save_sim(self): self.selected_sim.output_simulation(self.outdir)
+    def save_allsims(self):
+        ''' Saves all stored simulations in the sims_editor.  Checks for duplicate names and non-run/incomplete
+        simulations and prompts user accordingly.'''
+
+        ### Check to make sure all simulations have completed data
+        unrun=[s.outname for s in self.simulations if s._completed == False]   
+        nrunstring=' '.join(unrun)
+        if len(unrun) > 0:
+            message('Cannot save simulations:  %s. Results not found.'%nrunstring, title='Warning')
+            ### Can't save either way, so force exit instead of user being able to continue
+            return               
+        
+        ### Check for duplicate runnames        
+        rnames=[s.outname for s in self.simulations]        
+        non_uniq=[r for r in rnames if rnames.count(r) > 1]
+        if len(non_uniq) > 0:
+            non_uniq=list(set(non_uniq))
+            nustring=' '.join(non_uniq)
+      
+            message('Duplicate simulation outfile names found: %s.'%nustring, title='Warning')
+            return        
+        
+        ### Output completed simulations
+        outsims=[s for s in self.simulations if s not in unrun]
+        for s in outsims:
+            s.output_simulation(self.outdir, confirmwindow=False)
+        message('%s simulation(s) saved to directory: "%s"'%(len(outsims),
+                  os.path.split(self.outdir)[1]), title='Success')
 
     ### Show Reflectance ###
     def conf_ref(self):

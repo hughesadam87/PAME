@@ -295,13 +295,113 @@ class SphericalInclusions_Disk(SphericalInclusions):
 			 Include('inclusionsgroup')
 			 )
 
-##########Class nanoparticles##########
+class TriangularInclusions(CompositeMaterial):
+	'''Essentially a composite material except inclusions of triangular cylinder are integrated with the VFrac parameter in volume'''
+        ###Here we also look into the equilateral triangular particles, this model is given by the paper "Adsorption and Conformation of Serum Albumin Protein on Gold Nanoparticles Investigated Using Dimensional Measurements and in Situ Spectroscopic Methods" by Tsai and DelRio etc.###
+
+	platform_type=Str
+	particle_type=Str('Triangular Inclusions')  
+	mat_name=Str('Composite Material with Triangular Inclusions')
+
+	l_particle=Float(8.0)   #the edge length of the triangular particle   
+	h_particle=Float(3.0)   #the thickness of the triangular particle
+        r_platform=Float(12.0)  #the radius of the spherical np particle core
+	shell_thickness=Property(Float, depends_on='l_particle, h_particle')  #Thickness of shell determined by 2r inclusion
+       
+	vbox=Property(Float, depends_on='l_particle, h_particle')      #Rectangular box volume determined by the triangular particle
+	unitvolume=Property(Float, depends_on='l_particle, h_particle')   #Total amount of volume occupied by the triangular particle 
+	VT=Property(Float, depends_on='l_particle, h_particle, r_platform') #DEFINED SEPARATELY FOR DIFFERENT SHELL CASES
+
+	N_tot=Property(Float, depends_on='VT, vbox')
+	N_occ=Property(Float, depends_on='Vfrac, VT, unitvolume')
+
+	vinc_occ=Property(Float, depends_on='N_occ, unitvolume')  #Total volume of the inclusions
+	vshell_occ=Property(Float, depends_on='N_occ, vbox')      #Total volume of the shell filled by boxes
+
+	coverage=Property(Float, depends_on='N_occ, N_tot')
+
+	def __init__(self, *args, **kwargs):
+	        super(TriangularInclusions, self).__init__(*args, **kwargs)
+
+
+	def _get_vbox(self): return (self.l_particle**2)*self.h_particle         #Square boxes of volumes
+
+	def _get_vinc_occ(self): return self.N_occ*self.unitvolume
+
+	def _get_vshell_occ(self): return self.N_occ*self.vbox
+
+	def _get_unitvolume(self): 
+		value= math.sqrt(3)*(self.l_particle**2)*self.h_particle/4.0  #THIS IS ONLY VALID FOR TRIANGULAR CYLINDER
+		return round(value, 2)
+
+	def _get_N_tot(self): return int(self.VT/self.vbox)   #Total number of available boxes is Vbox/VT
+
+	def _get_N_occ(self): return  int((self.Vfrac * self.VT)/(self.unitvolume))
+
+	def _set_N_occ(self, Nocc): 
+		self.Vfrac= (Nocc * self.unitvolume)/self.VT 
+
+	def _get_coverage(self): return round ( (float(self.N_occ) / float(self.N_tot) )*100.0 , 4)	
+	def _set_coverage(self, coverage):
+		self.N_occ=int( (coverage * self.N_tot) / 100.0	)
+
+class TriangularInclusions_Shell_case1(TriangularInclusions):
+	'''Used for sphere/shell nanoparticles; shell thickness is determined by l_particle (edge length of the triangular cylinder)'''
+
+	platform_type=Str('Shell Platform')   #Core particle  (Usually NP)
+	mat_name=Str('Triangular Inclusions (orientation1) on a Spherical particle"s shell')
+	
+
+	inclusionsgroup=Group(
+				HGroup(Item('particle_type', style='readonly'), Item('platform_type', style='readonly')), 
+				 HGroup( Item('l_particle', label='Inclusion edge length'), Item('h_particle', label='Inclusion height'), Item('shell_thickness', style='readonly')), (Item('r_platform')),
+				HGroup(Item('coverage', label='Shell Coverage %'),Item('vinc_occ', label='Total inclusion volume') ),
+				HGroup(Item('N_occ', label='Occupied Sites     '), Item('N_tot', label='Total Sites')),
+				HGroup(Item('vshell_occ', label='Shell volume occupied'), Item('VT', label='Total shell volume')),
+				Include('mixgroup'),
+				label='Shell Inclusions and Mixing'    )
+
+	traits_view=View(
+			Include('compmatgroup'), Include('inclusionsgroup')
+			 )
+
+        #@cached_property
+	def _get_shell_thickness(self): return self.l_particle
+
+	#@cached_property
+	def _get_VT(self): return round ( (4.0*math.pi/3.0) * (  (self.r_platform+2.0*self.l_particle)**3 - self.r_platform**3 ) , 2)
+
+class TriangularInclusions_Shell_case2(TriangularInclusions):
+	'''Used for sphere/shell nanoparticles; shell thickness is determined by h_particle (height of the triangular cylinder)'''
+
+	mat_name=Str('Triangular Inclusions (orientation 2) on a Spherical particle"s shell')
+
+	platform_type=Str('Shell Platform')   #Core particle  (Usually NP)
+
+	inclusionsgroup=Group(
+				HGroup(Item('particle_type', style='readonly'), Item('platform_type', style='readonly')), 
+				 HGroup( Item('l_particle', label='Inclusion edge length'), Item('h_particle', label='Inclusion height'), Item('shell_thickness', style='readonly')), (Item('r_platform')),
+				HGroup(Item('coverage', label='Shell Coverage %'),Item('vinc_occ', label='Total inclusion volume') ),
+				HGroup(Item('N_occ', label='Occupied Sites     '), Item('N_tot', label='Total Sites')),
+				HGroup(Item('vshell_occ', label='Shell volume occupied'), Item('VT', label='Total shell volume')),
+				Include('mixgroup'),
+				label='Shell Inclusions and Mixing'    )
+
+	traits_view=View(
+			Include('compmatgroup'), Include('inclusionsgroup')
+			 )
+
+        #@cached_property
+	def _get_shell_thickness(self): return self.h_particle
+
+	#@cached_property
+	def _get_VT(self): return round ( (4.0*math.pi/3.0) * (  (self.r_platform+2.0*self.h_particle)**3 - self.r_platform**3 ) , 2)
 
 
 
 if __name__ == '__main__':
 #	f=CompositeMaterial_Equiv()
-	f=CompositeMaterial_Equiv()
+	f=TriangularInclusions_Shell_case1()
 #	f=SphericalInclusions_Disk()
 	f.configure_traits()
 
