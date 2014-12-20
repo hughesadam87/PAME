@@ -6,7 +6,6 @@ from chaco.api import ArrayPlotData
 from spec_data import spec_dtype
 from ct_interfaces import IRun, IRunStorage, IPlot
 from numpy import array, empty, linspace
-from helper_methods import get_factors
 from run_plots_v2 import AbsPlot, SpecPlot, TimePlot#, AreaPlot
 from pandas import DataFrame
 from pandasplotdata import PandasPlotData
@@ -15,6 +14,11 @@ from pandasplotdata import PandasPlotData
 ## STILL USES OLD DATASTRUCTURE AND CONVERTS MERE THE MAKE_DFRAME() METHOD
 ## EVENTUALLY WANT TO BYPASS MY OLD DATASTRUCTURE ALTOGETHER
 
+
+# Should this include final value (ie n itself?)
+def _get_factors(n):
+    """ Get factors in a value, ie if 10, returns 1,2,5,10"""
+    return [x for x in range(1, n+1) if n % x == 0]
 
 class RunStorage(HasTraits):
 	''' This object takes the file_data_info dictionary from the IRun instance, creates Arrays from this and
@@ -116,7 +120,7 @@ class RunStorage(HasTraits):
 			#no averaging, 50% average, 20%averaging.  Necessary because reshaping operations require
 			#factors.  So if I have 6 rows to start with, can end with 3 rows, averaging 2 at a time or 
 			#or 2 rows, averaging 3 at a time.
-			self._valid_x_averages=get_factors(len(self.x_label) )
+			self._valid_x_averages=_get_factors(len(self.x_label) )
 
 		elif self.averaging_style=='Rolling':
 #			validx=range(1, self.size/2) #Any valid number between 1 and half sample size
@@ -132,7 +136,7 @@ class RunStorage(HasTraits):
 	def _t_avg_changed(self):
 		if self.averaging_style=='Reshaping':
 			print 'reshaping t'
-			self._valid_t_averages=get_factors(len(self.t_label) )
+			self._valid_t_averages=_get_factors(len(self.t_label) )
 
 		elif self.averaging_style=='Rolling':
 #			validt=range(1, self.size/2) #Any valid number between 1 and half sample size
@@ -258,7 +262,8 @@ class RunStorage(HasTraits):
 			#no averaging, 50% average, 20%averaging.  Necessary because reshaping operations require
 			#factors.  So if I have 6 rows to start with, can end with 3 rows, averaging 2 at a time or 
 			#or 2 rows, averaging 3 at a time.
-			self._valid_x_averages=get_factors(len(self.x_label) ) ; self._valid_t_averages=get_factors(len(self.t_label) ) 
+			self._valid_x_averages=_get_factors(len(self.x_label) ) 
+			self._valid_t_averages=_get_factors(len(self.t_label) ) 
 
 
 		elif self.averaging_style=='Rolling':
