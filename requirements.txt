@@ -1,0 +1,8 @@
+mayavi
+chaco
+traits
+scikit-spectra 
+numpy
+scipy
+traits
+traitsui

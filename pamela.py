@@ -210,10 +210,12 @@ class GlobalScene(HasTraits):
         self.statedata.simview.edit_traits(view='view2')
     #	pass
 
+def main():
+    popup=GlobalScene()
+    popup.configure_traits()    
 
 
 
 if __name__ == '__main__':
-    popup=GlobalScene()
-    popup.configure_traits()
+    main()
 
