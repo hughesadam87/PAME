@@ -2,7 +2,7 @@ import sys
 import os.path as op
 from setuptools import setup, find_packages
 
-NAME = 'PAMELA'
+NAME = 'PAME'
 
 # Python >= 2.7 ?
 user_py = sys.version_info
@@ -33,7 +33,7 @@ setup(
        
     entry_points = {'console_scripts': 
                     [
-                       'pamela = fibersim.pamela:main',
+                       'pame = pame.pame:main',
                     ]
                     },
     
