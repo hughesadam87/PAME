@@ -58,9 +58,12 @@ class SimView(HasTraits):
                   width=800, height=600, resizable=True   )
 
     def _get_selected(self): 
-        if self.chooseplot=='Reflectance': return self.Refplot
-        elif self.chooseplot=='Transmittance': return self.Transplot
-        elif self.chooseplot=='Averaged Reflectance': return self.Avgplot
+        if self.chooseplot=='Reflectance': 
+            return self.Refplot
+        elif self.chooseplot=='Transmittance': 
+            return self.Transplot
+        elif self.chooseplot=='Averaged Reflectance': 
+            return self.Avgplot
 
     def create_plots(self):
         self.Refplot = ToolbarPlot(self.data)
@@ -74,15 +77,18 @@ class SimView(HasTraits):
                 color='blue'
             angle=self.angles[i]
             self.data.set_data(('RTheta' + str(i)), self.RefArray[i,:])
-            self.Refplot.plot( ("x", ('RTheta' + str(i))), name=('Angle'+ str(angle) ), color=color)
+            self.Refplot.plot( ("x", ('RTheta' + str(i))), 
+                               name=('%.2f'% angle ))
 
             self.data.set_data(('TTheta' + str(i)), self.TransArray[i,:])
-            self.Transplot.plot( ("x", ('TTheta' + str(i))), name=('Angle'+str(angle) ), color=color)
+            self.Transplot.plot( ("x", ('TTheta' + str(i))), 
+                                 name=('%.2f' % angle))
+
         self.Avgplot.plot( ("x", 'Avg'), name='Averaged Angles', color='red' )
 
         self.add_tools_title(self.Refplot, 'Reflectance')
         self.add_tools_title(self.Transplot, 'Transmittance')
-        self.add_tools_title(self.Avgplot, 'Avg')
+        self.add_tools_title(self.Avgplot, 'Averaged Reflectance')
 
     def add_tools_title(self, plot, title):
         '''Used to add same tools to multiple plots'''
@@ -97,24 +103,20 @@ class SimView(HasTraits):
         plot.overlays.append(zoom)
 
     def update(self, xarray, anglearray, RefArray, TransArray, AvgArray):   
-        self.xarray=xarray;		self.angles=anglearray
-        self.RefArray=RefArray;		self.TransArray=TransArray
+        self.xarray=xarray
+        self.angles=anglearray
+        self.RefArray=RefArray
+        self.TransArray=TransArray
         self.AvgArray=AvgArray
 
-        if self.data == None:
-            self.data = ArrayPlotData(x=self.xarray, angs=self.angles, Ref=self.RefArray, Trans=self.TransArray, Avg=self.AvgArray)
-            self.create_plots()
-        else:
-            self.update_data()
-
-    def update_data(self):
-        ''' This is a set_data function, expect it sets all the data parameters at once'''
-        self.data.set_data('x',self.xarray) ; self.data.set_data('angs', self.angles)
-        self.data.set_data('Ref', self.RefArray) ; self.data.set_data('Trans', self.TransArray)
-        self.data.set_data('Avg', self.AvgArray)
-        self.Refplot.request_redraw(); self.Transplot.request_redraw(); self.Avgplot.request_redraw()
-
-    ### Probably a smart way to change all of these update methods to a simplier dictionary notation ###
+        # Totally makes new dat and redraws plots instead of updating data.  Otherwise, need 5 array
+        # plot data objects and speed increase is minimal
+        self.data = ArrayPlotData(x=self.xarray, 
+                                  angs=self.angles, 
+                                  Ref=self.RefArray, 
+                                  Trans=self.TransArray, 
+                                  Avg=self.AvgArray)
+        self.create_plots()
 
     def get_sexy_data(self):
         '''Returns the data in a list that can be immediately read back in another instance of simview.  
@@ -124,7 +126,7 @@ class SimView(HasTraits):
     def set_sexy_data(self, data_list):
         '''Takes in data formatted deliberately from "get_sexy_data" and forces an update'''
         self.update(data_list[0], data_list[1], data_list[2], data_list[3], data_list[4])
-        
+
     def get_dataframe(self):
         ''' Returns dataframe of data for easier concatenation into a runpanel dataframe used by
         simulations'''
@@ -140,9 +142,9 @@ class SimView(HasTraits):
         ravg=np.mean(self.RefArray, axis=0)
         d.update({'Ravg':ravg, 'Tavg':tavg})
         return DataFrame(d, index=self.xarray)
-        
-        
-                
+
+
+
 
 class MaterialView(HasTraits):
 
@@ -246,7 +248,7 @@ class MaterialView(HasTraits):
     def set_sexy_data(self, data_list):
         '''Takes in data formatted deliberately from "get_sexy_data" and forces an update'''
         self.update(data_list[0], data_list[1], data_list[2], data_list[3])
-        
+
     def get_dataframe(self):
         ''' Returns dataframe of data for easier concatenation into a runpanel dataframe used by
         simulations'''
@@ -369,7 +371,7 @@ class ScatterView(HasTraits):
     def set_sexy_data(self, data_list):
         '''Takes in data formatted deliberately from "get_sexy_data" and forces an update'''
         self.update(data_list[0], data_list[1], data_list[2], data_list[3])
-        
+
     def get_dataframe(self):
         ''' Returns dataframe of data for easier concatenation into a runpanel dataframe used by
         simulations'''

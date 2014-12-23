@@ -4,6 +4,7 @@ from basic_material import BasicMaterial
 from numpy import empty, interp, linspace
 from converter import SpectralConverter
 import re, os
+import logging
 
 class BasicFile(BasicMaterial):
     '''Has no implementation of mat_name...maybe that's ok'''
@@ -28,15 +29,19 @@ class BasicFile(BasicMaterial):
 
     #FOR NOW THIS DOES NOT INCORPORATE FILE_E BECAUSE OF PROPERTY ISSUES, NEEDS MORE THOUGHT
 
-    def _file_x_changed(self): self.update_interp()
-    def _file_n_changed(self): self.update_interp()
+    def _file_x_changed(self): 
+        self.update_interp()
+        
+    def _file_n_changed(self): 
+        self.update_interp()
 
     def _thefile_changed(self): 
         self.header_data()	
         self.update_file()  
         self.update_mview()
 
-    def update_file(self): 	pass
+    def update_file(self): 	
+        pass
 
     def _get_datalist(self):
         '''Given the data as a list of lines, turns it into a list of lists'''
@@ -66,16 +71,17 @@ class BasicFile(BasicMaterial):
 
     def update_interp(self):
         '''Method interpolates complex arrays and also reverses when appropriate'''
-        temp=empty( (self.lambdas.shape), dtype='complex')
-        if self.file_x[0] > self.file_x[-1]:  #If last value is larger than first! (Then backwards)
-            nps=self.file_n[::-1] 
-            xps=self.file_x[::-1]    #Syntax to reverse an array 
-            print "Had to sort values \n"
-        print nps.shape, xps.shape
-        a=interp(self.lambdas, xps, nps.real, left=0, right=0)
-        b=interp(self.lambdas, xps, nps.imag, left=0, right=0)
-        temp.real=a ; temp.imag=b
-        self.narray=temp
+        if len(self.file_x) != 0:  #If array populated
+            temp=empty( (self.lambdas.shape), dtype='complex')
+            if self.file_x[0] > self.file_x[-1]:  #If last value is larger than first! (Then backwards)
+                nps=self.file_n[::-1] 
+                xps=self.file_x[::-1]    #Syntax to reverse an array 
+                logging.info("Had to sort values \n")
+                logging.info('nps.shape, xps.shape:', nps.shape, xps.shape)
+                a=interp(self.lambdas, xps, nps.real, left=0, right=0)
+                b=interp(self.lambdas, xps, nps.imag, left=0, right=0)
+                temp.real=a ; temp.imag=b
+                self.narray=temp
 
 class NK_Delimited(BasicFile):
     '''Format is Lambdas, N, K'''

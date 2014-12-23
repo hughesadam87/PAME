@@ -1,7 +1,9 @@
 mayavi
 chaco
 traits
-scikit-spectra 
+matplotlib
+pandas
+#scikit-spectra 
 numpy
 scipy
 traits

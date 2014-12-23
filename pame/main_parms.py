@@ -95,21 +95,21 @@ class FiberParms(HasTraits):
 
     sa=Property(Array, depends_on='angles')   #Sin and cosine of the angles, handy in other portion of code
     ca=Property(Array, depends_on='angles') 
-    
+
     def get_usefultraits(self):
         ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
-	traitdic={'Optical Configuration':self.Config, 'Mode':self.Mode, 'Core Diameter':self.Dcore, 
-	        'Numerical Aperature':self.NA, 'Critical Angle':self.critical_angle, 'Angle Min':self.angle_start, 
-	        'Angle Max':self.angle_stop,'Angle Inc.':self.angle_inc}
-	
-	if self.Config=='Transmission':
-	    	l=self.Lregion
-	else:
-		l='N/A'
-	traitdic.update({'Strip Region':l})
-	return traitdic
-	
-    
+        traitdic={'Optical Configuration':self.Config, 'Mode':self.Mode, 'Core Diameter':self.Dcore, 
+                  'Numerical Aperature':self.NA, 'Critical Angle':self.critical_angle, 'Angle Min':self.angle_start, 
+                  'Angle Max':self.angle_stop,'Angle Inc.':self.angle_inc}
+
+        if self.Config=='Transmission':
+            l=self.Lregion
+        else:
+            l='N/A'
+        traitdic.update({'Strip Region':l})
+        return traitdic
+
+
 
 
     SharedGroup =Group(
