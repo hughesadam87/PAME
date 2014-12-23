@@ -68,11 +68,14 @@ def fressy(ang_array, n_arrays, TM_or_TE, lambdas):
 
 def boundary_crushin(angle_1, ds, n_arrays, TM_or_TE, lambdas):
     '''Determines to call 2 or 3-d boundary'''
-    layers=len(ds)
-    regions=int(n_arrays.shape[0])   #N regions, N-1 boundaries, N-2 layers
+    layers=len(ds) #LIterally number of materials
+    regions=n_arrays.shape[0]   #N regions, N-1 boundaries, N-2 layers
     bounds=regions-1
+    
+    # When does this happen!?
     if regions - layers != 2:
-        print '\nShould always have N-2 layers to regions; you have', str(layers), 'layers and', str(regions), 'regions'
+        print '\nShould always have N-2 layers to regions; found %s layers and %s regions' \
+              % (layers, regions)
         sys.exit()
 
     #Why do I take conjugate!?
