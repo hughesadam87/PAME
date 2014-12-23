@@ -58,37 +58,49 @@ class SimView(HasTraits):
                   width=800, height=600, resizable=True   )
 
     def _get_selected(self): 
-        if self.chooseplot=='Reflectance': 
+        if self.chooseplot == 'Reflectance': 
             return self.Refplot
-        elif self.chooseplot=='Transmittance': 
+        elif self.chooseplot == 'Transmittance': 
             return self.Transplot
-        elif self.chooseplot=='Averaged Reflectance': 
+        elif self.chooseplot == 'Averaged Reflectance': 
             return self.Avgplot
 
     def create_plots(self):
         self.Refplot = ToolbarPlot(self.data)
-        self.Transplot= ToolbarPlot(self.data)
-        self.Avgplot= ToolbarPlot(self.data)
+#        self.Transplot= ToolbarPlot(self.data)
+#        self.Avgplot= ToolbarPlot(self.data)
 
-        for i in range(self.angles.shape[0]):
+        print self.RefArray.shape
+        
+        import matplotlib.pyplot as plt
+
+        for i, angle in enumerate(self.angles):
             try:
                 color=color_list[i]  #if somehow there are more lines than available colors (151)
             except IndexError:
                 color='blue'
-            angle=self.angles[i]
+                
+#            print self.RefArray[i,:], self.RefArray[i,:].shape, type(self.RefArray[i,:]), np.isnan(np.sum(self.RefArray[i,:]))
             self.data.set_data(('RTheta' + str(i)), self.RefArray[i,:])
+
+            print self.data.get_data(('RTheta' + str(i)))
+            
+            plt.plot(self.xarray, self.RefArray[i,:])
+
             self.Refplot.plot( ("x", ('RTheta' + str(i))), 
                                name=('%.2f'% angle ))
 
-            self.data.set_data(('TTheta' + str(i)), self.TransArray[i,:])
-            self.Transplot.plot( ("x", ('TTheta' + str(i))), 
-                                 name=('%.2f' % angle))
+#            self.data.set_data(('TTheta' + str(i)), self.TransArray[i,:])
+#            self.Transplot.plot( ("x", ('TTheta' + str(i))), 
+#                                 name=('%.2f' % angle))
 
-        self.Avgplot.plot( ("x", 'Avg'), name='Averaged Angles', color='red' )
+#        self.Avgplot.plot( ("x", 'Avg'), name='Averaged Angles', color='red' )
+
+        plt.show()
 
         self.add_tools_title(self.Refplot, 'Reflectance')
         self.add_tools_title(self.Transplot, 'Transmittance')
-        self.add_tools_title(self.Avgplot, 'Averaged Reflectance')
+ #       self.add_tools_title(self.Avgplot, 'Averaged Reflectance')
 
     def add_tools_title(self, plot, title):
         '''Used to add same tools to multiple plots'''

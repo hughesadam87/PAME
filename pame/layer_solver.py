@@ -33,9 +33,6 @@ def fressy(ang_array, n_arrays, TM_or_TE, lambdas):
     TE_list=['te', 'TE', 'Te']
     Mixed=['mixed', 'Mixed',]
     valid_list=TM_list+TE_list+Mixed
-    if TM_or_TE not in valid_list:
-        print '\n Enter TE or TM'
-        sys.exit()
 
     for i in range(len(lambdas)):
         for j in range(jmax):

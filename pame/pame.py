@@ -244,10 +244,8 @@ def main():
     
     
     popup=GlobalScene()
-    popup.opticstate.update_simview()
-    print popup.current_state, 'HIIIIIII'
+#    popup.opticstate.update_simview() #Necessary?
     popup.configure_traits()    
-    print popup.current_state, 'byyye'
     
     
 

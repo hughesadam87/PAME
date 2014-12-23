@@ -1,3 +1,5 @@
+from __future__ import division
+
 from traits.api import *
 from traitsui.api import *
 from converter import SpectralConverter
@@ -34,7 +36,7 @@ class SpecParms(HasTraits):
         return self.trait_get('x_start', 'x_end', 'x_increment', 'x_samples')
 
     def _conv_default(self): return SpectralConverter(input_array=self.lambdas, input_units='Nanometers')
-    def _lambdas_default(self): return linspace(300,800,300)
+    def _lambdas_default(self): return linspace(300,800,100)
     def _x_unit_default(self): return 'Nanometers'
     def _valid_units_default(self): return self.conv.valid_units
 
@@ -46,7 +48,7 @@ class SpecParms(HasTraits):
 
     #@cached_property
     def _get_x_increment(self):  
-        return float(abs(self.xstart - self.xend))/float(self.x_samples)
+        return round(abs(self.xstart - self.xend) / self.x_samples, 4)
 
     def _x_unit_changed(self):
         self.conv.output_units=self.x_unit     #INPUT ALWAYS KEPT AT NANOMETERS, THIS IS IMPORTANT DONT EDIT
@@ -77,7 +79,9 @@ class SpecParms(HasTraits):
 
 class FiberParms(HasTraits):
     Config=Enum('Reflection', 'Transmission')
-    Mode=Enum('TE', 'TM', 'Mixed')
+
+    # Don't change these or BasicReflectance.update_R will get mad
+    Mode=Enum('S-polarized', 'P-polarized', 'Mixed')
     Lregion=Float(1500) #um or cm
     Dcore=Float(62.5)  #um
     Rcore=Property(Float, depends_on=['Dcore'])
@@ -145,7 +149,7 @@ class FiberParms(HasTraits):
     )
 
     def _angle_stop_default(self): return self.critical_angle
-    def _Mode_default(self): return 'TM'
+    def _Mode_default(self): return 'S-polarized'
     def _Config_default(self): return 'Reflection'
 
     #@cached_property

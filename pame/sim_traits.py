@@ -1,14 +1,21 @@
 from traits.api import *
 from traitsui.api import *
+import sys
 import math
-from numpy import empty, array, conj, average
+from numpy import empty, array, conj, average, inf
 import layer_solver as ls
 from basicplots import SimView
 from main_parms import SpecParms, FiberParms
 from interfaces import ISim, ILayer
 from layer_editor import LayerEditor
 from scipy.integrate import simps
+from pandas import Panel
 import logging
+from tmm_mod import vector_com_tmm
+import numpy as np
+
+class ReflectanceError(Exception):
+    """ """
 
 class BasicReflectance(HasTraits):
     '''Class used to store data in an interactive tabular environment'''
@@ -28,8 +35,12 @@ class BasicReflectance(HasTraits):
     stack= DelegatesTo('layereditor')               #Variables are stored here just because they can be useful for future implementations
 
     R=CArray()   #THIS IS REFLECTION RESPONSE NOT REFLECTANCE!
-    Reflectance=Property(Array, depends_on='R')
-    Transmittance=Property(Array, depends_on='Reflectance')
+
+    # PRIMARY STORAGE OBJECT FROM TRANSFER MATRIX FORMALISM
+    Stackdata = Instance(Panel)
+
+    Reflectance=Property(Array, depends_on='Stackdata')
+    Transmittance=Property(Array, depends_on='Stackdata')
     AvgArray=Property(Array, depends_on='Reflectance, angle_avg')
 
     angle_avg=Enum('Equal', 'Gupta')
@@ -46,7 +57,8 @@ class BasicReflectance(HasTraits):
     implements(ISim)
 
     traits_view=View(
-        Item('Mode'), Item('sim_designator'),
+        Item('Mode'),
+        Item('sim_designator'),
         Item('ds', style='simple'), 
         Item('Reflectance'),
         resizable=True
@@ -57,17 +69,6 @@ class BasicReflectance(HasTraits):
                      'fiberparms.angle_start, fiberparms.angle_stop, fiberparms.angle_ind') 
     def sync_stack(self):
         self.update_simview()
-
-    def _angle_avg_default(self):
-        return 'Equal'
-
-    #@cached_property
-    def _get_AvgArray(self):
-        print 'AVERAGING ANGLES WITH STYLE %s' % self.angle_avg
-        if self.angle_avg=='Gupta': 
-            return self.gupta_averaging()
-        elif self.angle_avg=='Equal': 
-            return self.equal_averaging()
 
     def update_simview(self): #pass
 
@@ -101,29 +102,60 @@ class BasicReflectance(HasTraits):
 
     #@cached_property
     def _get_ds(self): 
-        ds=[]
+        ds = [inf, inf]
         for layer in self.stack:
-            if layer.d != 'N/A':
-                ds.append(layer.d)
+            if layer.d != 'N/A':  #When does this happen?  Substrate/solvent?
+                ds.insert(-1, layer.d)
         return array(ds)
 
+    # RENAME
     def update_R(self):
         '''Actually computes R'''
-        rows= len(self.angles) 
-        cols = self.lambdas.shape[0]   
         logging.info('recomputing R')
-        R=empty( (rows,cols), dtype=float)
-        for i in range(len(self.angles)):
-            R[i,:]=ls.boundary_crushin(self.angles[i], self.ds, self.ns, self.Mode, self.lambdas)
-        self.R=R   #Only change trait once so listeners don't get messd up later
+
+        if self.Mode == 'S-polarized':
+            pol = 's'
+        elif self.Mode == 'P-polarized':
+            pol = 'p'
+        elif self.Mode == 'Mixed':
+            print '\n\n\nSKIPPING MIXED MODE!!!\n\n\n\n'          
+        else:
+            raise ReflectanceError('Mode must be "S-polarized", "P-polarized" or Mixed; crashing intentionally.')
+            sys.exit()
+
+        paneldict = {}
+        for ang in self.angles:
+            paneldict[ang] = vector_com_tmm(pol, 
+                                            self.ns,
+                                            self.ds, 
+                                            ang, 
+                                            self.lambdas
+                                            )
+
+        # UPDATE STACKDATA!
+        self.Stackdata = Panel(paneldict)
 
     #@cached_property
     def _get_Reflectance(self):  
-        return (self.R)**2
+        out = np.vstack([self.Stackdata[item]['R'] for item in self.Stackdata])
+        print out
+        print out.shape
+        return out
 
     #@cached_property
     def _get_Transmittance(self): 
-        return (1.0 - self.Reflectance)
+        return np.vstack([self.Stackdata[item]['T'] for item in self.Stackdata])
+
+    def _angle_avg_default(self):
+        return 'Equal'
+
+    #@cached_property
+    def _get_AvgArray(self):
+        print 'AVERAGING ANGLES WITH STYLE %s' % self.angle_avg
+        if self.angle_avg=='Gupta': 
+            return self.gupta_averaging()
+        elif self.angle_avg=='Equal': 
+            return self.equal_averaging()
 
     def equal_averaging(self): 
         return average(self.Reflectance, axis=0)
@@ -145,11 +177,6 @@ class BasicReflectance(HasTraits):
         tempnum =simps(P_num, axis=0, even='last')
         tempden =simps(P_den, axis=0, even='last')
         return tempnum/tempden
-
-
-
-
-
 
 
 if __name__ == '__main__':
