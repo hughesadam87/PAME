@@ -161,13 +161,17 @@ class GlobalScene(HasTraits):
                   VGroup(
                     Item('specparms',show_label=False, style='custom'),
                     Item('outdir', label='Output Directory'),
-                    Item('refresh', label='REFRESH OPTICAL', show_label=False),                                         
+                    Include('summarygroup'), #simulation and summary
                       ),
-                    Include('summarygroup'),
-                    ),
-                Item('opticview', 
-                     style='custom',
-                     show_label=False),
+                # PLOT
+                VGroup(
+                    Item('refresh', label='REFRESH', show_label=False),                                                           
+                    Item('opticview', 
+                         style='custom',
+                         show_label=False),
+                     )
+                ),
+                
         Tabbed(
             Include('fibergroup'), 
             Include('layergroup'),
@@ -236,12 +240,13 @@ class GlobalScene(HasTraits):
         message('%s simulation(s) saved to directory: "%s"'%(len(outsims),
                   os.path.split(self.outdir)[1]), title='Success')
 
-    ### Show Reflectance ###
+    # Show Reflectance --------
     def compute_optics(self):
+        """ Refresh and popup optics plot """
     #	self.opticstate.update_R()   #FOR SOME REASON EVEN THOUGH I UPDATE THE STACK WHEN LAYERS ARE CHANGED, IT ONLY UNDERSTANDS WHEN LAYERS ARE REMOVED ORA DDED
-        print 'showing reflectance'
+        print 'updating reflectance'
         self.opticstate.update_opticview()
-        self.opticstate.opticview.edit_traits(view='viradio_viewew2')
+        self.opticstate.opticview.edit_traits()#view='radio_view')
     #	pass
 
 def main():

@@ -86,8 +86,8 @@ class BasicFile(BasicMaterial):
             if self.file_x[0] > self.file_x[-1]:  #If last value is larger than first! (Then backwards)
                 nps=self.file_n[::-1] 
                 xps=self.file_x[::-1]    #Syntax to reverse an array 
-                logging.info("Had to sort values in material_files.update_interp\n")
-                logging.info('nps.shape, xps.shape:', nps.shape, xps.shape)
+                print "Had to sort values in material_files.update_interp\n"
+                print 'nps.shape, xps.shape:', nps.shape, xps.shape
                 a=interp(self.lambdas, xps, nps.real, left=0, right=0)
                 b=interp(self.lambdas, xps, nps.imag, left=0, right=0)
                 temp.real=a 

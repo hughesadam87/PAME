@@ -7,7 +7,7 @@ from traits.api import HasTraits, Instance, Array, Property, CArray, Str, Float,
 from traitsui.api import Item, Group, View, Tabbed, Action, HGroup, InstanceEditor, VGroup, ListStrEditor
 
 # Chaco imports
-from chaco.api import ArrayPlotData, Plot, AbstractPlotData, PlotAxis, HPlotContainer, ToolbarPlot, jet
+from chaco.api import ArrayPlotData, Plot, AbstractPlotData, PlotAxis, HPlotContainer, ToolbarPlot
 from chaco.tools.api import *
 from numpy import where
 from interfaces import IView
@@ -21,6 +21,9 @@ import numpy as np
 # http://stackoverflow.com/questions/15140072/how-to-map-number-to-color-using-matplotlibs-colormap
 import matplotlib as mpl
 import matplotlib.cm as cm
+
+# pame config
+import config
 
 class OpticalView(HasTraits):
     """ Multiple lineplots for optics in Stack for attributes like Reflectance, Tramission etc...
@@ -91,7 +94,7 @@ class OpticalView(HasTraits):
 
         # http://stackoverflow.com/questions/15140072/how-to-map-number-to-color-using-matplotlibs-colormap
         norm = mpl.colors.Normalize(vmin=self.angles[0], vmax=self.angles[-1])
-        cmapper = cm.ScalarMappable(norm=norm, cmap=cm.jet ).to_rgba #THIS IS A FUNCTION
+        cmapper = cm.ScalarMappable(norm=norm, cmap=config.LINECMAP ).to_rgba #THIS IS A FUNCTION
 
         for i, angle in enumerate(self.angles):
             
@@ -132,8 +135,6 @@ class OpticalView(HasTraits):
         plot.legend.resizable = 'hv'
 
         
-        
-
         # Attach some tools to the plot
         plot.tools.append(PanTool(plot))
         zoom = BetterSelectingZoom(component=plot, tool_mode="box", always_on=False)

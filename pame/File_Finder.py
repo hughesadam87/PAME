@@ -319,6 +319,9 @@ class SourceFile ( HasTraits ):
     def _get_ext_path ( self ):
         return dirname( self.full_name )[ len( self.live_search.root ): ]
 
+    # DONT DELETE BELOW: USED FOR SEARCHING FILES FOR INFORMATION
+
+    # CONTENTS ARE ONLY NECESSARY WHEN DOING SEARCHES IN THE FILE CONTENTS THEMSELVES (IE STRING SEARCH)
     #@property_depends_on( 'full_name' )
     #def _get_contents ( self ):
         #try:
@@ -329,22 +332,22 @@ class SourceFile ( HasTraits ):
             #return ''
 
     # Used by search, but doesn't seem to be too time consuming
-    @property_depends_on( 'full_name, live_search.[search, case_sensitive]' )
-    def _get_matches ( self ):
-        search = self.live_search.search
-        if search == '':
-            return []
+    #@property_depends_on( 'full_name, live_search.[search, case_sensitive]' )
+    #def _get_matches ( self ):
+        #search = self.live_search.search
+        #if search == '':
+            #return []
 
-        case_sensitive = self.live_search.case_sensitive
-        if case_sensitive:
-            return [ '%5d: %s' % ( (i + 1), line.strip() )
-                     for i, line in enumerate( self.contents )
-                     if line.find( search ) >= 0 ]
+        #case_sensitive = self.live_search.case_sensitive
+        #if case_sensitive:
+            #return [ '%5d: %s' % ( (i + 1), line.strip() )
+                     #for i, line in enumerate( self.contents )
+                     #if line.find( search ) >= 0 ]
 
-        search = search.lower()
-        return [ '%5d: %s' % ( (i + 1), line.strip() )
-                 for i, line in enumerate( self.contents )
-                 if line.lower().find( search ) >= 0 ]
+        #search = search.lower()
+        #return [ '%5d: %s' % ( (i + 1), line.strip() )
+                 #for i, line in enumerate( self.contents )
+                 #if line.lower().find( search ) >= 0 ]
 
 
 if __name__ == '__main__':

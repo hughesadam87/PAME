@@ -100,7 +100,7 @@ class SopraFileAdapter(BasicFileAdapter):
         return 'Sopra Object:  %s' % basename( self.thefile )
 
     def populate_object(self): 
-        self.matobject=self.SopraFile(thefile=self.thefile)
+        self.matobject = self.SopraFile(thefile=self.thefile)
         
 
 class NKDelimitedAdapter(BasicFileAdapter):
@@ -109,10 +109,10 @@ class NKDelimitedAdapter(BasicFileAdapter):
     notes="Assumes real and imaginary parts of the index of refraction in delimited columns.  If header present, must be first line and begin with a '#' character"
 
     def populate_object(self): 
-        self.matobject=self.NK_Delimited(thefile=self.thefile)
+        self.matobject = self.NK_Delimited(thefile=self.thefile)
 
     def _get_name(self): 
-        return 'NK Delimited Object:  '+basename( self.thefile )
+        return 'NK Delimited Object:  %s' % basename( self.thefile )
 
 
 

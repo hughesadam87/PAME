@@ -11,6 +11,10 @@ from traitsui.api \
 from interfaces import IAdapter
 from File_Finder import LiveSearch
 
+from simple_materials_adapter import BasicAdapter, SellmeirAdapter, ConstantAdapter, \
+    DrudeBulkAdapter, SopraFileAdapter, NKDelimitedAdapter
+
+
 class Category ( HasTraits ):
     """ Defines a Category with Materials. """
 
@@ -71,7 +75,6 @@ tree_editor = TreeEditor(
 
 class Main( HasTraits ):
     """This handles the tree and other stuff"""
-    from simple_materials_adapter import BasicAdapter, SellmeirAdapter, ConstantAdapter, DrudeBulkAdapter, SopraFileAdapter, NKDelimitedAdapter
 
     materials_trees = Instance( MaterialList )  #An instance of the tree
     current_selection = Any()  #Used for navigating the table
@@ -91,15 +94,15 @@ class Main( HasTraits ):
     # Non-Metals Models ------
     def _nonmetals_default(self): 
         return [
-            self.BasicAdapter(),
-            self.SellmeirAdapter(),
-            self.ConstantAdapter(),
+            BasicAdapter(),
+            SellmeirAdapter(),
+            ConstantAdapter(),
         ]
 
     # Metal Models Models ------
     def _metals_default(self):
         return [
-            self.DrudeBulkAdapter()
+            DrudeBulkAdapter()
         ]
 
 
@@ -115,10 +118,10 @@ class Main( HasTraits ):
             file_id = afile.fileclass  #Specifies which filetype trait object this file should fit (Sopra)
 
             if file_id=='Other': 
-                self.FileDic[afile] = self.NKDelimitedAdapter(thefile=full_path)
+                self.FileDic[afile] = NKDelimitedAdapter(thefile=full_path)
 
             if file_id=='Sopra': 
-                self.FileDic[afile] = self.SopraFileAdapter(thefile=full_path)
+                self.FileDic[afile] = SopraFileAdapter(thefile=full_path)
 
         # When entries in 'my_files' are removed, this syncs the dictionary
         for key in self.FileDic.keys():
