@@ -29,6 +29,7 @@ from numpy import cos, inf, zeros, array, exp, conj, nan, isnan
 import scipy as sp
 import numpy as np
 from pandas import DataFrame
+import cmath
 
 import sys
 EPSILON = sys.float_info.epsilon # typical floating-point calculation error
@@ -58,6 +59,7 @@ def snell(n_1,n_2,th_1):
     #arcsin(2) due to branch cut
     return sp.arcsin(np.real_if_close(n_1*np.sin(th_1) / n_2))
 
+
 def list_snell(n_list,th_0):
     """
     return list of angle theta in each layer based on angle th_0 in layer 0,
@@ -69,7 +71,6 @@ def list_snell(n_list,th_0):
     #Use real_if_close because e.g. arcsin(2 + 1e-17j) is very different from
     #arcsin(2) due to branch cut
     return sp.arcsin(np.real_if_close(n_list[0]*np.sin(th_0) / n_list))
-
 
 def interface_r(polarization, n_i, n_f, th_i, th_f):
     """

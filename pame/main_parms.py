@@ -106,13 +106,12 @@ class FiberParms(HasTraits):
     critical_angle=Property(Float, depends_on=['NA'])  #Critical angle
 
     angle_samples=Property(Int, depends_on=['angle_start', 'angle_stop', 'angle_inc'])
-    angles=Property(Array, depends_on=['angle_samples, Config']) 
+    angles = Property(Array, depends_on=['angle_samples, Config']) 
+    angles_radians = Property(Array, depends_on=['angles'])
 
     N=Property(Array, depends_on=['Config', 'angles', 'Lregion', 'Dcore'])  #NUMBER OF REFLECTIONS
 
-    sa=Property(Array, depends_on='angles')   #Sin and cosine of the angles, handy in other portion of code
-    ca=Property(Array, depends_on='angles') 
-
+    
     def get_usefultraits(self):
         ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
         traitdic={'Optical Configuration':self.Config, 
@@ -168,48 +167,57 @@ class FiberParms(HasTraits):
         Group(SharedGroup, RefGroup, TransGroup)
     )
 
-    def _angle_stop_default(self): return self.critical_angle
-    def _Mode_default(self): return 'S-polarized'
-    def _Config_default(self): return 'Reflection'
+    def _angle_stop_default(self): 
+        return self.critical_angle
+    
+    def _Mode_default(self): 
+        return 'S-polarized'
+
+    def _Config_default(self): 
+        return 'Reflection'
 
     #@cached_property
     def _get_Rcore(self): return (1000.0 * self.Dcore)/2.0
 
     #@cached_property
     def _get_N(self): 
+        """ Number of reflectations for each mode in the fiber if the ray can bounce indefinitely """
         N=empty( (len(self.angles)) )
         for i in range(len(self.angles)):
             if self.Config =='Reflection': 
                 N[i]=int(1)  #Technically an int, but float works better for computations
             elif self.Config=='Transmission':
                 N[i]=int(math.tan(self.to_rads(self.angles[i]) ) * self.Lregion/self.Dcore )
-#					N[i]=(self.Dcore/(math.tan(self.to_rads(self.angles[i]) * self.Lregion)))
+#		 N[i]=(self.Dcore/(math.tan(self.to_rads(self.angles[i]) * self.Lregion)))
         return N
 
     #@cached_property
-    def _get_critical_angle(self): return round(self.to_degrees(math.asin(self.NA)),2)
-    def _set_critical_angle(self, theta): self.NA=round(math.sin(self.to_rads(theta)),2)
-
-    def to_degrees(self, angle_in_rad):  return angle_in_rad* (180.0 / math.pi)
-
-    def to_rads(self, angle_in_degrees): return angle_in_degrees*(math.pi / 180.0)   #Actually never used
+    def _get_critical_angle(self): 
+        return round(math.degrees(math.asin(self.NA)),2)
+    
+    def _set_critical_angle(self, theta): 
+        self.NA=round(math.sin(self.to_rads(theta)),2)
 
     #@cached_property
     def _get_angle_samples(self):
         angle_samples=int( (self.angle_stop-self.angle_start)  / self.angle_inc ) 
         return angle_samples
+
     #@cached_property
     def _get_angles(self):
         angles=linspace(self.angle_start, self.angle_stop, num=self.angle_samples)
-        if self.Config=='Reflection': return angles
+
+        if self.Config=='Reflection': 
+            return angles
+        
+        # betas?
         elif self.Config == 'Transmission':
             betas=abs(90.0-angles)
             return betas
-    #@cached_property
-    def _get_sa(self): return sin(self.to_rads(self.angles ))  #numpy.sin not math.sin
 
-    #@cached_property
-    def _get_ca(self): return cos(self.to_rads(self.angles ))
+    def _get_angles_radians(self):
+        return np.radians(self.angles)
+
 
 if __name__ == '__main__':
     SpecParms().configure_traits()

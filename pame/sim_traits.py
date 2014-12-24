@@ -26,16 +26,12 @@ class BasicReflectance(HasTraits):
     lambdas=DelegatesTo('specparms')	
     Mode=DelegatesTo('fiberparms')
     angles=DelegatesTo('fiberparms')
+    angles_radians=DelegatesTo('fiberparms')
 #   betas=DelegatesTo('fiberparms')
 
-    #sa,sb etc... averageing traits
     angle_avg = DelegatesTo('fiberparms')
-    sa=DelegatesTo('fiberparms') 
-    sb=DelegatesTo('fiberparms')
-    ca=DelegatesTo('fiberparms') 
-    cb=DelegatesTo('fiberparms')
     N=DelegatesTo('fiberparms')
-
+    
     layereditor=Instance(LayerEditor,())            #Need to initialize this because properties depend on this instance
     stack= DelegatesTo('layereditor')               #Variables are stored here just because they can be useful for future implementations
 
@@ -126,6 +122,7 @@ class BasicReflectance(HasTraits):
 
         paneldict = {}
         for ang in self.angles:
+            ang = math.radians(ang)
             paneldict[ang] = vector_com_tmm(pol, 
                                             self.ns,
                                             self.ds, 
@@ -177,6 +174,10 @@ class BasicReflectance(HasTraits):
         """ CITE ME!!"""
         P_num=empty((self.angles.shape[0], self.nsubstrate.shape[0]), dtype=float)
         P_den=empty((self.angles.shape[0], self.nsubstrate.shape[0]), dtype=float)
+        
+        sa = np.sin(self.angles_radians)
+        ca = np.cos(self.angles_radians)
+        
         for i in range(len(self.angles)):
             f1=self.nsubstrate**2 * self.sa[i] * self.ca[i]       #Technically nsubstrate is complex so this is complaining
             Rn=self.Reflectance[i,:]**self.N[i]
