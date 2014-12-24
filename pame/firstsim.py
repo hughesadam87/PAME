@@ -105,11 +105,11 @@ class LayerVfrac(MaterialSim):
                 print i, currentvalue
                 self.selected_material.trait_set(**currentvalue)   #sets the traits to intermittent values
 
-            self.opticstate.update_simview()         #Recompute Reflectance
+            self.opticstate.update_opticview()         #Recompute Reflectance
 
 
 
-    #		svl_dic[str(vf)]=self.opticstate.simview.get_sexy_data()
+    #		svl_dic[str(vf)]=self.opticstate.opticview.get_sexy_data()
     #		mvl_dic[str(vf)]=self.selected_material.mview.get_sexy_data()
     #		i=i+1
     #		print "Iteration\t", i, "\t of \t", self.inc, "\t completed"

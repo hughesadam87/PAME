@@ -246,8 +246,7 @@ class GlobalScene(HasTraits):
 
 def main():
     # HACK FOR DEBUG UNTIL DATA CAN BE IMPORTED CORRECTLY
-    # os.chdir('/home/glue/Desktop/fibersim')
-    
+    # os.chdir('/home/glue/Desktop/fibersim')    
     
     popup=GlobalScene()
     popup.configure_traits()    

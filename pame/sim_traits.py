@@ -161,12 +161,12 @@ class BasicReflectance(HasTraits):
 
     #@c
     def _get_Reflectance_AVG(self):
-        print 'AVERAGING ANGLES WITH STYLE %s' % self.angle_avg
         if self.angle_avg=='Gupta': 
             return self.gupta_averaging()
         elif self.angle_avg=='Equal': 
             return np.average(self.Reflectance, axis=0)
 
+    # THESE BOTH USE REFLECTANCES INNATELY NOT TRANSMITTANCE!!!!!
     def equal_averaging(self): 
         return average(self.Reflectance, axis=0)
 
@@ -179,7 +179,7 @@ class BasicReflectance(HasTraits):
         ca = np.cos(self.angles_radians)
         
         for i in range(len(self.angles)):
-            f1=self.nsubstrate**2 * self.sa[i] * self.ca[i]       #Technically nsubstrate is complex so this is complaining
+            f1=self.nsubstrate**2 * sa[i] * ca[i]       #Technically nsubstrate is complex so this is complaining
             Rn=self.Reflectance[i,:]**self.N[i]
             logging.info('N, rn', self.N[i], Rn)
 

@@ -1,28 +1,24 @@
-#  Adam Hughes 2011
-#  Adapted from Enthought traits4.0 examples:
-	#  Copyright (c) 2007, Enthought, Inc.
-	#  License: BSD Style.#-- Imports --------------------------------------------------------------------
+"""This program is modified from livesearch example in traits4.0.  The main change is that the table 
+selection can be multiple rows, meaning 'selected' returns a list.  This would throw off many of the
+functions which were used to open a file.  For example, the search function to find a line in a file 
+would need modified.  Most of these file-related methods like "selected_contents, selected_line" 
+were deleted.  Most search features like the directory structure, recursive search, type_ranges
+(etc...) were retained."""
 
-from os \
-    import walk, getcwd, listdir
+from os import walk, getcwd, listdir
 
 from os.path \
-    import basename, dirname, splitext, join
+     import basename, dirname, splitext, join
 
 from traits.api \
-    import HasTraits, File, Directory, Str, Bool, List, Int, Enum, DictStrList, Button, Instance, \
-           Property, Any, property_depends_on
+     import HasTraits, File, Directory, Str, Bool, List, Int, Enum, DictStrList, Button, Instance, \
+     Property, Any, property_depends_on
 
 from traitsui.api \
-    import View, VGroup, VSplit, HGroup, Item, TableEditor, CodeEditor, \
-           TitleEditor, HistoryEditor, DNDEditor, OKCancelButtons
+     import View, VGroup, VSplit, HGroup, Item, TableEditor, CodeEditor, \
+     TitleEditor, HistoryEditor, DNDEditor, OKCancelButtons
 
-from traitsui.table_column \
-    import ObjectColumn
-
-#This program is modified from livesearch example in traits4.0.  The main change is that the table selection can be multiple rows, meaning 'selected' returns a list.  This would
-#throw off many of the functions which were used to open a file.  For example, the search function to find a line in a file would need modified.  Most of these file-related 
-#methods like "selected_contents, selected_line" were deleted.  Most search features like the directory structure, recursive search, type_ranges (etc...) were retained
+from traitsui.table_column import ObjectColumn
 
 #-- The Live Search table editor definition ------------------------------------
 
@@ -38,7 +34,7 @@ source_editor = TableEditor(
                         label       = 'Source Files',
                         width       = 0.30,
                         editable    = False ),
-    ],
+        ],
     filter_name        = 'filter',
     auto_size          = False,
     show_toolbar       = False,
@@ -54,7 +50,7 @@ file_editor = TableEditor(
                         label       = 'Selected Files',
                         width       = 0.30,
                         editable    = False ),
-    ],
+        ],
     filter_name        = 'filter',
     auto_size          = False,
     show_toolbar       = False,
@@ -67,16 +63,16 @@ file_editor = TableEditor(
 #-- LiveSearch class -----------------------------------------------------------
 
 class LiveSearch ( HasTraits ):
-
+    """ Searches for files in operating system.  Adapted heavily from traits examples."""
     #THIS DICTSTRINGLIST CAN BE OVERWRITTEN AT ANY TIME AND THE PROGRAM WILL NOT FAULTER, MEANING CUSTOM FILE SEARCHES ARE POSSIBLE
 
     ValidTypes =DictStrList({
 #	    'Python': [ '.py' ],
-	    'Sopra':      [ '.nk'],
-	    'Other':    [ '.txt', '.dat' ],   #CAN EDIT MODULE WHICH CONTROLS THIS TO ADD "ANY" OPTION, OR MAYBE FILTER = NONE OPTION
+            'Sopra':      [ '.nk'],
+            'Other':    [ '.txt', '.dat' ],   #CAN EDIT MODULE WHICH CONTROLS THIS TO ADD "ANY" OPTION, OR MAYBE FILTER = NONE OPTION
 #	    'Java':   [ '.java' ],
 #	    'Ruby':   [ '.rb' ]
-				})
+    })
 
     #A list of the keys in ValidTypes, basically a list of searchable types 'Python' vs. 'Java'
     types_list=Property(List, depends_on='ValidTypes')
@@ -121,7 +117,10 @@ class LiveSearch ( HasTraits ):
     selected_summary = Property # Str
 
     # Button to add files from source list to return list
-    Add=Button ; AddAll=Button ; RemoveAll=Button ; Remove=Button
+    Add=Button 
+    AddAll=Button 
+    RemoveAll=Button 
+    Remove=Button
 
     #-- Traits UI Views --------------------------------------------------------
 
@@ -132,71 +131,82 @@ class LiveSearch ( HasTraits ):
                       id    = 'root',
                       label = 'Path',
                       width = 0.5
-                ),
+                      ),
                 Item( 'recursive' ),
                 Item( 'type_range', label = 'Type' ),  #HERE IS FILE TYPE
                 Item( 'search',
                       id     = 'search',
                       width  = 0.5,
-		      label = 'Search for infile string',
+                      label = 'Search for infile string',
                       editor = HistoryEditor( auto_set = True )
-                ),
+                      ),
                 Item( 'case_sensitive' )
-            ),
+                ),
             VSplit(
                 VGroup(
-                HGroup(    
-			VGroup(
-	                  Item( 'source_summary', editor = TitleEditor(), show_label=False ),
-  			  Item( 'source_files',
-                          id     = 'source_files',
-                          editor = source_editor, show_label=False),
-			  HGroup(  Item('Add', label='Deposit Selected', show_label=False), Item('AddAll', label='Deposit All', show_label=False) )	
-			      ),
+                    HGroup(    
+                        VGroup(
+                            Item( 'source_summary', editor = TitleEditor(), show_label=False ),
+                            Item( 'source_files',
+                                  id     = 'source_files',
+                                  editor = source_editor, show_label=False),
+                            HGroup(  Item('Add', label='Deposit Selected', show_label=False), 
+                                     Item('AddAll', label='Deposit All', show_label=False) 
+                                     )	
+                            ),
 
 
-			 VGroup(
-				 Item( 'selected_summary', editor = TitleEditor(), show_label=False ),
-				Item( 'my_files',
-			  editor=file_editor, show_label=False),
-		          HGroup( Item('Remove', label='Remove Selected', show_label=False, enabled_when='len(my_files) > 0'),
-				  Item('RemoveAll', label='Remove All Stored', show_label=False, enabled_when='len(my_files) > 0') )
-			     ),
-		      ),
+                        VGroup(
+                            Item( 'selected_summary', editor = TitleEditor(), show_label=False ),
+                            Item( 'my_files',
+                                  editor=file_editor, show_label=False),
+                            HGroup( Item('Remove', label='Remove Selected', show_label=False, enabled_when='len(my_files) > 0'),
+                                    Item('RemoveAll', label='Remove All Stored', show_label=False, enabled_when='len(my_files) > 0') )
+                            ),
+                        ),
                     ),
-                    dock        = 'horizontal',
-                    show_labels = False
+                dock        = 'horizontal',
+                show_labels = False
                 ),
-        ),
+            ),
         title     = 'Live File Search',
         id        = 'File Search Mod',
         width     = 0.75,
         height    = 0.67,
         resizable = True,
-	buttons=OKCancelButtons  #Why don't these work on small button operations
+        buttons=OKCancelButtons  #Why don't these work on small button operations
     )
 
-
+    # Button Events
+    # -------------
     def _Add_fired(self):
-	for afile in self.selected:
-		if afile not in self.my_files:
-			self.my_files.append(afile)
+        for afile in self.selected:
+            if afile not in self.my_files:
+                self.my_files.append(afile)
 
     def _AddAll_fired(self):
-	for afile in self.source_files:
-		if afile not in self.my_files:
-			self.my_files.append(afile)
+        """ Add all files in a directory possibly.  Can add a lot of files, so
+        instead of appending one by one, add them all at once to avoid over-triggering
+        event handlers in modeltree_v2.py, which will update a dictionary every single
+        time something in here changes.
+        """
+        new = []
+        for afile in self.source_files:
+            if afile not in self.my_files:
+                new.append(afile)                
+        self.my_files.extend(new)
 
     def _Remove_fired(self):
-	for afile in self.selected_file:  #Since multi rows, this is a list, even when selected on object
-		self.my_files.remove(afile)   #Selected_file is the variable for all selections on file table
+        for afile in self.selected_file:  #Since multi rows, this is a list, even when selected on object
+            self.my_files.remove(afile)   #Selected_file is the variable for all selections on file table
 
-    def _RemoveAll_fired(self): self.my_files=[]
-
+    def _RemoveAll_fired(self): 
+        self.my_files=[]
 
     #-- Property Implementations -----------------------------------------------
 
-    def _get_types_list(self): return self.ValidTypes.keys()
+    def _get_types_list(self): 
+        return self.ValidTypes.keys()
 
     @property_depends_on( 'search, case_sensitive' )
     def _get_filter ( self ):
@@ -207,7 +217,7 @@ class LiveSearch ( HasTraits ):
 
     @property_depends_on( 'root, recursive, type_range' )
     def _get_source_files ( self ):
-	'''This populates with a list of source_files'''
+        """FIND THE SOURCE FILES populates with a list of source_files"""
         root = self.root
         if root == '':
             root = getcwd()
@@ -217,13 +227,13 @@ class LiveSearch ( HasTraits ):
             result = []
             for dir_path, dir_names, file_names in walk( root ):
                 for file_name in file_names:	
-		    extension=splitext(file_name)[1]
+                    extension=splitext(file_name)[1]
                     if extension in valid_extensions:
                         result.append( SourceFile(
                             live_search = self,
                             full_name   = join( dir_path, file_name ),
-			    file_ext = extension) #File class set automatically
-				      )
+                            file_ext = extension) #File class set automatically
+                                       )
             return result
 
         return [ SourceFile( live_search = self,
@@ -242,14 +252,16 @@ class LiveSearch ( HasTraits ):
 
     @property_depends_on('my_files')
     def _get_selected_summary ( self ):
-	return 'A total of %d files have been selected.' %(len(self.my_files) )
-	
+        return 'A total of %d files have been selected.' %(len(self.my_files) )
+
 
     #-- Traits Event Handlers --------------------------------------------------
 
-    def _selected_changed ( self ): self.selected_match = 1
+    def _selected_changed ( self ): 
+        self.selected_match = 1
 
     def _source_files_changed ( self ):
+        print 'source files changed'
         if len( self.source_files ) > 0:
             self.selected = self.source_files[0]
         else:
@@ -258,13 +270,14 @@ class LiveSearch ( HasTraits ):
 #-- SourceFile class -----------------------------------------------------------
 
 class SourceFile ( HasTraits ):
-
+    """ Stores file in table."""
+    
     # The search object this source file is associated with:
     live_search = Instance( LiveSearch )
 
     # The full path and file name of the source file:
     full_name = File
- 
+
     # File extension (set by the live search _get_source_files mechanism)
     file_ext = Str
 
@@ -277,23 +290,26 @@ class SourceFile ( HasTraits ):
     # The portion of the file path beyond the root search path:
     ext_path = Property # Str
 
+    # NOT NECESSARY TO STORE CONTENTS, THEY ARE READ BY MATERIAL ADAPTERS
     # The contents of the source file:
-    contents = Property # List( Str )
+    #contents = Property # List( Str )
 
     # The list of matches for the current search criteria:
     matches = Property # List( Str )
 
     # File ext
- 
-    #-- Property Implementations -----------------------------------------------
 
 
     @property_depends_on('file_ext')
     def _get_fileclass(self):
-	for key in self.live_search.ValidTypes.keys():
-		for value in self.live_search.ValidTypes[key]:
-			if value==self.file_ext:
-				return key
+        """ For each file, looks at its extension (ie .nk, .txt) and returns
+        category defined in LiveSeach.  For .nk, this would be Sopra.  For .txt
+        this would be Other.
+        """
+        for key in self.live_search.ValidTypes.keys():
+            for value in self.live_search.ValidTypes[key]:
+                if self.file_ext in value:
+                    return key
 
     @property_depends_on( 'full_name' )
     def _get_base_name ( self ):
@@ -303,16 +319,16 @@ class SourceFile ( HasTraits ):
     def _get_ext_path ( self ):
         return dirname( self.full_name )[ len( self.live_search.root ): ]
 
-    @property_depends_on( 'full_name' )
-    def _get_contents ( self ):
-        try:
-            fh = open( self.full_name, 'rb' )
-            contents = fh.readlines()
-            fh.close()
-            return contents
-        except:
-            return ''
+    #@property_depends_on( 'full_name' )
+    #def _get_contents ( self ):
+        #try:
+            #with open( self.full_name, 'rb' ) as f:
+                #contents = f.readlines()
+            #return contents
+        #except:
+            #return ''
 
+    # Used by search, but doesn't seem to be too time consuming
     @property_depends_on( 'full_name, live_search.[search, case_sensitive]' )
     def _get_matches ( self ):
         search = self.live_search.search

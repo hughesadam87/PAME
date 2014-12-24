@@ -1,12 +1,12 @@
-#  Adam Hughes 2011
-#  Adapted from Enthought traits4.0 examples:
-	#  Copyright (c) 2007, Enthought, Inc.
-	#  License: BSD Style.#-- Imports --------------------------------------------------------------------
+""" Tree to store files by catgeory (model, bulk etc...).  Dictionary maps entries
+in tree to list of files stored in "my_list" in File_Finder.  Also stores models and
+other default objects.
+"""
 
 from traits.api import *
 
 from traitsui.api \
-    import Item, View, TreeEditor, TreeNode, OKCancelButtons, VSplit
+     import Item, View, TreeEditor, TreeNode, OKCancelButtons, VSplit
 
 from interfaces import IAdapter
 from File_Finder import LiveSearch
@@ -35,7 +35,7 @@ tree_editor = TreeEditor(
                   label     = '=Models',
                   view      = no_view,
                   add       = [ Category ],
-        ),
+                  ),
 
         TreeNode( node_for  = [ MaterialList ],
                   auto_open = True,
@@ -43,7 +43,7 @@ tree_editor = TreeEditor(
                   label     = '=Files',
                   view      = no_view,
                   add       = [ Category ],
-        ),
+                  ),
 
         TreeNode( node_for  = [ MaterialList ],
                   auto_open = False,
@@ -51,22 +51,22 @@ tree_editor = TreeEditor(
                   label     = '=All Materials',
                   view      = no_view,
                   add       = [ IAdapter ]
-        ),
+                  ),
         TreeNode( node_for  = [ Category ],
                   auto_open = True,
                   children  = 'Materials',
                   label     = 'name',
                   view      = View( [ 'name' ] ),
                   add       = [ IAdapter ]
-        ),
+                  ),
         TreeNode( node_for  = [ IAdapter ],
                   auto_open = True,
                   label     = 'name',
                   view      = View( [ 'name', 'source', 'notes', 'preview', 'matobject', 'thefile' ] )     #TRAITS FROM IADAPTER OBJECT
-        )
-    ],
-	selection_mode='extended',
-	selected='current_selection',
+                  )
+        ],
+    selection_mode='extended',
+    selected='current_selection',
 )
 
 class Main( HasTraits ):
@@ -75,9 +75,9 @@ class Main( HasTraits ):
 
     materials_trees = Instance( MaterialList )  #An instance of the tree
     current_selection = Any()  #Used for navigating the table
-   
+
     FileSearch = Instance(LiveSearch,())	
-    FileDic=Dict  #Maintains object representations for files
+    FileDic = Dict  #Maintains object representations for files
 
     nonmetals  = List(IAdapter)
     metals  = List(IAdapter)
@@ -85,87 +85,97 @@ class Main( HasTraits ):
     nkfiles = List(IAdapter)
 
     def __init__(self, *args, **kwds):
-      	    super(HasTraits, self).__init__(*args, **kwds)
-            self.update_tree() #Necessary to make defaults work
+        super(HasTraits, self).__init__(*args, **kwds)
+        self.update_tree() #Necessary to make defaults work
 
+    # Non-Metals Models ------
     def _nonmetals_default(self): 
-	return [
-		self.BasicAdapter(),
-		self.SellmeirAdapter(),
-		self.ConstantAdapter(),
-		]
+        return [
+            self.BasicAdapter(),
+            self.SellmeirAdapter(),
+            self.ConstantAdapter(),
+        ]
 
+    # Metal Models Models ------
     def _metals_default(self):
-	return [
-		self.DrudeBulkAdapter()
-	       ]
+        return [
+            self.DrudeBulkAdapter()
+        ]
 
 
     @on_trait_change('FileSearch.my_files')
     def update_file_dic(self):
-	'''Updates file dic, and since my_files won't update redundantly, the dictionary also won't gather duplicate entries'''
-    	for afile in self.FileSearch.my_files:
-		full_path=afile.full_name ; base_name=afile.base_name
-		extension=afile.file_ext  ; file_id=afile.fileclass  #Specifies which filetype trait object this file should fit (Sopra)
+        '''Updates file dic, and since my_files won't update redundantly, the dictionary also won't gather duplicate entries'''
 
-		if file_id=='Other': self.FileDic[afile]=self.NKDelimitedAdapter(thefile=full_path)
-		if file_id=='Sopra': self.FileDic[afile]=self.SopraFileAdapter(thefile=full_path)
+        for afile in self.FileSearch.my_files:
+            # Fit new files to appropriate adapter
+            full_path = afile.full_name 
+            base_name = afile.base_name
+            extension = afile.file_ext  
+            file_id = afile.fileclass  #Specifies which filetype trait object this file should fit (Sopra)
 
-	###When entries in 'my_files' are removed, this syncs the dictionary###
-	for key in self.FileDic.keys():
-		if key not in self.FileSearch.my_files:
-			del self.FileDic[key]
+            if file_id=='Other': 
+                self.FileDic[afile] = self.NKDelimitedAdapter(thefile=full_path)
 
-	self.soprafiles=[ self.FileDic[k] for k in self.FileDic.keys() if k.fileclass =='Sopra']
-	self.nkfiles=[ self.FileDic[k] for k in self.FileDic.keys() if k.fileclass =='Other']
+            if file_id=='Sopra': 
+                self.FileDic[afile] = self.SopraFileAdapter(thefile=full_path)
 
-	self.update_tree()
+        # When entries in 'my_files' are removed, this syncs the dictionary
+        for key in self.FileDic.keys():
+            if key not in self.FileSearch.my_files:
+                del self.FileDic[key]
+
+        self.soprafiles= [self.FileDic[k] for k in self.FileDic.keys() if k.fileclass =='Sopra']
+        self.nkfiles= [self.FileDic[k] for k in self.FileDic.keys() if k.fileclass =='Other']
+
+        self.update_tree()
 
     def update_tree(self): 
-	self.materials_trees=MaterialList(
-	        Materials   = self.nonmetals+self.metals+self.soprafiles+self.nkfiles,   #Taking in lists
-	  
-	        MaterialCategories = 
-			[
-	  	          Category(
-	  	              name      = 'NonMetals',
-	  	              Materials = self.nonmetals 
-	  	                 ),
-          	 	    Category(
-          		      	name      = 'Metals',
-          	     		Materials = self.metals
-           			    )
-  			],
 
-		FileCategories = 
-			[
-	            Category(
-	                name      = 'Sopra Files',
-	                Materials = self.soprafiles
-	                   ),
-	            Category(
-	                name      = 'NK Files',
-	                Materials = self.nkfiles
-	                   ),
+        self.materials_trees = MaterialList(
+            Materials = self.nonmetals+self.metals+self.soprafiles+self.nkfiles,   #Taking in lists
 
-		        ],
-    	 )
+            MaterialCategories = 
+            [
+                Category(
+                    name      = 'NonMetals',
+                    Materials = self.nonmetals 
+                    ),
+                Category(
+                    name      = 'Metals',
+                    Materials = self.metals
+                )
+                ],
+
+            FileCategories = 
+            [
+                Category(
+                    name      = 'Sopra Files',
+                    Materials = self.soprafiles
+                    ),
+                Category(
+                    name      = 'NK Files',
+                    Materials = self.nkfiles
+                    ),
+
+                ],
+        )
 
     view = View(
-	VSplit(
-        Item( name       = 'materials_trees',
-              editor     = tree_editor,
-              show_label = False,
+        VSplit(
+            Item( name       = 'materials_trees',
+                  editor     = tree_editor,
+                  show_label = False,
 
-        ),
-	Item('FileSearch', show_label=False),
-	),
+                  ),
+            Item('FileSearch', show_label=False),
+            ),
         title     = 'Materials Parser',
         buttons   =  OKCancelButtons,
         resizable = True,
         style     = 'custom',
-	width=.8,
-	height=.8,
+        width=.8,
+        height=.8,
     )
 
 
@@ -173,4 +183,4 @@ class Main( HasTraits ):
 
 # Run the demo (if invoked from the command line):
 if __name__ == '__main__':
-	Main().configure_traits()
+    Main().configure_traits()

@@ -4,7 +4,7 @@ from traits.api import *
 from traitsui.api import *
 from converter import SpectralConverter
 from numpy import linspace, sin, cos, empty, argsort
-import math
+import numpy as np
 
 class SpecParms(HasTraits):
     '''Global class which defines variables and methods shared by all other class methods''' 
@@ -25,10 +25,16 @@ class SpecParms(HasTraits):
 
     traits_view = View(
         VGroup(
-            HGroup(  Item(name = 'xstart'),  Item(name = 'xend'), Item(name = 'x_increment'), Item(name='x_samples') ),
-            HGroup(  Item(name='x_unit', style='readonly'), Item(name='x_unit', style='simple', label='Change Units' ) 
-                     ), #    label='Spectral Parameters'
-        ))
+            HGroup(  Item(name = 'xstart'),  
+                     Item(name = 'xend'),
+                     Item(name = 'x_increment'),
+                     Item(name='x_samples') ),
+            
+            HGroup(  Item(name='x_unit', style='readonly'), 
+                     Item(name='x_unit', style='simple', label='Change Units' ) 
+                   ), #    label='Spectral Parameters'
+             )
+        )
 
     def get_usefultraits(self):
         ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
@@ -48,10 +54,11 @@ class SpecParms(HasTraits):
         return self.conv.valid_units
 
     #@cached_property
-    def _get_x_samples(self): return self.lambdas.shape[0]
+    def _get_x_samples(self): 
+        return self.lambdas.shape[0]
 
     def _set_x_samples(self, samples):
-        self.lambdas=linspace(self.xstart, self.xend, num=samples)
+        self.lambdas= np.linspace(self.xstart, self.xend, num=samples)
 
     #@cached_property
     def _get_x_increment(self):  
@@ -183,25 +190,24 @@ class FiberParms(HasTraits):
     def _get_N(self): 
         """ Number of reflectations for each mode in the fiber if the ray can bounce indefinitely """
         N=empty( (len(self.angles)) )
-        for i in range(len(self.angles)):
-            if self.Config =='Reflection': 
-                N[i]=int(1)  #Technically an int, but float works better for computations
-            elif self.Config=='Transmission':
-                N[i]=int(math.tan(self.to_rads(self.angles[i]) ) * self.Lregion/self.Dcore )
-#		 N[i]=(self.Dcore/(math.tan(self.to_rads(self.angles[i]) * self.Lregion)))
-        return N
+
+        if self.Config == 'Reflection':
+            return N.fill(1) #One reflection per mode
+        
+        elif self.Config == 'Transmission':
+            return np.tan(self.angles_radians * (self.Lregion / self.Dcore))
+
 
     #@cached_property
     def _get_critical_angle(self): 
-        return round(math.degrees(math.asin(self.NA)),2)
+        return round(np.degrees(np.arcsin(self.NA)),2)
     
     def _set_critical_angle(self, theta): 
-        self.NA=round(math.sin(self.to_rads(theta)),2)
+        self.NA=round(np.sin(np.radians(theta)),2)
 
     #@cached_property
     def _get_angle_samples(self):
-        angle_samples=int( (self.angle_stop-self.angle_start)  / self.angle_inc ) 
-        return angle_samples
+        return round ((self.angle_stop-self.angle_start)  / self.angle_inc) 
 
     #@cached_property
     def _get_angles(self):

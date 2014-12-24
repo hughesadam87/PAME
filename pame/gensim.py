@@ -316,7 +316,7 @@ class LayerVfrac(GeneralSim):
             ### dispersion relation don't trigger a change in the shell of nanoparticles 
 
             self.selected_material.FullMie.update_cross()  #This is only in case the trait I'm simulating doesn't automatically trigger an update
-            self.base_app.opticstate.update_simview()         #Recompute Reflectance		
+            self.base_app.opticstate.update_opticview()         #Recompute Reflectance		
 
             ### STUPID HACK TO ALLOW SAMPLING OF SCATTERING CROSS SECTIONS BY WRITING THEM INTO NEW LISTS, THEN MAKING A LIST OF LISTS
             ### FOR SOME REASON, TRYING TO ADD THEM EXPLICITLY TO A DICTIONARY WOULD CAUSE ERRORS AFTER THE ITERATIONS!!!
@@ -326,11 +326,11 @@ class LayerVfrac(GeneralSim):
                 scatt_dic[key].append(new_data)
 
             mvl_dic[key]=self.selected_material.mview.get_sexy_data()     #Get Dielectric plots (Working fine)
-            svl_dic[key]=self.base_app.opticstate.simview.get_sexy_data()  #Get Reflecatance plots
+            svl_dic[key]=self.base_app.opticstate.opticview.get_sexy_data()  #Get Reflecatance plots
 
             ### 12/9/12 Dataframes into panel for sim output ###
             mvl_df=self.selected_material.mview.get_dataframe()
-            svl_df=self.base_app.opticstate.simview.get_dataframe()  
+            svl_df=self.base_app.opticstate.opticview.get_dataframe()  
             scatt_df=self.selected_material.FullMie.sview.get_dataframe()
 
             ### Concatenate rowwise

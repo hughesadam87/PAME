@@ -1,12 +1,13 @@
-#  Adam Hughes 2011
-#  Adapted from Enthought traits4.0 examples:
-	#  Copyright (c) 2007, Enthought, Inc.
-	#  License: BSD Style.#-- Imports --------------------------------------------------------------------
+""" Table for selecting type of composite materials:  
+    - Composite Material for Bulk Materials
+    - General composite equivalent object for mixing spheres and shells
+    - Class for mixing spherical objects on a flat disk surface
+"""
 
 from traits.api import *
 
 from traitsui.api \
-    import Item, View, TreeEditor, TreeNode, OKCancelButtons, VSplit
+     import Item, View, TreeEditor, TreeNode, OKCancelButtons, VSplit
 
 from interfaces import IAdapter
 from composite_materials_adapter import *
@@ -30,29 +31,28 @@ no_view = View()
 tree_editor = TreeEditor(
     nodes = [
 
-
         TreeNode( node_for  = [ MaterialList ],
                   auto_open = False,
                   children  = 'Materials',
                   label     = '=Composite Materials',
                   view      = no_view,
                   add       = [ IAdapter ]
-        ),
+                  ),
         TreeNode( node_for  = [ Category ],
                   auto_open = True,
                   children  = 'Materials',
                   label     = 'name',
                   view      = View( [ 'name' ] ),
                   add       = [ IAdapter ]
-        ),
+                  ),
         TreeNode( node_for  = [ IAdapter ],
                   auto_open = True,
                   label     = 'name',
                   view      = View( [ 'name', 'source', 'notes', 'preview', 'matobject', 'thefile' ] )     #TRAITS FROM IADAPTER OBJECT
-        )
-    ],
-	selection_mode='extended',
-	selected='current_selection',
+                  )
+        ],
+    selection_mode='extended',
+    selected='current_selection',
 )
 
 class CompositeMain( HasTraits ):
@@ -60,45 +60,45 @@ class CompositeMain( HasTraits ):
 
     materials_trees = Instance( MaterialList )  #An instance of the tree
     current_selection = Any()  #Used for navigating the table
-   
+
     general=List(IAdapter) 
 
     def __init__(self, *args, **kwds):
-      	    super(CompositeMain, self).__init__(*args, **kwds)
-            self.update_tree() #Necessary to make defaults work
+        super(CompositeMain, self).__init__(*args, **kwds)
+        self.update_tree() #Necessary to make defaults work
 
     def _general_default(self): 
-	return [
-		CompositeAdapter(),
-		CompositeMaterial_EquivAdapter(),
-		SphericalInclusions_DiskAdapter()
-		]
+        return [
+            CompositeAdapter(),
+            CompositeMaterial_EquivAdapter(),
+            SphericalInclusions_DiskAdapter()
+        ]
 
     def update_tree(self): 
-	self.materials_trees=MaterialList(
-	        Materials   = self.general,
-	  
-	        MaterialCategories = 
-			[
-	  	          Category(
-	  	              name      = 'Composite Materials',
-	  	              Materials = self.general 
-	  	                 ),
-  			],
+        self.materials_trees=MaterialList(
+            Materials   = self.general,
 
-    	 )
+            MaterialCategories = 
+            [
+                Category(
+                    name      = 'Composite Materials',
+                    Materials = self.general 
+                    ),
+                ],
+
+        )
 
     view = View(
         Item( name       = 'materials_trees',
               editor     = tree_editor,
               show_label = False,
-	    ),
+              ),
         title     = 'Composite Materials Parser',
         buttons   =  OKCancelButtons,
         resizable = True,
         style     = 'custom',
-	width=.8,
-	height=.8,
+        width=.8,
+        height=.8,
     )
 
 
@@ -106,4 +106,4 @@ class CompositeMain( HasTraits ):
 
 # Run the demo (if invoked from the command line):
 if __name__ == '__main__':
-	CompositeMain().configure_traits()
+    CompositeMain().configure_traits()
