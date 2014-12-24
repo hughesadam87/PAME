@@ -1,13 +1,13 @@
 ''' All of these classes are used for visualizing and plotting simulations.  The actual
 simulation data is made in the gensim.py file, where each simulation is stored as a dictionary
 of arrays.  That later is passed to this file as the trials_dic trait.  These are later used to
-set chaco plot interfaces (SimView, MaterialView etc...).  At this point, its best to just
+set chaco plot interfaces (OpticalView, MaterialView etc...).  At this point, its best to just
 output the data to dataframes and rely on pyuvvis to do the visualization and analysis.  This
 can be resurrected when in-house visualization and realtime chaco plotting is important.'''
 
 from traits.api import Dict, Property, Any, Instance, HasTraits, List, cached_property, Int, Enum, Str
 from traitsui.api import Item, View, VGroup, ListStrEditor, HGroup
-from basicplots import SimView, MaterialView
+from basicplots import OpticalView, MaterialView
 from interfaces import IView
 import sys
 from operator import itemgetter
@@ -18,7 +18,7 @@ class GeneralSimStorage(HasTraits):
 	''' General holder object to contain sorted dictionaries.  Inhereting classes will utilize these to generate ViewList objects and
 	    CurveAnalysis interfaces.'''
 
-	### Basic storage of runs keyed by trialname storing array data of the format "get_sexy_data()" from Mview and SimView plots
+	### Basic storage of runs keyed by trialname storing array data of the format "get_sexy_data()" from Mview and OpticalView plots
 	trials_dic=Dict #Dictionary of array data specifically suited for simview
 	trials_delimiter=Str #This is passed in through gensim to make sure dictionary is split correctly
 	trials_keys=Property(List, depends_on='trials_dic, trials_delimiter')  #Requires special format of Str Str(int)
@@ -54,8 +54,8 @@ class GeneralViewList(GeneralSimStorage):
 class MaterialViewList(GeneralViewList):
 	plot_storage=Instance(MaterialView,())  #Instance Material View, used for E,N simulations
 
-class SimViewList(GeneralViewList):
-	plot_storage=Instance(SimView,())   #Instance Sim View, used for storing reflectance simulations
+class OpticalViewList(GeneralViewList):
+	plot_storage=Instance(OpticalView,())   #Instance Sim View, used for storing reflectance simulations
 
 class CurveAnalysisStorage(GeneralSimStorage):
 	''' Old version to store dictionaries of arrays in curve analysis programs.  Going to update to store Series
@@ -97,7 +97,7 @@ class CurveAnalysisStorage(GeneralSimStorage):
 
 
 class ReflectanceStorage(CurveAnalysisStorage):
-	data_column=Enum(4, [1,2,3,4]) #0= xarray,  1=angles, 2=RefArray, 3=TransArray, 4=AvgArray] (1,2,3 are not average so they probably wont work anyway)
+	data_column=Enum(4, [1,2,3,4]) #0= xarray,  1=angles, 2=RefArray, 3=TransArray, 4=Reflectance_AVG] (1,2,3 are not average so they probably wont work anyway)
 	
 	### If I ever decide to make a MaterialStorage class, keep in mind that data columns 2,3 refer to complex narray and earray, so I'd need to be sure
 	### to pipe the complex array into my program.  This brings up a complex truncation error if I try as currently written (3/29/12)

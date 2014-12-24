@@ -194,12 +194,19 @@ def vector_com_tmm(pol, n_matrix, d_list, angle, vacuum_wavelengths):
     outvals = []
     for (lamindex, lam) in enumerate(vacuum_wavelengths):
         n_of_lam = n_matrix[:, lamindex]
-        outvals.append( coh_tmm(pol, n_of_lam, d_list, angle, lam) )
+        outvals.append( coh_tmm(pol, 
+                                n_of_lam, 
+                                d_list,
+                                angle, 
+                                lam,
+                                dict_output=False)  #<<< IMPORTANT FOR MAKING PANEL
+                        )
         
     return DataFrame(outvals, columns=header, index=vacuum_wavelengths)    
     
 
-def coh_tmm(pol, n_list, d_list, th_0, lam_vac):
+# Changed option for dict_output (other modules herein use dict output, so only vector_com_tmm needs)
+def coh_tmm(pol, n_list, d_list, th_0, lam_vac, dict_output=True):
     """
     Main "coherent transfer matrix method" calc. Given parameters of a stack,
     calculates everything you could ever want to know about how light

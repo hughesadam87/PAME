@@ -7,25 +7,34 @@ from traits.api import HasTraits, Instance, Array, Property, CArray, Str, Float,
 from traitsui.api import Item, Group, View, Tabbed, Action, HGroup, InstanceEditor, VGroup, ListStrEditor
 
 # Chaco imports
-from chaco.api import ArrayPlotData, Plot, AbstractPlotData, PlotAxis, HPlotContainer, ToolbarPlot
+from chaco.api import ArrayPlotData, Plot, AbstractPlotData, PlotAxis, HPlotContainer, ToolbarPlot, jet
 from chaco.tools.api import *
 from numpy import where
 from interfaces import IView
-from enable.colors import color_table
 from chaco.tools.api import RangeSelection, RangeSelectionOverlay
 from scipy.integrate import simps  #Simpson integration
 
 from pandas import DataFrame
 import numpy as np
 
-color_list=color_table.keys()  #Color table is a dic "red":(1,0,0) for example, so this just returns names which plots understand"
+# Use matplotlib color maps because chaco's confuse me on lineplot
+# http://stackoverflow.com/questions/15140072/how-to-map-number-to-color-using-matplotlibs-colormap
+import matplotlib as mpl
+import matplotlib.cm as cm
 
-class SimView(HasTraits):
-    ''' Used for plotting fiber data.  Either reflectance, transmittance or averaged
-    reflectance.  Should really be called FiberView or something.'''
+class OpticalView(HasTraits):
+    """ Multiple lineplots for optics in Stack for attributes like Reflectance, Tramission etc...
+    
+    Reflectance data is already stored as a panel, but to be consistent with simulation and legacy
+    design, uses numpy arrays.  (IView)
+    
+    Uses update methods rather than delegating to StackData so it can be used independtly, although
+    such an interface is probably never going to be used.  If it ends up simplifying things to just
+    let the data in here have access to the opticstack panel from sim_traits, just do that.
+    """
     implements(IView)
 
-    name=Str('Test')
+    name=Str('Test') #??
 
     Refplot = Instance(Plot)
     Transplot = Instance(Plot)             #Traits are populated on update usually
@@ -36,26 +45,33 @@ class SimView(HasTraits):
 
     data = Instance(ArrayPlotData)
 
-    xarray=Array()
+    xarray=Array() #Wavelengths
     angles=Array()
+        
     RefArray=Array()
     TransArray=Array()
-    AvgArray=Array()
+    Reflectance_AVG=Array()
 
-    traits_view = View(
-        Tabbed(
-            Item('Refplot', editor=ComponentEditor(), dock='tab', label='Reflectance'),
-            Item('Transplot', editor=ComponentEditor(), dock='tab', label='Transmittance'), 
-            Item('Avgplot', editor=ComponentEditor(), dock='tab', label='Theta averaged'),		
-            show_labels=False         #Side label not tab label
-            ),
-        width=800, height=600,
-        resizable=True
-    )
-
-    view2 = View( Item('chooseplot', label='Choose selected plot', show_label=False, style='custom'),
+    # Radio button View
+    traits_view = View( Item('chooseplot', 
+                             label='Choose selected plot', 
+                             show_label=False, 
+                             style='custom'),
                   Item('selected', show_label=False, editor=ComponentEditor()),
                   width=800, height=600, resizable=True   )
+
+    # Tabs
+    #tabbed_view = View(
+        #Tabbed(
+            #Item('Refplot', editor=ComponentEditor(), dock='tab', label='Reflectance'),
+            #Item('Transplot', editor=ComponentEditor(), dock='tab', label='Transmittance'), 
+            #Item('Avgplot', editor=ComponentEditor(), dock='tab', label='Theta averaged'),		
+            #show_labels=False         #Side label not tab label
+            #),
+        #width=800, height=600,
+        #resizable=True
+    #)
+
 
     def _get_selected(self): 
         if self.chooseplot == 'Reflectance': 
@@ -66,47 +82,57 @@ class SimView(HasTraits):
             return self.Avgplot
 
     def create_plots(self):
-        self.Refplot = ToolbarPlot(self.data)
-#        self.Transplot= ToolbarPlot(self.data)
-#        self.Avgplot= ToolbarPlot(self.data)
+        """ Creates several toolbar plots"""
+        self.Refplot = ToolbarPlot(self.data) #Requires access to arrayplotdata
+        self.Transplot= ToolbarPlot(self.data)
+        self.Avgplot= ToolbarPlot(self.data)
 
-        print self.RefArray.shape
-        
-        import matplotlib.pyplot as plt
+        print self.RefArray.shape, 'in create plot', self.Refplot
+
+        # http://stackoverflow.com/questions/15140072/how-to-map-number-to-color-using-matplotlibs-colormap
+        norm = mpl.colors.Normalize(vmin=self.angles[0], vmax=self.angles[-1])
+        cmapper = cm.ScalarMappable(norm=norm, cmap=cm.jet ).to_rgba #THIS IS A FUNCTION
 
         for i, angle in enumerate(self.angles):
-            try:
-                color=color_list[i]  #if somehow there are more lines than available colors (151)
-            except IndexError:
-                color='blue'
-                
+            
+            linecolor = cmapper(angle)
+
 #            print self.RefArray[i,:], self.RefArray[i,:].shape, type(self.RefArray[i,:]), np.isnan(np.sum(self.RefArray[i,:]))
             self.data.set_data(('RTheta' + str(i)), self.RefArray[i,:])
-
-            print self.data.get_data(('RTheta' + str(i)))
             
-            plt.plot(self.xarray, self.RefArray[i,:])
+#            plt.plot(self.xarray, self.RefArray[i,:])
 
             self.Refplot.plot( ("x", ('RTheta' + str(i))), 
-                               name=('%.2f'% angle ))
+                               name=('%.2f'% angle ),
+                               color=linecolor)
 
-#            self.data.set_data(('TTheta' + str(i)), self.TransArray[i,:])
-#            self.Transplot.plot( ("x", ('TTheta' + str(i))), 
-#                                 name=('%.2f' % angle))
+            self.data.set_data(('TTheta' + str(i)), self.TransArray[i,:])
+            self.Transplot.plot( ("x", ('TTheta' + str(i))), 
+                                 name=('%.2f' % angle),
+                                 color=linecolor)
 
-#        self.Avgplot.plot( ("x", 'Avg'), name='Averaged Angles', color='red' )
-
-        plt.show()
+        self.Avgplot.plot( ("x", 'Avg'), name='Averaged Angles', color='red' )
 
         self.add_tools_title(self.Refplot, 'Reflectance')
         self.add_tools_title(self.Transplot, 'Transmittance')
- #       self.add_tools_title(self.Avgplot, 'Averaged Reflectance')
+        self.add_tools_title(self.Avgplot, 'Averaged Reflectance')
+    
 
     def add_tools_title(self, plot, title):
         '''Used to add same tools to multiple plots'''
         plot.title = title
         plot.padding = 50
+        
+        # Legend settings
+        # http://code.enthought.com/projects/files/ETS3_API/enthought.chaco.legend.Legend.html
+        plot.legend.labels = list([i for i in self.angles]) #Sort numerically, not alphabetically
         plot.legend.visible = True
+        plot.legend.bgcolor = (.5,.5,.5) #gray
+        plot.legend.border_visible = True
+        plot.legend.resizable = 'hv'
+
+        
+        
 
         # Attach some tools to the plot
         plot.tools.append(PanTool(plot))
@@ -114,12 +140,13 @@ class SimView(HasTraits):
 #		plot.overlays.append(RangeSelectionOverlay(component=plot))
         plot.overlays.append(zoom)
 
-    def update(self, xarray, anglearray, RefArray, TransArray, AvgArray):   
+    def update(self, xarray, anglearray, RefArray, TransArray, Reflectance_AVG):   
+        print 'UPDATING OPTIC VIEW'
         self.xarray=xarray
         self.angles=anglearray
         self.RefArray=RefArray
         self.TransArray=TransArray
-        self.AvgArray=AvgArray
+        self.Reflectance_AVG=Reflectance_AVG
 
         # Totally makes new dat and redraws plots instead of updating data.  Otherwise, need 5 array
         # plot data objects and speed increase is minimal
@@ -127,18 +154,19 @@ class SimView(HasTraits):
                                   angs=self.angles, 
                                   Ref=self.RefArray, 
                                   Trans=self.TransArray, 
-                                  Avg=self.AvgArray)
+                                  Avg=self.Reflectance_AVG)
         self.create_plots()
 
     def get_sexy_data(self):
-        '''Returns the data in a list that can be immediately read back in another instance of simview.  
+        '''Returns the data in a list that can be immediately read back in another instance of opticview.  
         Note this is not the same as the arrayplotdata getdata() function'''
-        return [self.xarray, self.angles, self.RefArray, self.TransArray, self.AvgArray]
+        return [self.xarray, self.angles, self.RefArray, self.TransArray, self.Reflectance_AVG]
 
     def set_sexy_data(self, data_list):
         '''Takes in data formatted deliberately from "get_sexy_data" and forces an update'''
         self.update(data_list[0], data_list[1], data_list[2], data_list[3], data_list[4])
 
+    # Legacy: gets average T and R values 
     def get_dataframe(self):
         ''' Returns dataframe of data for easier concatenation into a runpanel dataframe used by
         simulations'''
@@ -154,8 +182,6 @@ class SimView(HasTraits):
         ravg=np.mean(self.RefArray, axis=0)
         d.update({'Ravg':ravg, 'Tavg':tavg})
         return DataFrame(d, index=self.xarray)
-
-
 
 
 class MaterialView(HasTraits):
@@ -230,10 +256,10 @@ class MaterialView(HasTraits):
 
 
     def togimag(self):      #NOT SURE HOW TO QUITE DO THIS
-        print 'hi'
+        print 'togimag not supported!!'
 
     def togreal(self):
-        print 'hi'
+        print 'togimag not supported!!'
 
     def update(self, xarray, earray, narray, xunit):    
         '''Method to update plots; draws them if they don't exist; otherwise it simply updates the data'''     
@@ -254,7 +280,7 @@ class MaterialView(HasTraits):
     ####### USED FOR SIMULATION STORAGE MOSTLY #####
 
     def get_sexy_data(self):
-        '''Returns the data in a list that can be immediately read back in another instance of simview.  Note this is not the same as the arrayplotdata getdata() function'''
+        '''Returns the data in a list that can be immediately read back in another instance of opticview.  Note this is not the same as the arrayplotdata getdata() function'''
         return [self.xarray, self.ereal, self.nreal, self.eimag, self.nimag]
 
     def set_sexy_data(self, data_list):
@@ -377,7 +403,7 @@ class ScatterView(HasTraits):
         self.sigplot.request_redraw()
 
     def get_sexy_data(self):
-        '''Returns the data in a list that can be immediately read back in another instance of simview.  Note this is not the same as the arrayplotdata getdata() function'''
+        '''Returns the data in a list that can be immediately read back in another instance of opticview.  Note this is not the same as the arrayplotdata getdata() function'''
         return [self.xarray, self.scatarray, self.absarray, self.extarray]
 
     def set_sexy_data(self, data_list):

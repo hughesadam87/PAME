@@ -6,7 +6,7 @@ from traits.api import *
 from traitsui.api import *
 from enable.component_editor import ComponentEditor
 from sim_traits import BasicReflectance
-from basicplots import SimView
+from basicplots import OpticalView
 from layer_editor import LayerEditor
 from main_parms import FiberParms, SpecParms
 from interfaces import ISim, ILayer, IMaterial, IStorage
@@ -66,6 +66,7 @@ class GlobalScene(HasTraits):
 
     current_state = Instance(ISim)
     opticstate = Instance(ISim)
+    opticview = DelegatesTo('opticstate')
 
     save=Button
     load=Button
@@ -83,7 +84,7 @@ class GlobalScene(HasTraits):
         
     def _refresh_fired(self):
         print 'refresh fired'
-        self.opticstate.update_simview()
+        self.opticstate.update_opticview()
         
     def _outdir_default(self):
         return os.path.join( os.path.abspath('.'),'Simulations')
@@ -164,6 +165,9 @@ class GlobalScene(HasTraits):
                       ),
                     Include('summarygroup'),
                     ),
+                Item('opticview', 
+                     style='custom',
+                     show_label=False),
         Tabbed(
             Include('fibergroup'), 
             Include('layergroup'),
@@ -192,11 +196,13 @@ class GlobalScene(HasTraits):
         self.sync_trait('layereditor', self.opticstate, 'layereditor')
 
       #self.simulations.append(LayerVfracEpsilon(base_app=self))   #Pass self to a simulation environment
-        self.simulations.append(LayerVfrac(base_app=self, outname='Layersim0'))   #Pass self to a simulation environment
+        self.simulations.append(LayerVfrac(base_app=self,
+                                           outname='Layersim0'))   #Pass self to a simulation environment
         
     ### Store copy of current simulation 
     def new_sim(self): 
-        self.simulations.append(LayerVfrac(base_app=self, outname='Layersim'+str(len(self.simulations))))
+        self.simulations.append(LayerVfrac(base_app=self, 
+                                           outname='Layersim'+str(len(self.simulations))))
     
     def save_sim(self): 
         self.selected_sim.output_simulation(self.outdir)
@@ -234,8 +240,8 @@ class GlobalScene(HasTraits):
     def compute_optics(self):
     #	self.opticstate.update_R()   #FOR SOME REASON EVEN THOUGH I UPDATE THE STACK WHEN LAYERS ARE CHANGED, IT ONLY UNDERSTANDS WHEN LAYERS ARE REMOVED ORA DDED
         print 'showing reflectance'
-        self.opticstate.update_simview()
-        self.opticstate.simview.edit_traits(view='view2')
+        self.opticstate.update_opticview()
+        self.opticstate.opticview.edit_traits(view='viradio_viewew2')
     #	pass
 
 def main():
@@ -244,7 +250,6 @@ def main():
     
     
     popup=GlobalScene()
-#    popup.opticstate.update_simview() #Necessary?
     popup.configure_traits()    
     
     

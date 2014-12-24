@@ -35,10 +35,17 @@ class SpecParms(HasTraits):
         ### trait_get is shortcut to return dic if the keys are adequate descriptors for output
         return self.trait_get('x_start', 'x_end', 'x_increment', 'x_samples')
 
-    def _conv_default(self): return SpectralConverter(input_array=self.lambdas, input_units='Nanometers')
-    def _lambdas_default(self): return linspace(300,800,100)
-    def _x_unit_default(self): return 'Nanometers'
-    def _valid_units_default(self): return self.conv.valid_units
+    def _conv_default(self): 
+        return SpectralConverter(input_array=self.lambdas, input_units='Nanometers')
+    
+    def _lambdas_default(self): 
+        return linspace(300,800,100)
+
+    def _x_unit_default(self): 
+        return 'Nanometers'
+
+    def _valid_units_default(self): 
+        return self.conv.valid_units
 
     #@cached_property
     def _get_x_samples(self): return self.lambdas.shape[0]
@@ -55,10 +62,12 @@ class SpecParms(HasTraits):
         self.lambdas = self.conv.output_array
 
     #@cached_property
-    def _get_xstart(self): return self.lambdas[0]
+    def _get_xstart(self): 
+        return self.lambdas[0]
 
     #@cached_property
-    def _get_xend(self):  return self.lambdas[-1]
+    def _get_xend(self):  
+        return self.lambdas[-1]
 
     def _set_xstart(self, xstart): 
         self.lambdas=linspace(xstart, self.xend, num=self.x_samples)
@@ -86,7 +95,11 @@ class FiberParms(HasTraits):
     Dcore=Float(62.5)  #um
     Rcore=Property(Float, depends_on=['Dcore'])
 
-    angle_start=Float(.5);  angle_stop=Float();	angle_inc=Float(.5)
+    angle_start = Float(.5)
+    angle_stop = Float()
+    angle_inc = Float(.5)
+    angle_avg = Enum('Equal', 'Gupta') #Why not in fiberparms
+    
 
     ### Used to compute hypothetical max angle capacity, but are not actually used in iteration over angle start-stop
     NA=Float(.275)
@@ -102,9 +115,14 @@ class FiberParms(HasTraits):
 
     def get_usefultraits(self):
         ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
-        traitdic={'Optical Configuration':self.Config, 'Mode':self.Mode, 'Core Diameter':self.Dcore, 
-                  'Numerical Aperature':self.NA, 'Critical Angle':self.critical_angle, 'Angle Min':self.angle_start, 
-                  'Angle Max':self.angle_stop,'Angle Inc.':self.angle_inc}
+        traitdic={'Optical Configuration':self.Config, 
+                  'Mode':self.Mode, 
+                  'Core Diameter':self.Dcore, 
+                  'Numerical Aperature':self.NA, 
+                  'Critical Angle':self.critical_angle, 
+                  'Angle Min':self.angle_start, 
+                  'Angle Max':self.angle_stop,
+                  'Angle Inc.':self.angle_inc}
 
         if self.Config=='Transmission':
             l=self.Lregion
@@ -114,7 +132,8 @@ class FiberParms(HasTraits):
         return traitdic
 
 
-
+    # VIEW
+    # -------------
 
     SharedGroup =Group(
         HGroup(
@@ -125,6 +144,7 @@ class FiberParms(HasTraits):
             Item('critical_angle', label='Critical Angle')
             ),
         HGroup(
+            Item('angle_avg', label='Averaging'),
             Item('angle_start', label='Angle Start'), 
             Item('angle_stop', label='Angle End'), 
             Item('angle_inc', label='Angle Increment'),
