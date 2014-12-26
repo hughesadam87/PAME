@@ -3,7 +3,6 @@ from traitsui.api import *
 import sys
 import math
 from numpy import empty, array, conj, inf
-import layer_solver as ls
 from basicplots import OpticalView
 from main_parms import SpecParms, FiberParms
 from interfaces import ISim, ILayer

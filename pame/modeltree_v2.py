@@ -34,6 +34,12 @@ class MaterialList ( HasTraits ):
 # Create an empty view for objects that have no data to display:
 no_view = View()
 
+# Show's name in view panel for nodes (ie if use clicks model node)
+# Why isn't working for some of them?
+nodeview =  View( ['name'], 
+                  style='readonly'
+                  )
+
 # Define the TreeEditor VIEW used to display the hierarchy:
 tree_editor = TreeEditor(
     nodes = [
@@ -43,7 +49,7 @@ tree_editor = TreeEditor(
                   auto_open = True,
                   label     = '=All Materials',
                   view      = no_view,
-#                  add       = [ Category ],
+                  name      = 'Material models, files and databases',
                   ),        
         
         # Second level (models, files, database)
@@ -51,6 +57,7 @@ tree_editor = TreeEditor(
                   auto_open = False,
                   children  = 'ModelCategories',   #Trait
                   label     = '=Models',
+                  name      = 'Material models: Drude etc...', # X NAMES DONT WORK EVEN IN NODEVIEW                  
                   view      = no_view,
                   add       = [ Category ],
                   ),
@@ -59,6 +66,7 @@ tree_editor = TreeEditor(
                   auto_open = False,
                   children  = 'FileCategories',   #Trait
                   label     = '=Files',
+                  name      = 'Material from files',                  
                   view      = no_view,
                   add       = [ Category ],
                   ),
@@ -77,19 +85,13 @@ tree_editor = TreeEditor(
                   auto_open = True,
                   children  = 'Materials',
                   label     = 'name',
-                  view      = View( [ 'name' ] ),
+                  view      = nodeview,
                   add       = [ IAdapter ]
                   ),
 
         TreeNode( node_for  = [ IAdapter ],
                   auto_open = True,
                   label     = 'name',
-                  # LET THE ADAPTER HANDLE ITS OWN VIEW
-      #            view      = View( [ 'preview',
-      #                                'name', 
-      #                                'source',
-      #                                'notes',
-      #                                 ], style='custom' )     #TRAITS FROM IADAPTER OBJECT
                  )
             ],
         selection_mode='extended',

@@ -121,7 +121,9 @@ class NK_Delimited(BasicFile):
         self.file_n=ns
         self.file_x=lams
 
-    traits_view=View(Item('header', style='readonly'), Item('mviewbutton'), Item('thefile') )
+    traits_view=View(Item('header', style='readonly'),
+                     Item('mviewbutton'),
+                     Item('thefile') )
 
 
 class SopraFile(BasicFile):  

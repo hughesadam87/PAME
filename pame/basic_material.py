@@ -44,7 +44,8 @@ class BasicMaterial(HasTraits):
     allbutt=Button
 
     basic_group=VGroup( Item('mat_name', label='Material Name', style='simple'),
-                        Item('mviewbutton', label='Show Material'), Item('allbutt', label='Show allview'),
+                        Item('mviewbutton', label='Show Material'), 
+                        Item('allbutt', label='Show allview'),
                        #Item('specparms', style='custom'),  #INCLUDE FOR TESTING PURPOSES
                                 )
 
@@ -70,12 +71,16 @@ class BasicMaterial(HasTraits):
     def _x_unit_changed(self): 
         self.update_mview()
 
-    def update_data(self): pass
+    # ABC METHOD
+    def update_data(self): 
+        pass
+#        raise NotImplementedError('Update_data ABC method, not defined for %s'\
+#                                  % self.__class__.__name__)
 
     def update_mview(self): 
         self.mview.update(self.lambdas, self.earray, self.narray, self.x_unit)	
-        self.eplot=self.mview.eplot
-        self.nplot=self.mview.nplot
+        self.eplot = self.mview.eplot
+        self.nplot = self.mview.nplot
 
     def get_usefultraits(self):
         """Dictionary of various traits that are useful for outputting as parameters. Overwrite

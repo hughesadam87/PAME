@@ -34,13 +34,11 @@ class BasicAdapter(HasTraits):
     basicgroup=Group(
         Item('name', style='readonly'),   #THESE ARENT READ ONLY!
         Item('source', style='readonly'),
-        Item('notes', style='readonly')
+        Item('notes'),
+        Item('preview'), 
     )
 
-    traitsview= View(Include('basicgroup'),
-                     Item('matobject', 
-                          style='custom',
-                          show_label=False),                     
+    traitsview= View(Include('basicgroup'),              
                      resizable=True, width=400, height=200)
 
 
