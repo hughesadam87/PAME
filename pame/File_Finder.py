@@ -69,7 +69,8 @@ class LiveSearch ( HasTraits ):
     ValidTypes =DictStrList({
 #	    'Python': [ '.py' ],
             'Sopra':      [ '.nk'],
-            'Other':    [ '.txt', '.dat' ],   #CAN EDIT MODULE WHICH CONTROLS THIS TO ADD "ANY" OPTION, OR MAYBE FILTER = NONE OPTION
+            'XNK':    [ '.txt', '.dat' ],   #CAN EDIT MODULE WHICH CONTROLS THIS TO ADD "ANY" OPTION, OR MAYBE FILTER = NONE OPTION
+            'XNK_csv': ['.csv']
 #	    'Java':   [ '.java' ],
 #	    'Ruby':   [ '.rb' ]
     })
@@ -134,13 +135,16 @@ class LiveSearch ( HasTraits ):
                       ),
                 Item( 'recursive' ),
                 Item( 'type_range', label = 'Type' ),  #HERE IS FILE TYPE
-                Item( 'search',
-                      id     = 'search',
-                      width  = 0.5,
-                      label = 'Search for infile string',
-                      editor = HistoryEditor( auto_set = True )
-                      ),
-                Item( 'case_sensitive' )
+
+                # COMMENTED OUT STRING SEARCH, DONT DELETE THIS LETS ME SEARCH FILES 
+                # MUST ALSO UNCOMMENT 2 METHODS AT END OF FILE
+#                Item( 'search',
+#                      id     = 'search',
+#                      width  = 0.5,
+#                      label = 'Search for infile string',
+#                      editor = HistoryEditor( auto_set = True )
+#                      ),
+#                Item( 'case_sensitive' )
                 ),
             VSplit(
                 VGroup(
@@ -160,8 +164,14 @@ class LiveSearch ( HasTraits ):
                             Item( 'selected_summary', editor = TitleEditor(), show_label=False ),
                             Item( 'my_files',
                                   editor=file_editor, show_label=False),
-                            HGroup( Item('Remove', label='Remove Selected', show_label=False, enabled_when='len(my_files) > 0'),
-                                    Item('RemoveAll', label='Remove All Stored', show_label=False, enabled_when='len(my_files) > 0') )
+                            HGroup( Item('Remove', 
+                                         label='Remove Selected',
+                                         show_label=False, 
+                                         enabled_when='len(my_files) > 0'),
+                                    Item('RemoveAll', 
+                                         label='Remove All Stored',
+                                         show_label=False,
+                                         enabled_when='len(my_files) > 0') )
                             ),
                         ),
                     ),

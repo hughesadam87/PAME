@@ -15,7 +15,7 @@ class NanoSphere(SphericalInclusions_Disk):
     '''Technically a nanosphere always needs a medium anyway, so make it composite object'''
     from mie_traits_v2 import sphere_full, sphere
     from material_models import Dispwater
-    from material_files import NK_Delimited
+    from material_files import XNKFile
 
     mat_name=Str('Bare Nanosphere')
     FullMie=Instance(IMie)  #Used to compute scattering properties	
@@ -60,10 +60,14 @@ class NanoSphere(SphericalInclusions_Disk):
     )
 
 
-    def _FullMie_default(self): return self.sphere_full()			
+    def _FullMie_default(self): 
+        return self.sphere_full()			
+    
     def _CoreMaterial_default(self):  ### Overwrite as package data eventually
-        return self.NK_Delimited(thefile='./Optical_metal_data/Converted_Files/JC_Gold.txt')
-    def _MediumMaterial_default(self): return self.Dispwater()#specparms=self.specparms)
+        return self.XNKFile(file_path='./Optical_metal_data/Converted_Files/JC_Gold.txt')
+
+    def _MediumMaterial_default(self): 
+        return self.Dispwater()#specparms=self.specparms)
 
 
 ######## DRUDE MODELS BELOW MAY BE DEPRECATES	

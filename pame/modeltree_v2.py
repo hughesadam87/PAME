@@ -12,7 +12,7 @@ from interfaces import IAdapter
 from File_Finder import LiveSearch
 
 from simple_materials_adapter import BasicAdapter, SellmeirAdapter, ConstantAdapter, \
-    DrudeBulkAdapter, SopraFileAdapter, NKDelimitedAdapter
+    DrudeBulkAdapter, SopraFileAdapter, XNKFileAdapter
 
 #http://code.enthought.com/projects/traits/docs/html/TUIUG/factories_advanced_extra.html
 
@@ -146,7 +146,7 @@ class Model( HasTraits ):
     def _metals_default(self):
         return [
             DrudeBulkAdapter()
-        ]
+            ]
 
     # Files managed by dictionary here
     @on_trait_change('FileSearch.my_files')
@@ -160,11 +160,17 @@ class Model( HasTraits ):
             extension = afile.file_ext  
             file_id = afile.fileclass  #Specifies which filetype trait object this file should fit (Sopra)
 
-            if file_id=='Other': 
-                self.FileDic[afile] = NKDelimitedAdapter(thefile=full_path)
+            if file_id=='XNK': 
+                self.FileDic[afile] = XNKFileAdapter(file_path=full_path)
 
-            if file_id=='Sopra': 
-                self.FileDic[afile] = SopraFileAdapter(thefile=full_path)
+            elif file_id == 'XNK_csv':
+                self.FileDic[afile] = XNKFileAdapter(file_path=full_path, csv=True)                
+
+            elif file_id=='Sopra': 
+                self.FileDic[afile] = SopraFileAdapter(file_path=full_path)
+
+            else:
+                raise Exception('What kind of file id is %s' % file_id)
 
         # When entries in 'my_files' are removed, this syncs the dictionary
         for key in self.FileDic.keys():
@@ -173,8 +179,11 @@ class Model( HasTraits ):
 
         self.soprafiles= [self.FileDic[k] for k in self.FileDic.keys() if
                           k.fileclass =='Sopra']
+
+        # nk files can be csv too, so have this workaround
         self.nkfiles= [self.FileDic[k] for k in self.FileDic.keys() if
-                       k.fileclass =='Other']
+                       k.fileclass in ['XNK', 'XNK_csv']]
+
         self.update_tree()
 
     def update_tree(self): 

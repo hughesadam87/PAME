@@ -1,4 +1,4 @@
-from traits.api import Str, HasTraits, Instance, Button, implements, File, Property
+from traits.api import Str, HasTraits, Instance, Button, implements, File, Property, Bool
 from traitsui.api import View, Item, Group, Include
 from interfaces import IMaterial, IAdapter
 from os.path import basename
@@ -72,6 +72,7 @@ class DrudeBulkAdapter(BasicAdapter):
 
     def populate_object(self):
         self.matobject=self.DrudeBulk()
+
         
 class NKJsonAdapter(BasicAdapter):
     """ Reads data from JSON database.  Json data must be of form:
@@ -83,50 +84,53 @@ class NKJsonAdapter(BasicAdapter):
     
 
 
-class BasicFileAdapter(BasicAdapter):
-    from material_files import BasicFile
+class ABCFileFileAdapter(BasicAdapter):
+    from material_files import ABCFile
     source="N/A"
     notes="Basic File of unknown type"
-    thefile=File
-    matobject=Instance(BasicFile)
-    name=Property(Str, depends_on='thefile')
+    file_path = File
+    matobject = Instance(ABCFile)
+    name=Property(Str, depends_on='file_path')
 
     def populate_object(self): 
-        self.matobject=self.BasicFile(thefile=self.thefile)
+        self.matobject=self.ABCFile(file_path=self.file_path)
 
     def _get_name(self): 
-        return 'Basic Object:  %s' % basename( self.thefile )
+        return 'Basic Object:  %s' % basename( self.file_path )
     
     def _set_name(self, newname): 
         self.name = newname
 
 
-class SopraFileAdapter(BasicFileAdapter):
+class SopraFileAdapter(ABCFileFileAdapter):
     from material_files import SopraFile
     
     source="Sopra file"
     notes="http://www.sspectra.com/sopra.html"
 
     def _get_name(self): 
-        #return 'Sopra Object:  %s' % basename( self.thefile )
-        return basename(self.thefile)
+        return basename(self.file_path)
     
     def populate_object(self): 
-        self.matobject = self.SopraFile(thefile=self.thefile)
+        self.matobject = self.SopraFile(file_path=self.file_path)
         
 
-class NKDelimitedAdapter(BasicFileAdapter):
-    from material_files import NK_Delimited
-    source="NK_Delmited object"
+class XNKFileAdapter(ABCFileFileAdapter):
+    from material_files import XNKFile, XNKFileCSV
+    csv = Bool(False) 
+    source="NK_Delimited File"
     notes="Assumes real and imaginary parts of the index of refraction in "\
     "delimited columns.  If header present, must be first line and begin with "\
     "a '#' character"
 
     def populate_object(self): 
-        self.matobject = self.NK_Delimited(thefile=self.thefile)
+        if self.csv:
+            self.matobject = self.XNKFileCSV(file_path=self.file_path)            
+        else:
+            self.matobject = self.XNKFile(file_path=self.file_path)
 
     def _get_name(self): 
-        return 'NK Delimited Object:  %s' % basename( self.thefile )
+        return 'NK Delimited Object:  %s' % basename( self.file_path )
 
 
 
