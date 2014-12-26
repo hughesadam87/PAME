@@ -72,6 +72,15 @@ class DrudeBulkAdapter(BasicAdapter):
 
     def populate_object(self):
         self.matobject=self.DrudeBulk()
+        
+class NKJsonAdapter(BasicAdapter):
+    """ Reads data from JSON database.  Json data must be of form:
+    {dataset/filename : {
+         x:xvals, n:nvals, k:kvals
+         }
+    With canonical form N = n + ik
+    """
+    
 
 
 class BasicFileAdapter(BasicAdapter):

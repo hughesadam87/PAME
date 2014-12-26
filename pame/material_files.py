@@ -104,7 +104,7 @@ class BasicFile(BasicMaterial):
 class NK_Delimited(BasicFile):
     """3-coloumns: header is lambdas, N, K"""
     fileid='nk_delim'
-    file_extension='.txt'  #FIX LATER
+    file_extension='.txt'  #FIX LATER (I don't need this...)
 
     def update_file(self):
         self.header_data()
@@ -190,6 +190,8 @@ class SopraFile(BasicFile):
     def header_data(self):
         """Slightly modified for unusual sopra header"""
         f = open(self.thefile, 'r')
+        
+        # Change to readline?
         data = f.readlines()
         firstline = data[0]
         if len(firstline.strip().split()) != 4:         #Crude file format test
