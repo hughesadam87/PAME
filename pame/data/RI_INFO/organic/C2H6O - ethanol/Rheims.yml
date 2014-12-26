@@ -1,0 +1,6 @@
+REFERENCES: "J. Rheims, J Köser and T Wriedt. Refractive-index measurements in the near-IR using an Abbe refractometer, <a href=\"http://dx.doi.org/10.1088/0957-0233/8/6/003\"><i>Meas. Sci. Technol.</i> <b>8</b>, 601-605 (1997)</a>"
+COMMENTS: "20 °C"
+FORMULA:
+    type: 5
+    range: 0.4765 0.83
+    coefficients: 1.35265 0.00306 -2 0.00002 -4

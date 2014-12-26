@@ -1,0 +1,6 @@
+REFERENCES: "I. H. Malitson. Refractive properties of barium fluoride, <a href=\"http://dx.doi.org/10.1364/JOSA.54.000628\"><i>J. Opt. Soc. Am.</i> <b>54</b>, 628-630 (1964)</a>"
+COMMENTS: "25 °C"
+FORMULA:
+    type: 1
+    range: 0.2652 10.346
+    coefficients: 0 0.643356 0.057789 0.506762 0.10968 3.8261 46.3864

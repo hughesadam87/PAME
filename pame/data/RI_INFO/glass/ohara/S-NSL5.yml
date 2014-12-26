@@ -1,0 +1,5 @@
+REFERENCES: "<a href=\"http://www.oharacorp.com/catalog.html\">Ohara Glass Catalog Data</a>"
+FORMULA:
+    type: 2
+    range: 0.32 2.4
+    coefficients: 0 1.04574577 5.8523228E-3 2.39613026E-1 2.36858752E-2 1.1590685 1.31329061E2

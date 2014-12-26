@@ -1,0 +1,6 @@
+REFERENCES: "CR-39 Product Data - PPG Industries"
+COMMENTS: "20 °C"
+DATA:
+    type: n
+    data: |
+        0.58929 1.498

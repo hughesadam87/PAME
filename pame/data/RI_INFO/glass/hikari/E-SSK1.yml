@@ -1,0 +1,5 @@
+REFERENCES: "<a href=\"http://pdf.directindustry.com/pdf/hikari-glass-22741.html\">Hikari Catalog</a>"
+FORMULA:
+    type: 3
+    range: 0.28 2.4
+    coefficients: 2.56935287 -1.03280973E-2 2 1.61803173E-2 -2 3.14456596E-4 -4 -8.91235286E-8 -6 6.08967029E-7 -8

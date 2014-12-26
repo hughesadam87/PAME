@@ -1,0 +1,6 @@
+REFERENCES: "<a href=\"http://refractiveindex.info/download/data/2013/schott-infrared-chalcogenide-glasses-irg26-october-2013-us.pdf\">SCHOTT Infrared Chalcogenide Glasses - IRG 26 Product flyer (Version May 2013)</a>"
+COMMENTS: "20 °C"
+FORMULA:
+    type: 1
+    range: 0.85 12
+    coefficients: 3.18216 3.59677 0.429791 2.33719 59.5544

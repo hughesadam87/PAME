@@ -1,0 +1,6 @@
+REFERENCES: "<a href=\"http://www.cargille.com/specimmerliq.shtml\">CARGILLE Acrylic matching liquid characteristics.</a> August 10, 2004"
+COMMENTS: "25 °C"
+FORMULA:
+    type: 5
+    range: 0.31 1.55
+    coefficients: 1.478419 463182.1E-8 -2 -8.637338E-6 -4

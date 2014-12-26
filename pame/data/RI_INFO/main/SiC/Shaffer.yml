@@ -1,0 +1,6 @@
+REFERENCES: "P. T. B. Shaffer. Refractive index, dispersion, and birefringence of silicon carbide polytypes, <a href=\"http://dx.doi.org/10.1364/AO.10.001034\"><i>Appl. Opt.</i> <b>10</b>, 1034-1036 (1971)</a>"
+COMMENTS: "β-SiC (zincblende crystal structure)"
+FORMULA:
+    type: 5
+    range: 0.467 0.691
+    coefficients: 2.5538 0.0342 -2

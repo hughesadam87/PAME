@@ -1,0 +1,6 @@
+REFERENCES: "<a href=\"http://www.oharacorp.com/catalog.html\">Ohara Glass Catalog Data</a>"
+COMMENTS: "i-line glass"
+FORMULA:
+    type: 2
+    range: 0.31 2.4
+    coefficients: 0 1.22310794 8.97805333E-3 8.11217929E-2 4.45756957E-2 3.21400939E-1 4.05962247E1

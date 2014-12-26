@@ -1,0 +1,6 @@
+REFERENCES: "<a href=\"http://www.sumita-opt.co.jp/en/catalog.htm\">Sumita Optical Glass Data Book</a>"
+FORMULA:
+    type: 3
+    range: 0.365 1.548
+    coefficients: 2.2984199 -9.8977917E-3 2 1.0454435E-2 -2 -1.1762246E-5 -4 2.220678E-5 -6 -1.2212713E-6 -8
+COMMENTS: "Glass for Precision Molding"

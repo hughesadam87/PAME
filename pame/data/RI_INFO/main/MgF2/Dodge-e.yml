@@ -1,0 +1,6 @@
+REFERENCES: "M. J. Dodge. Refractive properties of magnesium fluoride, <a href=\"http://dx.doi.org/10.1364/AO.23.001980\"><i>Appl. Opt.</i> <b>23</b>, 1980-1985 (1984)</a>"
+COMMENTS: "19 °C. Extraordinary ray (e)."
+FORMULA:
+    type: 1
+    range: 0.2 7.0
+    coefficients: 0 0.41344023 0.03684262 0.50497499 0.09076162 2.4904862 23.771995

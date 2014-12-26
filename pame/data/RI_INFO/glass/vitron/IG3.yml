@@ -1,0 +1,14 @@
+REFERENCES: "<a href=\"http://refractiveindex.info/download/data/2007/1219schott_ig3.pdf\">Infrared Chalcogenide Glass IG3 Datasheet (2007)</a>"
+DATA:
+    type: n
+    data: |
+        3.0 2.8111
+        4.0 2.8034
+        5.0 2.7993
+        6.0 2.7965
+        7.0 2.7941
+        8.0 2.7919
+        9.0 2.7896
+        10 2.7870
+        11 2.7841
+        12 2.7810

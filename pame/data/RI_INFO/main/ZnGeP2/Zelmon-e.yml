@@ -1,0 +1,6 @@
+REFERENCES: "D. E. Zelmon et al.. Refractive-index measurements and Sellmeier coefficients for zinc germanium phosphide from 2 to 9 µm with implications for phase matching in optical frequency-conversion devices, <a href=\"http://dx.doi.org/10.1364/JOSAB.18.001307\"><i>J. Opt. Soc. Am. B</i> <b>18</b>, 1307-1310 (2001)</a>"
+COMMENTS: "Extraordinary ray (e); 21–22 °C."
+FORMULA:
+    type: 2
+    range: 2 9
+    coefficients: 7.0929 1.8649 0.41468 0 0.84052 1 452.05

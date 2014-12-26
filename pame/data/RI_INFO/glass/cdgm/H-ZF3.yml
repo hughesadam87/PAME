@@ -1,0 +1,5 @@
+REFERENCES: "<a href=\"http://www.cdgmgd.com/en/asp/\">CDGM Optical Glass Products Database</a>"
+FORMULA:
+    type: 3
+    range: 0.365 0.7065
+    coefficients: 2.8508499 -1.323461E-2 2 2.9415325E-2 -2 2.5542666E-3 -4 -2.1232133E-4 -6 2.2261936E-5 -8

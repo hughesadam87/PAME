@@ -1,0 +1,12 @@
+﻿2014-07-01
+  new data
+    ITO (In2O3-SnO2): data provided by Tobias König
+      other/mixed crystals/In2O3-SnO2/Konig.yml
+      other/mixed crystals/In2O3-SnO2/Konig-EMA.yml
+    PVP (polyvinylpyrrolidone (C6H9NO)n): data provided by Tobias König!
+      organic/(C6H9NO)n - polyvinylpyrrolidone/Konig.yml
+    Graphene: data provided by Jan-Willem Weber!
+      main/C/Weber.yml
+  bug fixes
+    glass/ohara/S-BSL7.yml: error in dispersion formula fixed (thanks to Joel Murray)
+    main/Al: removed AgGaSe2 sub-folder (thanks to Joel Murray)

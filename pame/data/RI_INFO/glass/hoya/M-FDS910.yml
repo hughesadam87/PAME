@@ -1,0 +1,5 @@
+REFERENCES: "<a href=\"http://www.hoyaoptics.com/products/document_library.htm\">HOYA Optical Glass Master Datasheet</a>"
+FORMULA:
+    type: 3
+    range: 0.38 1.55
+    coefficients: 3.1659870 -1.3491960E-2 2 4.6499180E-2 -2 2.4714130E-3 -4 -8.6595960E-5 -6 2.7259270E-5 -8
