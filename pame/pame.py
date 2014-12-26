@@ -11,7 +11,7 @@ from layer_editor import LayerEditor
 from main_parms import FiberParms, SpecParms
 from interfaces import ISim, ILayer, IMaterial, IStorage
 from fiberview import FiberView
-from modeltree_v2 import Main
+from modeltree_v2 import Model
 from gensim import LayerVfrac, GeneralSim
 from handlers import WarningDialog
 
@@ -59,7 +59,7 @@ class GlobalScene(HasTraits):
 
     specparms=Instance(SpecParms,())
     fiberparms=Instance(FiberParms,())
-    modeltree=Instance(Main,())
+    modeltree=Instance(Model,())
     lambdas=DelegatesTo('specparms')  #Actually not used except for making it easy to run sims
 
     fview=Instance(FiberView,())     #May want to pass specparms and fiberparms to this later if it requries them

@@ -6,7 +6,7 @@ from interfaces import ILayer, IMaterial
 from traitsui.table_filter \
      import EvalFilterTemplate, MenuFilterTemplate, RuleFilterTemplate, \
      EvalTableFilter
-from modeltree_v2 import Main
+from modeltree_v2 import Model
 from composite_tree import CompositeMain
 from nanotree import NanoMain
 
@@ -14,7 +14,7 @@ from composite_materials_v2 import SphericalInclusions_Disk   #For testing purpo
 from advanced_objects_v2 import NanoSphereShell
 
 class LayerEditor(HasTraits):
-    modeltree=Instance(Main,())
+    modeltree=Instance(Model,())
     compositetree=Instance(CompositeMain,())
     nanotree=Instance(NanoMain,())
 

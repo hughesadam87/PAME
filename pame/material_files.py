@@ -7,27 +7,30 @@ import re, os
 import logging
 
 class BasicFile(BasicMaterial):
-    """ General model to store data from file.  Metadata includes file id, name, header.  Sopra
-    and other file interfaces are built from this.  This will read the contents of the file, and set
+    """ General model to store data from file.  Metadata includes file id, 
+    name, header.  'thefile' must be set on instantiation!!
+    
+    Sopra and other file interfaces are built from this.  This will read the contents of the file, and set
     E and N and interpolate based on x.
     
     Check out file Adapter for how files are stored without storing all their data.
+    (basic_materials_adapter.BasicFileAdapter)
     """
-    source='File'
-    thefile=File() #Shortname? of file
-    file_id=Str()  #Used to identify with methods below.  For example, Sopra is "Sopra"
-    file_extention=Str() #Again, not all files may have this
+    source = 'File'
+    thefile = File() #Shortname? of file
+    file_id = Str()  #Used to identify with methods below.  For example, Sopra is "Sopra"
+    file_extention = Str() #Again, not all files may have this
 
-    header=Str()       #Not all files will have this (CHANGE TO BOOL AND MAKE A GET HEADER METHOD IN GENERAL)
-    headerlist=Property(List, depends_on='header')
-    headerstatus=Bool(False)
-    datalines=List()  #Data stored as lines
-    datalist=Property(List, depends_on='datalines')
+    header = Str()       #Not all files will have this (CHANGE TO BOOL AND MAKE A GET HEADER METHOD IN GENERAL)
+    headerlist = Property(List, depends_on='header')
+    headerstatus = Bool(False)
+    datalines = List()  #Data stored as lines
+    datalist = Property(List, depends_on='datalines')
 
-    xstart=Float()
-    xend=Float()
-    xpoints=Int()
-    default_unit=Str()        #DEFAULT SPECTRAL UNIT IN A FILE
+    xstart = Float()
+    xend = Float()
+    xpoints = Int()
+    default_unit = Str()        #DEFAULT SPECTRAL UNIT IN A FILE
 
     # Store the real data in the file
     file_x = Array()       
@@ -35,6 +38,7 @@ class BasicFile(BasicMaterial):
 
     #FOR NOW THIS DOES NOT INCORPORATE FILE_E BECAUSE OF PROPERTY ISSUES, NEEDS MORE THOUGHT
 
+    # When are file_x, file_n ever changed?
     def _file_x_changed(self): 
         self.update_interp()
         
@@ -46,8 +50,9 @@ class BasicFile(BasicMaterial):
         self.update_file()  
         self.update_mview()
 
+    # Seems like update-file and update_data are one in the same
     def update_file(self): 	
-        pass
+        raise NotImplementedError('BasicFile has no update_file() method.')
 
     def _get_datalist(self):
         """Given the data as a list of lines, turns it into a list of lists"""
@@ -65,20 +70,24 @@ class BasicFile(BasicMaterial):
     def _get_headerlist(self): 
         return self.header.strip().split()
 
+    # Header data actually reads all data, stores header and data separately
     def header_data(self):
-        """Should be general enough to fit all files with comment characters on first line."""
-        f=open(self.thefile, 'r')
-        data=f.readlines()
-        firstline=data[0]
+        """Should be general enough to fit all files with comment 
+        characters on first line."""
+        f = open(self.thefile, 'r')
+        data = f.readlines()
+     
+        # First line is header, rest are data
+        firstline = data[0]
         if re.match('#', firstline):
             self.header=firstline 
             self.headerstatus=True
             data.pop(0)     #IF HEADER FOUND, POP IT OUT
 
-        self.datalines=data  #Datalist is set as property
+        self.datalines = data  #Datalist is set as property
 
     def update_interp(self):
-        '''Method interpolates complex arrays and also reverses when appropriate'''
+        """Method interpolates complex arrays and also reverses when appropriate"""
         if len(self.file_x) != 0:  #If array populated
 
             temp=empty( (self.lambdas.shape), dtype='complex')
@@ -97,7 +106,7 @@ class BasicFile(BasicMaterial):
 
 # What's the difference between NC_Delimited and Sopra?!
 class NK_Delimited(BasicFile):
-    """Format is Lambdas, N, K"""
+    """3-coloumns: header is lambdas, N, K"""
     fileid='nk_delim'
     file_extension='.txt'  #FIX LATER
 
@@ -109,7 +118,8 @@ class NK_Delimited(BasicFile):
             line=self.datalist[i]
             lams[i]=float(line[0])
             ns[i]=complex(float(line[1]), float(line[2]))
-        self.file_n=ns;	self.file_x=lams
+        self.file_n=ns
+        self.file_x=lams
 
     traits_view=View(Item('header', style='readonly'), Item('mviewbutton'), Item('thefile') )
 
@@ -123,15 +133,18 @@ class SopraFile(BasicFile):
     lam_code=Enum(1,2,3,4)     #SOPRA-specific integer code to determine name of the lambda unit
 
     traits_view=View(  
-        Item('thefile', editor=FileEditor() ) , Item('header' ),
+        Item('thefile', editor=FileEditor() ) ,
+        Item('header' ),
         HGroup(
-            Item('xstart', style='readonly') , Item('xend', style='readonly'),	Item('xpoints', style='readonly'),
+            Item('xstart', style='readonly') ,
+            Item('xend', style='readonly'),
+            Item('xpoints', style='readonly'),
             ),
         Item('mviewbutton', label='Show Material', show_label=False),
         Item('default_unit', label='File spectral unit', style='readonly'), 
         Item('x_unit', style='readonly', label='Current spectral unit'),
         resizable=True, buttons=['Undo']
-    )
+        )
 
     def lam_decode(self):
         """Converts sopra unit integer code to BasicFile attributes/metadata"""
@@ -169,7 +182,7 @@ class SopraFile(BasicFile):
             # Changes x values ...
             self.lam_decode()
 
-            ns=empty(len(self.datalist), dtype=complex)
+            ns = empty(len(self.datalist), dtype=complex)
             for i in range(len(self.datalist)):
                 line=self.datalist[i]
                 ns[i]=complex(float(line[0]), float(line[1]))
@@ -177,14 +190,14 @@ class SopraFile(BasicFile):
 
     def header_data(self):
         """Slightly modified for unusual sopra header"""
-        f=open(self.thefile, 'r')
-        data=f.readlines()
-        firstline=data[0]
+        f = open(self.thefile, 'r')
+        data = f.readlines()
+        firstline = data[0]
         if len(firstline.strip().split()) != 4:         #Crude file format test
             self.header='SOPRA FORMAT INCORRECT'
         else:
-            self.header=firstline
-            self.headerstatus=True
+            self.header = firstline
+            self.headerstatus = True
             data.pop(0)     #IF HEADER FOUND, POP IT OUT
 
         self.datalines = data
