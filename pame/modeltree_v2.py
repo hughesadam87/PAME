@@ -239,4 +239,4 @@ class Model( HasTraits ):
 
 # Run the demo (if invoked from the command line):
 if __name__ == '__main__':
-    Main().configure_traits()
+    Model().configure_traits()

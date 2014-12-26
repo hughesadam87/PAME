@@ -73,6 +73,7 @@ class BasicMaterial(HasTraits):
 
     # ABC METHOD
     def update_data(self): 
+        """ Sets n or e arrays.  All subclasses must overwrite this!"""
         pass
 #        raise NotImplementedError('Update_data ABC method, not defined for %s'\
 #                                  % self.__class__.__name__)

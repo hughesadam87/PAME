@@ -70,7 +70,8 @@ class LayerEditor(HasTraits):
 
     ####BUTTONS MOSTLY FOR TESTING, IF YOU COULD HAVE A ROW FACTORY THAT NEW HOW TO ADD AND ASSIGN SPEC PARMS VARIABLE (AKA A ROW FACTOR THAT WAS AN OBJECT FUNCTION, THIS BE BETTER###
 
-    def _selected_layer_default(self): return self.stack[1]
+    def _selected_layer_default(self):
+        return self.stack[1]
 
     def _sync_solvent_changed(self):
         '''This is sloppy because when I change the item in the table, this gets called but not all materials have sync/unsync methods,
@@ -91,7 +92,8 @@ class LayerEditor(HasTraits):
         if self.selected_layer is not None:
             return self.selected_layer.d
 
-    def _set_selected_layer(self, d): self.selected_layer.d=d
+    def _set_selected_layer(self, d): 
+        self.selected_layer.d=d
 
     def _add_basic_fired(self): 
         layer=BasicLayer()
@@ -106,9 +108,12 @@ class LayerEditor(HasTraits):
         self.selected_layer=self.stack[self.selected_index]
 
     def _get_selectedtree(self): 
-        if self.layer_type=='Bulk Material': return self.modeltree
-        if self.layer_type=='Mixed Bulk Materials': return self.compositetree
-        if self.layer_type=='Nanoparticle Objects': return self.nanotree
+        if self.layer_type=='Bulk Material': 
+            return self.modeltree
+        if self.layer_type=='Mixed Bulk Materials':
+            return self.compositetree
+        if self.layer_type=='Nanoparticle Objects': 
+            return self.nanotree
 
     def _remove_fired(self): 
         self.stack.remove(self.selected_layer)
@@ -164,11 +169,14 @@ class LayerEditor(HasTraits):
         return mats
 
     ###  Important to declare these here instead of on the delcaration of the stack; otherwise tableeditor trips ###
-    def _solvent_default(self): return self.stack[-1]
-    def _substrate_default(self): return self.stack[0]
+    def _solvent_default(self): 
+        return self.stack[-1]
+    def _substrate_default(self): 
+        return self.stack[0]
     ######################################################################
 
-    def _get_tablesize(self): return len(self.stack)  #Resets table-end
+    def _get_tablesize(self): 
+        return len(self.stack)  #Resets table-end
 
     def _selected_layer_changed(self):	
         if self.selected_layer is not None:

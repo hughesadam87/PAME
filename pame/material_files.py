@@ -21,12 +21,11 @@ class BasicFile(BasicMaterial):
     file_id = Str()  #Used to identify with methods below.  For example, Sopra is "Sopra"
     file_extention = Str() #Again, not all files may have this
 
-    header = Str()       #Not all files will have this (CHANGE TO BOOL AND MAKE A GET HEADER METHOD IN GENERAL)
-    headerlist = Property(List, depends_on='header')
-    headerstatus = Bool(False)
+    header = Str()     
     datalines = List()  #Data stored as lines
     datalist = Property(List, depends_on='datalines')
 
+    # These are all displayed on Adapter View
     xstart = Float()
     xend = Float()
     xpoints = Int()
@@ -34,7 +33,7 @@ class BasicFile(BasicMaterial):
 
     # Store the real data in the file
     file_x = Array()       
-    file_n = Array()
+    file_n = CArray() #Complex array nr, ni
 
     #FOR NOW THIS DOES NOT INCORPORATE FILE_E BECAUSE OF PROPERTY ISSUES, NEEDS MORE THOUGHT
 
@@ -67,8 +66,6 @@ class BasicFile(BasicMaterial):
                     data.append(newlist)
         return data
 
-    def _get_headerlist(self): 
-        return self.header.strip().split()
 
     # Header data actually reads all data, stores header and data separately
     def header_data(self):
@@ -81,7 +78,6 @@ class BasicFile(BasicMaterial):
         firstline = data[0]
         if re.match('#', firstline):
             self.header=firstline 
-            self.headerstatus=True
             data.pop(0)     #IF HEADER FOUND, POP IT OUT
 
         self.datalines = data  #Datalist is set as property
@@ -172,12 +168,13 @@ class SopraFile(BasicFile):
 
 
     def update_file(self):
-        if self.headerstatus == True:
-            # Leave as is
-            self.lam_code=int(self.headerlist[0])
-            self.xstart=float(self.headerlist[1])
-            self.xend=float(self.headerlist[2])
-            self.xpoints=int(self.headerlist[3])
+        if self.header:
+            headerlist = self.header.strip().split()
+            
+            self.lam_code=int(headerlist[0])
+            self.xstart=float(headerlist[1])
+            self.xend=float(headerlist[2])
+            self.xpoints=int(headerlist[3])
 
             self.file_x = linspace(self.xstart, self.xend, self.xpoints+1) #<< +1?
 
@@ -199,7 +196,6 @@ class SopraFile(BasicFile):
             self.header='SOPRA FORMAT INCORRECT'
         else:
             self.header = firstline
-            self.headerstatus = True
             data.pop(0)     #IF HEADER FOUND, POP IT OUT
 
         self.datalines = data
