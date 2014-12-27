@@ -172,7 +172,7 @@ class Model( HasTraits ):
             elif file_id=='Sopra': 
 
                 # YAML TEST CASE DELETE ME
-                testfile = YamlAdapter(file_path = '/home/glue/Desktop/fibersim/pame/data/RI_INFO/main/Ag/Johnson.yml')
+                testfile = YamlAdapter(file_path = '~/Desktop/fibersim/pame/data/RI_INFO/main/Ag/Johnson.yml')
                 testfile.parse_file() #WHEN IS BEST TIEM TO DO THIS?  DON'T WANT TO READ EVERY FILE 
                 self.riinfofiles = [testfile]
 

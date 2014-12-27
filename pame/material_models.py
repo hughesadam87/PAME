@@ -3,14 +3,24 @@ from traits.api import *
 from traitsui.api import *
 from numpy import array, sqrt, empty
 
-class basic_model(BasicMaterial):	
+class ABCMaterialModel(BasicMaterial):	
     def __init__(self, *args, **kwargs):
-        super(basic_model, self).__init__(*args, **kwargs)
+        super(ABCMaterialModel, self).__init__(*args, **kwargs)
 
     source='Model'
     model_id=Str('')    #model ID references the model used to construct the array
 
-class Constant(basic_model):
+    def update_data_view(self):
+        """ update_data() 
+            update_mview()
+            
+        Should this also update allplots?
+        """
+        self.update_data()
+        self.update_mview()
+        
+
+class Constant(ABCMaterialModel):
     from numpy.lib import scimath as SM
     constant_dielectric=Complex() 
     constant_index=Property(Complex, depends_on='constant_dielectric')
@@ -20,8 +30,7 @@ class Constant(basic_model):
         super(Constant, self).__init__(*args, **kwargs)
 
     def _constant_dielectric_changed(self):
-        self.update_data()
-        self.update_mview()
+        self.update_data_view()
 
     def _constant_dielectric_default(self):
         return complex(1.804535, 0.0)
@@ -54,7 +63,7 @@ class Constant(basic_model):
         resizable=True, width=.5, height=.2,
     )
 
-class Sellmeir(basic_model):
+class Sellmeir(ABCMaterialModel):
     '''Returns sellmeir dispersion of glass'''
     mat_name=Str('Dispersive Glass')
     model_id=Str('sellmeir')   
@@ -78,9 +87,12 @@ class Sellmeir(basic_model):
         super(Sellmeir, self).__init__(*args, **kwargs)
 
 
-    def _a1_changed(self): 
-        self.update_data()
-        self.update_mview()  #NEED TO ADD THIS FOR ALL VARIABLES
+    @on_trait_change('a1, b1, a2, b2, a3, b3')
+    def update_model(self):
+        """ Update data and view.  For trait_change decorator, need to use a new
+        method so I arbirarily named this "update_model()".
+        """
+        self.update_data_view()
 
     def _mat_name_default(self):
         return 'Sellmeir'	
@@ -94,7 +106,7 @@ class Sellmeir(basic_model):
         self.narray = sqrt(1.0 + f1 + f2 + f3)	
 
 
-class Dispwater(basic_model):
+class Dispwater(ABCMaterialModel):
     '''Returns dispersion of water as put in some paper'''
     A=Float(3479.0) 
     B=Float(5.111 * 10**7)  #WHAT UNITS
@@ -104,30 +116,35 @@ class Dispwater(basic_model):
         super(Dispwater, self).__init__(*args, **kwargs)
 
     def _mat_name_default(self): 
-        return  'Dispersive Water'	
+        return 'Dispersive Water'	
     
     def update_data(self): 	
         self.narray=1.32334 + (self.A/ self.lambdas**2 ) - (self.B/self.lambdas**4)   #Entry in nm
 
-    def _A_changed(self): 
-        self.update_data()
-        self.update_mview()
-    
-    def _B_changed(self):
-        self.update_data()
-        self.update_mview()
+    @on_trait_change('A, B')
+    def update_model(self):
+        """ Update data and plot on any of these attributes chaning. """
+        self.update_data_view()
 
     traits_view=View (
-        Group(Include('basic_group'), HGroup(Item('A', style='simple'), Item('B', style='simple'))),		
+        Group(Include('basic_group'),
+              HGroup(Item('A', style='simple'),
+                     Item('B', style='simple')
+                     )
+              ),		
         resizable=True
     )
 
+
 class Metals_plasma(HasTraits):
+    """ ???? """
+    
     metals_dic= DictStrList()
     name=Str()
     lam_plasma=Float()
     lam_collis=Float()
     keys=Any
+    
     def __init__(self, *args, **kwds):
         super(Metals_plasma, self).__init__(*args, **kwds)
         self.metals_dic.key_trait = self.name
@@ -139,38 +156,53 @@ class Metals_plasma(HasTraits):
         self.keys=(self.metals_dic.keys())     #WHAT IS THE TRAIT EQUIVALENT OF THIS?
 
 
-class basic_metal_model(basic_model):
+class ABCMetalModel(ABCMaterialModel):
     lam_plasma=Float()   #Plasma frequency
     lam_collis=Float()   #Collision frequency
     freq_plasma=Float()
     freq_collis=Float()
 
     def __init__(self, *args, **kwargs):
-        super(basic_metal_model, self).__init__(*args, **kwargs)
+        super(ABCMetalModel, self).__init__(*args, **kwargs)
 
-    def _lam_plasma_changed(self): self.update_data; self.update_mview
-    def update_data(self): pass
+    def _lam_plasma_changed(self): 
+        self.update_data_view()           
+        
+    def update_data(self): 
+        pass
 
     #SET FREQENCY/WAVELENGTH TO BE RECIPROCAL OF EACH OTHER LIKE N/E WITH FREQUENCY BEING CANONICAL REPRESENTATION
 
-class DrudeBulk(basic_metal_model):
+class DrudeBulk(ABCMetalModel):
     '''Taken from another gupta paper to test form.  I think this is valid for a metal sheet, not np's'''
 
-    model_id=Str('DrudeBulk')   
+    model_id=Str('DrudeBulk')   # What is the point of this?  Have class name... delete, or put in ABCMaterial???
 
     valid_metals=Enum('gold','silver','aluminum','copper')  #Currently only 
 
     traits_view=View(
-        Item('valid_metals'), Item('mat_name', label='Custom Name'), Item('lam_plasma', style='readonly'), Item('lam_collis', style='readonly'), Item('mviewbutton'), Item('x_unit')
+        Item('valid_metals'), 
+        Item('mat_name', label='Custom Name'),
+        Item('lam_plasma', style='readonly'),
+        Item('lam_collis', style='readonly'),
+        Item('mviewbutton'), 
+        Item('x_unit')
     )
 
     def __init__(self, *args, **kwargs):
         super(DrudeBulk, self).__init__(*args, **kwargs)
 
-    def _valid_metals_default(self): return 'gold'      #NEED TO MAKE METALS DIC THEN DEFAULT TO THAT 
-    def _lam_plasma_default(self): return 1.6826 * 10**-7
-    def _lam_collis_default(self): return 8.9342 * 10**-6
-    def _mat_name_default(self): return 'Drude Metal'
+    def _valid_metals_default(self): 
+        return 'gold'      #NEED TO MAKE METALS DIC THEN DEFAULT TO THAT 
+    
+    def _lam_plasma_default(self): 
+        return 1.6826 * 10**-7
+
+    def _lam_collis_default(self): 
+        return 8.9342 * 10**-6
+
+    def _mat_name_default(self): 
+        return 'Drude Metal'
 
     def _valid_metals_changed(self):
         if self.valid_metals == 'gold':               #These effects may be size dependent, need to look into it.  

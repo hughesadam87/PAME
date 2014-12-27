@@ -1,6 +1,6 @@
 from traits.api import *
 from traitsui.api import *
-from material_models import basic_metal_model, DrudeBulk
+from material_models import ABCMetalModel, DrudeBulk
 from interfaces import IMie, IMaterial, IMixer, IStorage
 from numpy import empty, array
 import math, cmath
@@ -72,7 +72,7 @@ class NanoSphere(SphericalInclusions_Disk):
 
 ######## DRUDE MODELS BELOW MAY BE DEPRECATES	
 
-class DrudeNew(basic_metal_model, NanoSphere):
+class DrudeNew(ABCMetalModel, NanoSphere):
     '''Drude model with interband contributions(From paper "Advanced Drude Model")'''
     mat_name=Str('Drude Gold Nanoparticle')
     model_id=Str('DrudeNew')
