@@ -31,12 +31,12 @@ setup(
     # include materialsdatabases
     package_data={
       'pame.data.SOPRA': ['*'],
-      'pame.data.RI_INFO': ['*'],
+      'pame.data.RI_INFO': ['*']
        },
        
     entry_points = {'console_scripts': 
                     [
-                    'pame = pame.pame:main',
+                    'pame = pame.pamemain:main',
                     ]
                     },
     

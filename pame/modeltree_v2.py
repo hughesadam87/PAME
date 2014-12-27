@@ -16,6 +16,7 @@ from simple_materials_adapter import BasicAdapter, SellmeirAdapter, ConstantAdap
 
 from yamlmaterials import YamlAdapter
 
+from pame import data_dir     
 #http://code.enthought.com/projects/traits/docs/html/TUIUG/factories_advanced_extra.html
 
 # Instances

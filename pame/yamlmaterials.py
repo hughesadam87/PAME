@@ -23,6 +23,8 @@ class YamlMaterial(ABCExternal):
         2. Convert Unit 
         3. Interpolate
         """    
+        
+        # Already a long string, so this seems best way to parse...
         if self.datatype == 'nk':
             x = []
             n = []
