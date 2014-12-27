@@ -8,4 +8,4 @@ numpy
 scipy
 traits
 traitsui
-yaml
+pyyaml
