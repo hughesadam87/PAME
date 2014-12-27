@@ -14,6 +14,8 @@ from File_Finder import LiveSearch
 from simple_materials_adapter import BasicAdapter, SellmeirAdapter, ConstantAdapter, \
     DrudeBulkAdapter, SopraFileAdapter, XNKFileAdapter
 
+from yamlmaterials import YamlAdapter
+
 #http://code.enthought.com/projects/traits/docs/html/TUIUG/factories_advanced_extra.html
 
 # Instances
@@ -117,6 +119,7 @@ class Model( HasTraits ):
     nonmetals  = List(IAdapter)
     metals  = List(IAdapter)
     soprafiles = List(IAdapter)
+    riinfofiles = List(IAdapter)
     nkfiles = List(IAdapter)
     sopradb = List(IAdapter)
 
@@ -167,6 +170,12 @@ class Model( HasTraits ):
                 self.FileDic[afile] = XNKFileAdapter(file_path=full_path, csv=True)                
 
             elif file_id=='Sopra': 
+
+                # YAML TEST CASE DELETE ME
+                testfile = YamlAdapter(file_path = '/home/glue/Desktop/fibersim/pame/data/RI_INFO/main/Ag/Johnson.yml')
+                testfile.parse_file() #WHEN IS BEST TIEM TO DO THIS?  DON'T WANT TO READ EVERY FILE 
+                self.riinfofiles = [testfile]
+
                 self.FileDic[afile] = SopraFileAdapter(file_path=full_path)
 
             else:
@@ -206,6 +215,11 @@ class Model( HasTraits ):
 
             DBCategories = 
             [
+                Category(
+                    name      = 'RIINFO Database',
+                    Materials = self._adaptersort(self.riinfofiles) #CHANGE ME
+                    ),
+                
                 Category(
                     name      = 'Sopra Database',
                     Materials = self._adaptersort(self.soprafiles) #CHANGE ME

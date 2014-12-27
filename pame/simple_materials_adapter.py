@@ -81,28 +81,33 @@ class NKJsonAdapter(BasicAdapter):
          }
     With canonical form N = n + ik
     """
-    
 
-
-class ABCFileFileAdapter(BasicAdapter):
-    from material_files import ABCFile
+class ABCFileAdapter(BasicAdapter):
+    from material_files import ABCExternal
     source="N/A"
     notes="Basic File of unknown type"
     file_path = File
-    matobject = Instance(ABCFile)
+    matobject = Instance(ABCExternal)
     name=Property(Str, depends_on='file_path')
 
+    openfile = Button
+    contents = Str #Only for opening file
+    
+    def _openfile_fired(self):
+        self.contents = open(self.file_path, 'r').read()
+        self.contents.edit_traits(kind='livemodal')      #Modal screws up objects for some reason
+        
     def populate_object(self): 
         self.matobject=self.ABCFile(file_path=self.file_path)
 
     def _get_name(self): 
-        return 'Basic Object:  %s' % basename( self.file_path )
+        return '%s' % basename( self.file_path )
     
     def _set_name(self, newname): 
         self.name = newname
 
 
-class SopraFileAdapter(ABCFileFileAdapter):
+class SopraFileAdapter(ABCFileAdapter):
     from material_files import SopraFile
     
     source="Sopra file"
@@ -115,7 +120,7 @@ class SopraFileAdapter(ABCFileFileAdapter):
         self.matobject = self.SopraFile(file_path=self.file_path)
         
 
-class XNKFileAdapter(ABCFileFileAdapter):
+class XNKFileAdapter(ABCFileAdapter):
     from material_files import XNKFile, XNKFileCSV
     csv = Bool(False) 
     source="NK_Delimited File"

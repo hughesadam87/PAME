@@ -10,7 +10,64 @@ import logging
 class MaterialFileError(Exception):
     """ """
 
-class ABCFile(BasicMaterial):
+class ABCExternal(BasicMaterial):
+    """ Base class for files and database linking (ie external) """
+    # These are all displayed on Adapter View (Original x values of file)
+    xstart = Property(Float)
+    xend = Property(Float)
+    xpoints = Property(Int)
+    file_spec_unit = Str()        
+
+    # Store the real data in the file
+    file_x = Array()       
+    file_n = CArray() #Complex array nr, ni  
+
+    def _get_xstart(self):
+        return self.file_x[0]
+    
+    def _get_xend(self):
+        return self.file_x[-1]
+    
+    def _get_xpoints(self):
+        return len(self.file_x)
+
+    def update_interp(self):
+        """Interpolates complex arrays from file data and sets self.narray (real and imaginary),
+        could also set dielectric function, since BasicMaterial updates when either is changed."""
+#        if len(self.file_x) != 0:  #If array populated
+
+        nps = self.file_n
+        xps = self.file_x
+
+        # Reverse (This happens even in wavelength = nm data, just how files formatted)
+        # Problem is, units like wavenumber should do this by default, so need to build that in...
+        if self.file_x[0] > self.file_x[-1]:  #If last value is larger than first! (Then backwards)
+            nps=nps[::-1] 
+            xps=xps[::-1]    #Syntax to reverse an array 
+            print "Had to sort values in material_files.update_interp\n"
+            print 'nps.shape, xps.shape:', nps.shape, xps.shape
+
+        n = interp(self.lambdas, xps, nps.real, left=0, right=0)
+        k = interp(self.lambdas, xps, nps.imag, left=0, right=0)
+
+        # Create complex array from two real arrays        
+        self.narray = n + 1j*k
+
+        
+    def convert_unit(self):
+        """ If file unit is not same as current unit"""
+        if self.file_spec_unit != self.x_unit:
+            # NEED AT ADD LAYER WHERE COMMON SYNONMYMS FOR WAVELENGTH ARE USED
+            f = SpectralConverter(input_array=self.file_x,
+                                  input_units=self.file_spec_unit,
+                                  output_units=self.x_unit)
+            self.file_x = f.output_array    
+
+    def update_data(self):
+        """ Must set header, set file_x, set file_n and call updated_interp() """
+        pass
+
+class ABCFile(ABCExternal):
     """ General model to store data from file.  
     
     Notes
@@ -35,41 +92,21 @@ class ABCFile(BasicMaterial):
                      #Otherwise, default split()/genfromtxt will split on all whitespace
 
     header = Str()     
-
-    # These are all displayed on Adapter View (Original x values of file)
-    xstart = Property(Float)
-    xend = Property(Float)
-    xpoints = Property(Int)
-    file_spec_unit = Str()        
-
-    # Store the real data in the file
-    file_x = Array()       
-    file_n = CArray() #Complex array nr, ni    
+  
     
     def _file_path_changed(self):
-        """ THIS HANDLES MAIN EVENT! """
+        """ THIS HANDLES MAIN EVENT! 
+           1. Read file Data 
+           2. Convert Unit 
+           3. Interpolate"""
         self.update_data()
         self.update_interp()
         self.update_mview()
     
+    
     # Unit Conversions
     def _file_spec_unit_changed(self):
-        """ If file unit is not same as current unit"""
-        if self.file_spec_unit != self.x_unit:
-            # NEED AT ADD LAYER WHERE COMMON SYNONMYMS FOR WAVELENGTH ARE USED
-            f = SpectralConverter(input_array=self.file_x,
-                                  input_units=self.file_spec_unit,
-                                  output_units=self.x_unit)
-            self.file_x = f.output_array    
-    
-    def _get_xstart(self):
-        return self.file_x[0]
-    
-    def _get_xend(self):
-        return self.file_x[-1]
-    
-    def _get_xpoints(self):
-        return len(self.file_x)
+        self.convert_unit()
     
     def _get_short_name(self):
         return os.path.basename(self.file_path)
@@ -78,28 +115,6 @@ class ABCFile(BasicMaterial):
         """ Must set header, set file_x, set file_n and call updated_interp() """
         pass
         
-    def update_interp(self):
-        """Interpolates complex arrays from file data and sets self.narray (real and imaginary),
-        could also set dielectric function, since BasicMaterial updates when either is changed."""
-#        if len(self.file_x) != 0:  #If array populated
-
-        nps = self.file_n
-        xps = self.file_x
-
-        # Reverse (This happens even in wavelength = nm data, just how files formatted)
-        # Problem is, units like wavenumber should do this by default, so need to build that in...
-        if self.file_x[0] > self.file_x[-1]:  #If last value is larger than first! (Then backwards)
-            nps=nps[::-1] 
-            xps=xps[::-1]    #Syntax to reverse an array 
-            print "Had to sort values in material_files.update_interp\n"
-            print 'nps.shape, xps.shape:', nps.shape, xps.shape
-
-        n = interp(self.lambdas, xps, nps.real, left=0, right=0)
-        k = interp(self.lambdas, xps, nps.imag, left=0, right=0)
-
-        # Create complex array from two real arrays        
-        self.narray = n + 1j*k
-
 
 class XNKFile(ABCFile):
     """3-coloumns header: lambdas, N, K as arrays."""

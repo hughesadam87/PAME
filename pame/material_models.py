@@ -32,7 +32,8 @@ class Constant(basic_model):
     def _set_constant_index(self, constant): 
         nr=constant.real
         nk=constant.imag          #NEED TO VERIFY THESE WORK SEE PLOT VS OLD VALUES
-        er = nr**2 -nk**2 ; ei = 2.0*nr*nk
+        er = nr**2 -nk**2 
+        ei = 2.0*nr*nk
         self.constant_dielectric=complex(er, ei)
 
     def _mat_name_default(self): 
@@ -58,8 +59,12 @@ class Sellmeir(basic_model):
     mat_name=Str('Dispersive Glass')
     model_id=Str('sellmeir')   
 
-    a1=Float(.6961663) ; a3=Float(.8974794) ;  a2=Float(.4079426)
-    b1=Float(.0684043) ; b3=Float( 9.896161) ; b2=Float(.1162414)		
+    a1=Float(.6961663) 
+    a3=Float(.8974794) 
+    a2=Float(.4079426)
+    b1=Float(.0684043) 
+    b3=Float( 9.896161) 
+    b2=Float(.1162414)		
 
     sellmeir_group=VGroup(HGroup(Item('a1'), Item('a2'), Item('a3')),
                           HGroup(Item('b1'), Item('b2'), Item('b3'))) 
@@ -73,31 +78,44 @@ class Sellmeir(basic_model):
         super(Sellmeir, self).__init__(*args, **kwargs)
 
 
-    def _a1_changed(self): self.update_data(); self.update_mview()  #NEED TO ADD THIS FOR ALL VARIABLES
+    def _a1_changed(self): 
+        self.update_data()
+        self.update_mview()  #NEED TO ADD THIS FOR ALL VARIABLES
 
-    def _mat_name_default(self): return 'Sellmeir'	
+    def _mat_name_default(self):
+        return 'Sellmeir'	
+    
     def update_data(self):		
-        um_xarray=self.specparms.specific_array('Micrometers')
-        l_sqr=um_xarray**2
-        f1=(self.a1*l_sqr)/(l_sqr - self.b1**2)
-        f2=(self.a2*l_sqr)/(l_sqr - self.b2**2)       #Dummy indicies
-        f3=(self.a3*l_sqr)/(l_sqr - self.b3**2)  
+        um_xarray = self.specparms.specific_array('Micrometers')
+        l_sqr = um_xarray**2
+        f1=(self.a1*l_sqr) / (l_sqr - self.b1**2)
+        f2=(self.a2*l_sqr) / (l_sqr - self.b2**2)       #Dummy indicies
+        f3=(self.a3*l_sqr) / (l_sqr - self.b3**2)  
         self.narray = sqrt(1.0 + f1 + f2 + f3)	
+
 
 class Dispwater(basic_model):
     '''Returns dispersion of water as put in some paper'''
-    A=Float(3479.0) ; B=Float(5.111 * 10**7)  #WHAT UNITS
+    A=Float(3479.0) 
+    B=Float(5.111 * 10**7)  #WHAT UNITS
     model_id=Str('Dispwater')   
 
     def __init__(self, *args, **kwargs):
         super(Dispwater, self).__init__(*args, **kwargs)
 
-    def _mat_name_default(self): return  'Dispersive Water'	
+    def _mat_name_default(self): 
+        return  'Dispersive Water'	
+    
     def update_data(self): 	
         self.narray=1.32334 + (self.A/ self.lambdas**2 ) - (self.B/self.lambdas**4)   #Entry in nm
 
-    def _A_changed(self): self.update_data(); self.update_mview()
-    def _B_changed(self): self.update_data(); self.update_mview()
+    def _A_changed(self): 
+        self.update_data()
+        self.update_mview()
+    
+    def _B_changed(self):
+        self.update_data()
+        self.update_mview()
 
     traits_view=View (
         Group(Include('basic_group'), HGroup(Item('A', style='simple'), Item('B', style='simple'))),		

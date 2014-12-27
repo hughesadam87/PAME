@@ -28,12 +28,15 @@ setup(
     author_email = 'hughesadam87@gmail.com',
     packages = find_packages(),
 
-    # include .tex and .ipynb files
-    package_data={},
+    # include materialsdatabases
+    package_data={
+      'pame.data.SOPRA': ['*'],
+      'pame.data.RI_INFO': ['*'],
+       },
        
     entry_points = {'console_scripts': 
                     [
-                       'pame = pame.pame:main',
+                    'pame = pame.pame:main',
                     ]
                     },
     
