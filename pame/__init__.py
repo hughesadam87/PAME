@@ -7,3 +7,4 @@ data_dir = op.join(pkg_dir, 'data')
 
 sopra_dir = op.join(data_dir, 'SOPRA')
 riinfo_dir = op.join(data_dir, 'RI_INFO')
+misc_dir = op.join(data_dir, 'MISC')

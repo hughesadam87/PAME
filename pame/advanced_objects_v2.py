@@ -86,15 +86,17 @@ class DrudeNew(ABCMetalModel, NanoSphere):
     wplasma=Float()  #1.29 E 16
     v_fermi=Float(1.4 * 10**6)         #Same for gold and silver
 
-    traits_view=View( Item('mat_name', show_label=False), Item('mviewbutton', label='Show Dielectric', show_label=False),
+    traits_view=View( Item('mat_name', show_label=False), 
+                      Item('mviewbutton', label='Show Dielectric', show_label=False),
                       Item('r_core', show_label=True, style='simple', label='NP Radius'),
-                      Item('FullMie'))
+                      Item('FullMie')
+                      )
 
     def __init__(self, *args, **kwargs):
         super(DrudeNew, self).__init__(*args, **kwargs)
 
-
-    def _wplasma_default(self): return 2.0*math.pi*self.c/(self.lamp * self.nm_conv)
+    def _wplasma_default(self): 
+        return 2.0*math.pi*self.c/(self.lamp * self.nm_conv)
 
     def update_data(self):           #THIS IS TOTALLY OLD WAY NEED TO UPDATE BUT NOT TRIVIAL
         eeff= empty(self.lambdas.shape, dtype='complex')

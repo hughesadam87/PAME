@@ -217,8 +217,8 @@ class Model( HasTraits ):
         # nk files can be csv too, so have this workaround
         self.nkfiles= [self.FileDic[k] for k in self.FileDic.keys() if
                        k.fileclass in ['XNK', 'XNK_csv']]
-
         self.update_tree()
+
 
     def update_tree(self): 
         """ Updates the entire tree """

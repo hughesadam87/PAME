@@ -30,8 +30,9 @@ class SpecParms(HasTraits):
         VGroup(
             HGroup(  Item(name = 'xstart'),  
                      Item(name = 'xend'),
-                     Item(name = 'x_increment'),
-                     Item(name='x_samples') ),
+                     Item(name='x_samples'),
+                     Item(name = 'x_increment', style='readonly')
+                     ),
             
             HGroup(  Item(name='x_unit', style='readonly'), 
                      Item(name='x_unit', style='simple', label='Change Units' ) 
