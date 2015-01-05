@@ -3,8 +3,11 @@ from traitsui.api import *
 from material_models import ABCMetalModel, DrudeBulk
 from interfaces import IMie, IMaterial, IMixer, IStorage
 from numpy import empty, array
+import os.path as op
 import math, cmath
 from composite_materials_v2 import SphericalInclusions_Disk #For inheritance
+
+from pame import XNK_dir
 
 def free_path_correction():
     ''' Size correction for the reduced mean free path.  Cited in many papers, in fact I'm writing this from,
@@ -67,7 +70,7 @@ class NanoSphere(SphericalInclusions_Disk):
         return self.sphere_full()			
 
     def _CoreMaterial_default(self):  ### Overwrite as package data eventually
-        return self.XNKFile(file_path='./Optical_metal_data/Converted_Files/JC_Gold.txt')
+        return self.XNKFile(file_path = op.join(XNK_dir, 'JC_Gold.nk'))
 
     def _MediumMaterial_default(self): 
         return self.Dispwater()#specparms=self.specparms)

@@ -17,16 +17,16 @@ from simple_materials_adapter import BasicAdapter, SellmeirAdapter, ConstantAdap
 
 from yamlmaterials import YamlAdapter
 
-from pame import sopra_dir, riinfo_dir     
+from pame import sopra_dir, riinfo_dir, XNK_dir
 import config
 #http://code.enthought.com/projects/traits/docs/html/TUIUG/factories_advanced_extra.html
 
 # Instances
 class Category ( HasTraits ):
     """ Defines a Category with Materials. """
-
     name      = Str( '<unknown>' )
     Materials = List( IAdapter )
+
 
 class MaterialList ( HasTraits ):
     """ Defines a Materials with MaterialCategories and Materials. Basically
@@ -122,9 +122,10 @@ class Model( HasTraits ):
     nonmetals  = List(IAdapter)
     metals  = List(IAdapter)
     soprafiles = List(IAdapter)
-    riinfofiles = List(IAdapter)
+    riinfodb = List(IAdapter)
     nkfiles = List(IAdapter)
     sopradb = List(IAdapter)
+    xnkdb = List(IAdapter)
 
     def __init__(self, *args, **kwds):
         super(HasTraits, self).__init__(*args, **kwds)
@@ -146,7 +147,7 @@ class Model( HasTraits ):
                 out.append(SopraFileAdapter(file_path = op.join(sopra_dir, f)))
         return out
 
-    def _riinfofiles_default(self):
+    def _riinfodb_default(self):
         """ Read all files form RI_INFO database """
         out = []
         if config.USERIINFO:           
@@ -157,6 +158,14 @@ class Model( HasTraits ):
                         out.append(obj)
         return out 
     
+
+    def _xnkdb_default(self):
+        """ Read all files from sopra database"""
+        out = []
+        if config.USESOPRA:
+            for f in os.listdir(XNK_dir):
+                out.append(XNKFileAdapter(file_path = op.join(XNK_dir, f)))
+        return out
         
     def _adaptersort(self, thelist):
         """ Sort a list of IAdapter object by name if self.SORT """
@@ -164,9 +173,6 @@ class Model( HasTraits ):
             thelist.sort(key=lambda x: x.name, reverse=self.REVERSE)
         return thelist
             
-    def read_databases(self):
-        """ Imports database from json object. """
-
 
     # Non-Metals Models ------
     def _nonmetals_default(self): 
@@ -241,13 +247,18 @@ class Model( HasTraits ):
             DBCategories = 
             [
                 Category(
-                    name      = 'RIINFO Database',
-                    Materials = self._adaptersort(self.riinfofiles),
+                    name      = 'XNK Database',
+                    Materials = self._adaptersort(self.xnkdb) 
                     ),
                 
                 Category(
                     name      = 'Sopra Database',
                     Materials = self._adaptersort(self.sopradb) 
+                    ),
+
+                Category(
+                    name      = 'RIINFO Database',
+                    Materials = self._adaptersort(self.riinfodb),
                     ),
                 ],
 

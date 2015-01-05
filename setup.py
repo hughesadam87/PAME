@@ -35,6 +35,12 @@ FILETYPE = '.nk'
 SOPRA =  [ (d, [os.path.join(d, f) for f in files if f.endswith(FILETYPE)]) 
              for d,folders,files in os.walk(RIDIR)]
 
+# XNK MATERIALS
+RIDIR = 'pame/data/XNK'
+FILETYPE = '.nk'
+XNK =  [ (d, [os.path.join(d, f) for f in files if f.endswith(FILETYPE)]) 
+             for d,folders,files in os.walk(RIDIR)]
+
 setup(
     name = NAME,
     version = '0.1',
@@ -44,7 +50,7 @@ setup(
     author_email = 'hughesadam87@gmail.com',
     packages = find_packages(), #What's this do?
     
-    data_files = RIFILES + SOPRA,
+    data_files = RIFILES + SOPRA + XNK,
        
     entry_points = {'console_scripts': 
                     [
