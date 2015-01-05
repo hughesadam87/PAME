@@ -75,7 +75,7 @@ class YamlAdapter(ABCFileAdapter):
 
 
     # CALL THIS LATER ON SELECTION
-    def parse_file(self):
+    def read_file_metadata(self):
         """ Opens yaml file, gets the metadata and data. """
         loaded = yaml.load(open(self.file_path, 'r'))
 
@@ -102,25 +102,22 @@ class YamlAdapter(ABCFileAdapter):
 
     def populate_object(self): 
         """Method used to instantiate an object to conserve resources"""
-
+    
         if self._is_model:
-            print 'THIS IS A MODEL'
-            raise NotImplementedError('YAML models not hooked up yet' % datatype)
+            raise NotImplementedError('RIINFO DB models not supported up yet!')
 
 
         else:
-            print 'THIS IS NOT A MODEL'
             datatype = self.DATA['type']
             data = self.DATA['data']
             self.matobject = YamlMaterial(datastring=data, datatype=datatype)
             print self.DATA
 
-#        self.matobject=self.BasicMaterial()
-
 
     # VIEW
     basicgroup=Group(
         Item('name', style='readonly'),   #THESE ARENT READ ONLY!
+        Item('_is_model', style='readonly', label='Model Material'),
         Item('source', style='readonly'),
         Item('REFERENCES', style='readonly'),
         Item('FORMULA', style='readonly'),

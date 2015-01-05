@@ -1,3 +1,13 @@
+""" These mixing models come from:
+
+Effect of interphase on effective permittivity of composites.
+J. Phys. D: Appl. Phys. 44 (2011) 1115042 (5pp)
+Liu, Wu, Wang, Li and Zhang
+
+Their paper gives a succinct equation to represent the maxwell garnett equation with volume fill correction,
+QCA-CP and Bruggeman's equation.
+"""
+
 from traits.api import *
 from traitsui.api import *
 import math, sys
@@ -8,209 +18,213 @@ from interfaces import IMixer, IMie, IMaterial
 from material_models import Sellmeir, Dispwater
 
 class DoubleMixer(HasTraits):
-	solutematerial=Instance(IMaterial)
-	solventmaterial=Instance(IMaterial)
+    solutematerial=Instance(IMaterial)
+    solventmaterial=Instance(IMaterial)
 
-	esolute=DelegatesTo('solutematerial', prefix='earray')
-	esolvent=DelegatesTo('solventmaterial',prefix='earray')
-	
-	mixedarray=CArray   
-	mix_name=Str('')
-	Vfrac=Range(low=0.0, high=1.0, value=.1)   #Mixing percent
+    esolute=DelegatesTo('solutematerial', prefix='earray')
+    esolvent=DelegatesTo('solventmaterial',prefix='earray')
 
-        implements(IMixer)   #Inherited by subclasses
-  	
-        def __init__(self, *args, **kwargs):
-        	super(DoubleMixer, self).__init__(*args, **kwargs)
-		self.on_trait_change(self.update_mix, 'solutematerial, solventmaterial, esolvent, esolute, Vfrac') 
-   	 	#Even though it looks redundant, solutematerial and esolute triggering same event, the program does not understand
-		#that esolute changes from solutematerial changing so this is necessary
+    mixedarray=CArray   
+    mix_name=Str('')
+    Vfrac=Range(low=0.0, high=1.0, value=.1)   #Mixing percent
 
-	def _solutematerial_default(self): return Sellmeir()
-	def _solventmaterial_default(self): return Dispwater()
-		
-	def update_mix(self): pass
+    implements(IMixer)   #Inherited by subclasses
+
+    def __init__(self, *args, **kwargs):
+        super(DoubleMixer, self).__init__(*args, **kwargs)
+        self.on_trait_change(self.update_mix, 'solutematerial, solventmaterial, esolvent, esolute, Vfrac') 
+        #Even though it looks redundant, solutematerial and esolute triggering same event, the program does not understand
+        #that esolute changes from solutematerial changing so this is necessary
+
+    def _solutematerial_default(self): 
+        return Sellmeir()
+
+    def _solventmaterial_default(self): 
+        return Dispwater()
+
+    def update_mix(self): 
+        pass
 
 
 class MG_Mod(DoubleMixer):
-	'''Modified MG equations by Garcia; specific to spheres with dipoles'''
-        mix_name='Maxwell Garnett Modification'
-	K=Range(low=0.0, high=10.0, value=2.0)   #Parameter in Maxwell Garnett Mixing Model
+    '''Modified MG equations by Garcia; specific to spheres with dipoles'''
+    mix_name='Maxwell Garnett Modification'
+    K=Range(low=0.0, high=10.0, value=2.0)   #Parameter in Maxwell Garnett Mixing Model
 
-	traits_view=View( 
-			Item('mix_name',label='Mixing Style Name'), 
-			HGroup( Item('Vfrac'), Item('K')), 
-			Item('solutematerial', label='solute_in_materialmix', show_label=False),
-			Item('solventmaterial', label='solvent_in_materialmix', show_label=False),
-			)
+    traits_view=View( 
+        Item('mix_name',label='Mixing Style Name'), 
+        HGroup( Item('Vfrac'), Item('K')), 
+        Item('solutematerial', label='solute_in_materialmix', show_label=False),
+        Item('solventmaterial', label='solvent_in_materialmix', show_label=False),
+    )
 
-	def _K_changed(self): self.update_mix()
+    def _K_changed(self): self.update_mix()
 
-	def update_mix(self):
-		'''Its important to update the mixed array all at once because there's a listenter in another method that can change at exact moment anything changes'''
-		eeff=np.empty(self.esolute.shape, dtype='complex')
-		for i in range(len(self.esolvent)):
-			em=self.esolvent[i]
-			emr=em.real
-			emi=em.imag  #Usually zero
-			ep=self.esolute[i]
-			epr=ep.real
-			epi=ep.imag
-	
-			A=self.Vfrac*(epr - emr)
-			B=self.Vfrac*epi
-			shell_scaling=(1.0/3.0)          #1/3 for spherical particles, not sure for others!!!
-			gam=(1.0/(3.0*emr) ) + (self.K/(4.0*math.pi*emr))
-			C=em + shell_scaling*(epr - emr) - self.Vfrac*gam*(epr-emr)
-			D=shell_scaling*epi - self.Vfrac*gam*epi
-			eff_r=emr + ( (A*C + B*D)/ (C**2 + D**2) )
-			eff_i=((B*C - A*D)/(C**2 + D**2)).real   #IMAGINARY PART SHOULD BE 0 NO MATTER WHAT!
-			eeff[i]=complex(eff_r, eff_i)
-		self.mixedarray=eeff
+    def update_mix(self):
+        '''Its important to update the mixed array all at once because there's a listenter in another method that can change at exact moment anything changes'''
+        eeff=np.empty(self.esolute.shape, dtype='complex')
+        for i in range(len(self.esolvent)):
+            em=self.esolvent[i]
+            emr=em.real
+            emi=em.imag  #Usually zero
+            ep=self.esolute[i]
+            epr=ep.real
+            epi=ep.imag
+
+            A=self.Vfrac*(epr - emr)
+            B=self.Vfrac*epi
+            shell_scaling=(1.0/3.0)          #1/3 for spherical particles, not sure for others!!!
+            gam=(1.0/(3.0*emr) ) + (self.K/(4.0*math.pi*emr))
+            C=em + shell_scaling*(epr - emr) - self.Vfrac*gam*(epr-emr)
+            D=shell_scaling*epi - self.Vfrac*gam*epi
+            eff_r=emr + ( (A*C + B*D)/ (C**2 + D**2) )
+            eff_i=((B*C - A*D)/(C**2 + D**2)).real   #IMAGINARY PART SHOULD BE 0 NO MATTER WHAT!
+            eeff[i]=complex(eff_r, eff_i)
+        self.mixedarray=eeff
 
 
 class RootFinder(DoubleMixer):
-	'''This class uses root finding to solve general Mg, Brugge or QCCPA STUFF'''
-	
+    '''This class uses root finding to solve general Mg, Brugge or QCCPA STUFF'''
+
 #	Root=Complex(complex(1.0, 0.0))
-	Root=Float(1.0)
-	w=Enum(0,2,3)
+    Root=Float(1.0)
+    w=Enum(0,2,3)
 
-	def fill_func_dielectric(self, x, em, e1, v, w):
-		'''From paper 'effect of interphase on effective permittivity of composites, used in conj w/ newton rhapson'''
-		A=v *  (e1 - em) / (e1 + 2.0*em + w*(x - em) )
-		B=(x - em) / (x + 2.0*em + w*(x-em) )
-		return B-A
+    def fill_func_dielectric(self, x, em, e1, v, w):
+        '''From paper 'effect of interphase on effective permittivity of composites, used in conj w/ newton rhapson'''
+        A=v *  (e1 - em) / (e1 + 2.0*em + w*(x - em) )
+        B=(x - em) / (x + 2.0*em + w*(x-em) )
+        return B-A
 
-	def update_mix(self):
-		eeff=np.empty(self.esolute.shape, dtype=complex)
-		for i in range(len(eeff)):
-			e1=self.esolute[i].real    
-			em=self.esolvent[i].real   #THIS IS GENERALLY THE SOLVENT
-			eeff[i]=scipy.optimize.newton(self.fill_func_dielectric, self.Root, fprime=None, args=(em, e1, self.Vfrac, self.w), tol=.0001, maxiter=1000)
+    def update_mix(self):
+        eeff=np.empty(self.esolute.shape, dtype=complex)
+        for i in range(len(eeff)):
+            e1=self.esolute[i].real    
+            em=self.esolvent[i].real   #THIS IS GENERALLY THE SOLVENT
+            eeff[i]=scipy.optimize.newton(self.fill_func_dielectric, self.Root, fprime=None, args=(em, e1, self.Vfrac, self.w), tol=.0001, maxiter=1000)
 #			self.Root=eeff[i]  #Reset the root
-		self.mixedarray=eeff
+        self.mixedarray=eeff
 
 class MG(RootFinder):
-	mix_name='MG w/ RootFinder'
-	w=0
+    mix_name='MG w/ RootFinder'
+    w=0
 
-	traits_view=View( 
-			Item('mix_name',label='Mixing Style Name'), Item('Vfrac'), Item('Root', style='text')
-			)
+    traits_view=View( 
+        Item('mix_name',label='Mixing Style Name'), Item('Vfrac'), Item('Root', style='text')
+    )
 class QCACP(RootFinder):
-	mix_name='QCACP w/ RootFinder'
-	w=2
+    mix_name='QCACP w/ RootFinder'
+    w=2
 
-	traits_view=View( 
-			Item('mix_name', label='Mixing Style Name'), Item('Vfrac'), Item('Root', style='text')
-			)
+    traits_view=View( 
+        Item('mix_name', label='Mixing Style Name'), Item('Vfrac'), Item('Root', style='text')
+    )
 
 
 class Bruggeman(RootFinder):
-	mix_name='Bruggeman w/ RootFinder'  
-	w=3
+    mix_name='Bruggeman w/ RootFinder'  
+    w=3
 
-	traits_view=View( 
-			Item('mix_name',label='Mixing Style Name'), Item('Vfrac'), Item('Root', style='text')
-			)
+    traits_view=View( 
+        Item('mix_name',label='Mixing Style Name'), Item('Vfrac'), Item('Root', style='text')
+    )
 
 class EquivMethod(DoubleMixer):
-	'''This is a method used to mix a shell, core spherical nanoparticle mixture into a composite particle of effective radius'''
-	mix_name='Equivalence Method'
+    '''This is a method used to mix a shell, core spherical nanoparticle mixture into a composite particle of effective radius'''
+    mix_name='Equivalence Method'
 
 #	mie=Instance(IMie)  #Since I want mie to store the main representation for r_particle and r_shell, and delgation control the rest, this needs to be here
-	r_particle=Float(12)
-	r_shell=Float(8)
-	shell_core_ratio=Property(Float, depends_on=['r_particle', 'r_shell'])  #Make this to tune proportion
-	gamma=Array
+    r_particle=Float(12)
+    r_shell=Float(8)
+    shell_core_ratio=Property(Float, depends_on=['r_particle', 'r_shell'])  #Make this to tune proportion
+    gamma=Array
 
 
-	traits_view=View( 
-			###  MADE A FEW OF THESE READ ONLY BECAUSE THEY ARE ACTUALLY TRAITS CONTROLLED BY THE MATERIAL VIEWER SO SHOULDN'T BE ADJUSTED WHEN MIXING ###			
-			Item('mix_name',label='Mixing Style Name'), 
-			HGroup(
-			      Item('r_particle', style='readonly'), 
-			      Item('r_shell', style='readonly'), 		
-			      Item('shell_core_ratio', label='Shell/Core Ratio', style='readonly'),
-			      ),
+    traits_view=View( 
+        ###  MADE A FEW OF THESE READ ONLY BECAUSE THEY ARE ACTUALLY TRAITS CONTROLLED BY THE MATERIAL VIEWER SO SHOULDN'T BE ADJUSTED WHEN MIXING ###			
+        Item('mix_name',label='Mixing Style Name'), 
+        HGroup(
+            Item('r_particle', style='readonly'), 
+            Item('r_shell', style='readonly'), 		
+            Item('shell_core_ratio', label='Shell/Core Ratio', style='readonly'),
+            ),
 
-			      Item('solutematerial'), Item('solventmaterial'),
-			)
+        Item('solutematerial'), Item('solventmaterial'),
+    )
 
 
-	###USES THE NOTATION THAT ESOLUTE REFERS TO DIELECTRIC FUNCTION OF CORE PARTICLE, ESOLVENT REFERS TO DIELECTRIC FUNCTION OF SHELL###
+    ###USES THE NOTATION THAT ESOLUTE REFERS TO DIELECTRIC FUNCTION OF CORE PARTICLE, ESOLVENT REFERS TO DIELECTRIC FUNCTION OF SHELL###
 
-	def _r_particle_changed(self): self.update_mix()
-	def _r_shell_changed(self): self.update_mix()
+    def _r_particle_changed(self): self.update_mix()
+    def _r_shell_changed(self): self.update_mix()
 
-	def _get_shell_core_ratio(self): return round(self.r_shell/self.r_particle,2)
+    def _get_shell_core_ratio(self): return round(self.r_shell/self.r_particle,2)
 
-	def _set_shell_core_ratio(self, input_value): 
-		'''If user changes ratio, this will adjust the shell (by choice) and not the core to fit the ratio'''
-		self.r_shell=input_value * self.r_particle
+    def _set_shell_core_ratio(self, input_value): 
+        '''If user changes ratio, this will adjust the shell (by choice) and not the core to fit the ratio'''
+        self.r_shell=input_value * self.r_particle
 
-	def update_mix(self):
-		eeff=np.empty(self.esolute.shape, dtype='complex')
-		r1=self.r_particle
-		r2=self.r_shell+self.r_particle        #KEY THAT r2 is not just r_shell
-		A=(r1/r2)**3
-		B=self.esolvent/self.esolute
-		num=(B*(1.0 + 2.0*B)) + (2.0*A*B*(1.0-B))
-		den=(1.0+2.0*B) - (A*(1.0-B))
-		gam=num/den #gamma is the equivalent coefficient
-		self.mixedarray=gam*self.esolute
+    def update_mix(self):
+        eeff=np.empty(self.esolute.shape, dtype='complex')
+        r1=self.r_particle
+        r2=self.r_shell+self.r_particle        #KEY THAT r2 is not just r_shell
+        A=(r1/r2)**3
+        B=self.esolvent/self.esolute
+        num=(B*(1.0 + 2.0*B)) + (2.0*A*B*(1.0-B))
+        den=(1.0+2.0*B) - (A*(1.0-B))
+        gam=num/den #gamma is the equivalent coefficient
+        self.mixedarray=gam*self.esolute
 
-		self.gamma=gam  #In case I ever want to plot it, tacked this on 4_13_12
+        self.gamma=gam  #In case I ever want to plot it, tacked this on 4_13_12
 
 
 class CustomEquiv(EquivMethod):
-	'''Modification of the equivalence method to allow for scaling parmaeters on the size of the shell, core 
-	   and on the dielectric constants.  Note, the scaling is linear, meaning dispersion will scale only linearly.
-	   I replaced variables alpha/beta to avoid confusion with the primary resource.'''
-	mix_name='Custom Equiv Method'
+    '''Modification of the equivalence method to allow for scaling parmaeters on the size of the shell, core 
+       and on the dielectric constants.  Note, the scaling is linear, meaning dispersion will scale only linearly.
+       I replaced variables alpha/beta to avoid confusion with the primary resource.'''
+    mix_name='Custom Equiv Method'
 
-	#Correction parameters for fine tuning shell, core to meet#
-	core_scaling=Range(low=0.0,high=5.0,value=1.0) 
-	shell_scaling= Range(low=0.0, high=3.0,value=1.0)
+    #Correction parameters for fine tuning shell, core to meet#
+    core_scaling=Range(low=0.0,high=5.0,value=1.0) 
+    shell_scaling= Range(low=0.0, high=3.0,value=1.0)
 
-	e_core_scaling=Range(low=1.0,high=3.0,value=1.0)  
-	e_shell_scaling=Range(low=1.0,high=3.0,value=1.0)  #This is the shell not overall medium
+    e_core_scaling=Range(low=1.0,high=3.0,value=1.0)  
+    e_shell_scaling=Range(low=1.0,high=3.0,value=1.0)  #This is the shell not overall medium
 
-	rcore_eff=Property(Float, depends_on=['core_scaling, r_particle'])
-	rshell_eff=Property(Float, depends_on=['shell_scaling, r_shell'])
+    rcore_eff=Property(Float, depends_on=['core_scaling, r_particle'])
+    rshell_eff=Property(Float, depends_on=['shell_scaling, r_shell'])
 
-	traits_view=View(         #FOR SOME REASON 'shell_core_ratio' causes the view to crash!
-			VGroup(
-				HGroup(Item('core_scaling'), Item('shell_scaling')), 
-				HGroup(Item('e_core_scaling', label='Scaling of core dielectric'), Item('e_shell_scaling', label='Scaling of shell dielectric')),
-				HGroup(Item('r_particle', style='readonly'), Item('r_shell', style='readonly')), 
-				HGroup(Item('rcore_eff'), Item('rshell_eff') ),# Item('shell_core_ratio') ),
-				)
-			)
+    traits_view=View(         #FOR SOME REASON 'shell_core_ratio' causes the view to crash!
+                              VGroup(
+                                  HGroup(Item('core_scaling'), Item('shell_scaling')), 
+                                  HGroup(Item('e_core_scaling', label='Scaling of core dielectric'), Item('e_shell_scaling', label='Scaling of shell dielectric')),
+                                  HGroup(Item('r_particle', style='readonly'), Item('r_shell', style='readonly')), 
+                                  HGroup(Item('rcore_eff'), Item('rshell_eff') ),# Item('shell_core_ratio') ),
+                              )
+                              )
 
-	def _rcore_eff_changed(self): self.update_mix()
-	def _rshell_eff_changed(self): self.update_mix()
-	def _e_core_scaling_changed(self): self.update_mix()
-	def _e_shell_scaling_changed(self): self.update_mix()
+    def _rcore_eff_changed(self): self.update_mix()
+    def _rshell_eff_changed(self): self.update_mix()
+    def _e_core_scaling_changed(self): self.update_mix()
+    def _e_shell_scaling_changed(self): self.update_mix()
 
-	def _get_rcore_eff(self): return self.core_scaling * self.r_particle
-	def _get_rshell_eff(self): return self.shell_scaling * self.r_shell
-	
-	def update_mix(self):
-		eeff=np.empty(self.esolute.shape, dtype='complex')
-		r1=self.rcore_eff
-		r2=self.rshell_eff+self.rcore_eff        #KEY THAT r2 is not just r_shell
-		A=(r1/r2)**3
+    def _get_rcore_eff(self): return self.core_scaling * self.r_particle
+    def _get_rshell_eff(self): return self.shell_scaling * self.r_shell
 
-		#Solvent in this case is shell on np not surrounding matrix/solution (VERIFIED 4_13_12)
-		B= ((self.esolvent*self.e_shell_scaling)/(self.e_core_scaling * self.esolute) )   #B = eshell/ecore  (each one given a scale factor)
-		num=(B*(1.0 + 2.0*B)) + (2.0*A*B*(1.0-B))
-		den=(1.0+2.0*B) - (A*(1.0-B))
-		gam=num/den
-		self.mixedarray=gam*self.esolute
-		self.gamma=gam
-			
+    def update_mix(self):
+        eeff=np.empty(self.esolute.shape, dtype='complex')
+        r1=self.rcore_eff
+        r2=self.rshell_eff+self.rcore_eff        #KEY THAT r2 is not just r_shell
+        A=(r1/r2)**3
+
+        #Solvent in this case is shell on np not surrounding matrix/solution (VERIFIED 4_13_12)
+        B= ((self.esolvent*self.e_shell_scaling)/(self.e_core_scaling * self.esolute) )   #B = eshell/ecore  (each one given a scale factor)
+        num=(B*(1.0 + 2.0*B)) + (2.0*A*B*(1.0-B))
+        den=(1.0+2.0*B) - (A*(1.0-B))
+        gam=num/den
+        self.mixedarray=gam*self.esolute
+        self.gamma=gam
+
 
 if __name__ == '__main__':
-	MG_Mod().configure_traits()
+    MG_Mod().configure_traits()

@@ -27,8 +27,11 @@ class NanoSphere(SphericalInclusions_Disk):
 
     d_core=Property(Float, depends_on='r_core')
 
-    def _get_d_core(self): return 2.0*self.r_core
-    def _set_d_core(self, d): self.r_core=d/2.0
+    def _get_d_core(self): 
+        return 2.0*self.r_core
+
+    def _set_d_core(self, d): 
+        self.r_core=d/2.0
 
     def __init__(self, *args, **kwds):
         super(NanoSphere, self).__init__(*args, **kwds)
@@ -62,7 +65,7 @@ class NanoSphere(SphericalInclusions_Disk):
 
     def _FullMie_default(self): 
         return self.sphere_full()			
-    
+
     def _CoreMaterial_default(self):  ### Overwrite as package data eventually
         return self.XNKFile(file_path='./Optical_metal_data/Converted_Files/JC_Gold.txt')
 

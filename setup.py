@@ -1,4 +1,5 @@
 import sys
+import os
 import os.path as op
 from setuptools import setup, find_packages
 
@@ -19,6 +20,21 @@ with open('requirements.txt', 'r') as f:
     
 # For now, most of these are in here for testing.  Dependency version 
 #requirements can probably be relaxed, especially chaco.
+
+# https://docs.python.org/2/distutils/setupscript.html#installing-package-data
+
+# RI_INFO MATERIAL DATABASE
+RIDIR = 'pame/data/RI_INFO'
+FILETYPE = '.yml'
+RIFILES =  [ (d, [os.path.join(d, f) for f in files if f.endswith(FILETYPE)]) 
+             for d,folders,files in os.walk(RIDIR)]
+
+# SOPRA MATERIAL DATABASE
+RIDIR = 'pame/data/SOPRA'
+FILETYPE = '.nk'
+SOPRA =  [ (d, [os.path.join(d, f) for f in files if f.endswith(FILETYPE)]) 
+             for d,folders,files in os.walk(RIDIR)]
+
 setup(
     name = NAME,
     version = '0.1',
@@ -26,13 +42,9 @@ setup(
     maintainer = 'Adam Hughes',
     maintainer_email = 'hughesadam87@gmail.com',
     author_email = 'hughesadam87@gmail.com',
-    packages = find_packages(),
-
-    # include materialsdatabases
-    package_data={
-      'pame.data.SOPRA': ['*'],
-      'pame.data.RI_INFO': ['*']
-       },
+    packages = find_packages(), #What's this do?
+    
+    data_files = RIFILES + SOPRA,
        
     entry_points = {'console_scripts': 
                     [

@@ -2,7 +2,8 @@
 in tree to list of files stored in "my_list" in File_Finder.  Also stores models and
 other default objects.
 """
-
+import os
+import os.path as op
 from traits.api import *
 
 from traitsui.api \
@@ -16,7 +17,8 @@ from simple_materials_adapter import BasicAdapter, SellmeirAdapter, ConstantAdap
 
 from yamlmaterials import YamlAdapter
 
-from pame import data_dir     
+from pame import sopra_dir, riinfo_dir     
+import config
 #http://code.enthought.com/projects/traits/docs/html/TUIUG/factories_advanced_extra.html
 
 # Instances
@@ -97,7 +99,7 @@ tree_editor = TreeEditor(
                   label     = 'name',
                  )
             ],
-        selection_mode='extended',
+        selection_mode='single', #Select one material at a time
         selected='current_selection',
         )
 
@@ -127,6 +129,34 @@ class Model( HasTraits ):
     def __init__(self, *args, **kwds):
         super(HasTraits, self).__init__(*args, **kwds)
         self.update_tree() #Necessary to make defaults work
+        
+    def _current_selection_changed(self):
+        # Parse yaml file metadata only when selected to save time
+        try:
+            self.current_selection.read_file_metadata() 
+        except Exception:
+            pass
+
+    # Default Database Files
+    def _sopradb_default(self):
+        """ Read all files from sopra database"""
+        out = []
+        if config.USESOPRA:
+            for f in os.listdir(sopra_dir):
+                out.append(SopraFileAdapter(file_path = op.join(sopra_dir, f)))
+        return out
+
+    def _riinfofiles_default(self):
+        """ Read all files form RI_INFO database """
+        out = []
+        if config.USERIINFO:           
+            for d, folders, files in os.walk(riinfo_dir):
+                if files:
+                    for f in files:
+                        obj = YamlAdapter(file_path = op.join(d, f))
+                        out.append(obj)
+        return out 
+    
         
     def _adaptersort(self, thelist):
         """ Sort a list of IAdapter object by name if self.SORT """
@@ -171,12 +201,6 @@ class Model( HasTraits ):
                 self.FileDic[afile] = XNKFileAdapter(file_path=full_path, csv=True)                
 
             elif file_id=='Sopra': 
-
-                # YAML TEST CASE DELETE ME
-                testfile = YamlAdapter(file_path = '~/Desktop/fibersim/pame/data/RI_INFO/main/Ag/Johnson.yml')
-                testfile.parse_file() #WHEN IS BEST TIEM TO DO THIS?  DON'T WANT TO READ EVERY FILE 
-                self.riinfofiles = [testfile]
-
                 self.FileDic[afile] = SopraFileAdapter(file_path=full_path)
 
             else:
@@ -218,12 +242,12 @@ class Model( HasTraits ):
             [
                 Category(
                     name      = 'RIINFO Database',
-                    Materials = self._adaptersort(self.riinfofiles) #CHANGE ME
+                    Materials = self._adaptersort(self.riinfofiles),
                     ),
                 
                 Category(
                     name      = 'Sopra Database',
-                    Materials = self._adaptersort(self.soprafiles) #CHANGE ME
+                    Materials = self._adaptersort(self.sopradb) 
                     ),
                 ],
 

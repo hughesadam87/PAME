@@ -6,6 +6,9 @@ from converter import SpectralConverter
 from numpy import linspace, sin, cos, empty, argsort
 import numpy as np
 
+# PAME imports
+import config
+
 class SpecParms(HasTraits):
     '''Global class which defines variables and methods shared by all other class methods''' 
 
@@ -45,10 +48,10 @@ class SpecParms(HasTraits):
         return SpectralConverter(input_array=self.lambdas, input_units='Nanometers')
     
     def _lambdas_default(self): 
-        return linspace(300,800,100)
+        return linspace(config.xstart,config.xend,config.xpoints)
 
     def _x_unit_default(self): 
-        return 'Nanometers'
+        return config.xunit
 
     def _valid_units_default(self): 
         return self.conv.valid_units
