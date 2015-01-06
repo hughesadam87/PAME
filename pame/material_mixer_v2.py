@@ -150,23 +150,22 @@ class MG(RootFinder):
     w=0
 
     traits_view=View( 
-        Item('mix_name',label='Mixing Style Name'), Item('Vfrac')
+        Item('mix_name',label='Mixing Style Name'), Item('Vfrac'))
 
 class Bruggeman(RootFinder):
     mix_name='Bruggeman w/ RootFinder'  
     w=2
 
     traits_view=View( 
-        Item('mix_name',label='Mixing Style Name'), Item('Vfrac')
-    )
+        Item('mix_name',label='Mixing Style Name'), Item('Vfrac'))
+    
 
 class QCACP(RootFinder):
     mix_name='QCACP w/ RootFinder'
     w=3
 
     traits_view=View( 
-        Item('mix_name', label='Mixing Style Name'), Item('Vfrac')
-    )
+        Item('mix_name', label='Mixing Style Name'), Item('Vfrac'))
 
 
 # Core/shell/Matrix scaling
