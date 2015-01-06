@@ -1,5 +1,7 @@
-from traitsui.api import TableEditor, ObjectColumn, ExpressionColumn,InstanceEditor, View, Item, HGroup
-from traits.api import HasTraits, Instance, List, Button, Int, Property, Float, Any, on_trait_change
+from traitsui.api import TableEditor, ObjectColumn, ExpressionColumn,InstanceEditor, \
+     View, Item, HGroup
+from traits.api import HasTraits, Instance, List, Button, Int, Property, Float, Any,\
+     on_trait_change
 from main_parms import SpecParms
 from layer_traits_v2 import * 
 from interfaces import ILayer, IMaterial
@@ -103,7 +105,7 @@ class LayerEditor(HasTraits):
         self.stack.insert(position, layer)
 
         self.sync_trait('specparms', layer, 'specparms')
-        self.sync_trait('modeltree', layer, 'basictree')
+        self.sync_trait('modeltree', layer, 'modeltree', mutual=True)
 
         self.selected_layer=self.stack[self.selected_index]
 
@@ -120,19 +122,22 @@ class LayerEditor(HasTraits):
         self.selected_layer=self.stack[self.selected_index-1]   #Simply moves the selected layer one down from the one deleted
 
     def _changematerial_fired(self):
+        
+
+        print 'IN CHANG EMATERIAL MODELTREE\n\n', self.modeltree
+        
         self.selectedtree.configure_traits(kind='modal')
         try:
             selected_adapter=self.selectedtree.current_selection[0]    #For some reason this returns a list
             selected_adapter.populate_object()
             newmat=selected_adapter.matobject	
 
-            ### If changing substrate or solvent###
-
-            if self.stack[self.selected_index]==self.solvent:
-                newlayer=Solvent(material=newmat)
+            # If changing substrate or solvent
+            if self.stack[self.selected_index] == self.solvent:
+                newlayer = Solvent(material=newmat)
                 self.solvent=newlayer
-            elif self.stack[self.selected_index]==self.substrate:
-                newlayer=Substrate(material=newmat)		
+            elif self.stack[self.selected_index] == self.substrate:
+                newlayer = Substrate(material=newmat)		
                 self.substrate=newlayer
 
             ### If changing layer ###
@@ -146,14 +151,14 @@ class LayerEditor(HasTraits):
                 elif self.layer_type=='Nanoparticle Objects':
                     newlayer=Nanoparticle(material=newmat, d=self.selected_d)
 
-            self.stack[self.selected_index]=newlayer
-            self.selected_layer=self.stack[self.selected_index]
+            self.stack[self.selected_index] = newlayer
+            self.selected_layer = self.stack[self.selected_index]
 
-            self.sync_trait('modeltree', newlayer, 'basictree')    #AGAIN NOT SURE IF NECESSARY, if i can just initialize 
+            self.sync_trait('modeltree', newlayer, 'modeltree')    #AGAIN NOT SURE IF NECESSARY, if i can just initialize 
             self.sync_trait('specparms', newlayer, 'specparms')
 
         except (TypeError, AttributeError):  #If user selects none, or selects a folder object, not an actual selection
-            print 'in exception', self.stack[self.selected_index], self.selected_layer
+            print 'in exception in layereditor change materal', self.stack[self.selected_index], self.selected_layer
             pass
 
 
@@ -164,13 +169,14 @@ class LayerEditor(HasTraits):
 #		mats=[substrate, Composite(d=24.0), solvent]     #Default layer is composite material
 #		mats=[substrate, BasicLayer(d=24.0), solvent]    #Default layer is basic layer
         for mat in mats:
-            self.sync_trait('modeltree', mat, 'basictree')  
+            self.sync_trait('modeltree', mat, 'modeltree')  
             self.sync_trait('specparms', mat, 'specparms')
         return mats
 
     ###  Important to declare these here instead of on the delcaration of the stack; otherwise tableeditor trips ###
     def _solvent_default(self): 
         return self.stack[-1]
+
     def _substrate_default(self): 
         return self.stack[0]
     ######################################################################
@@ -212,7 +218,7 @@ class LayerEditor(HasTraits):
         HGroup(
             Item('add_basic', show_label=False), 
             Item('remove', enabled_when='selected_layer != solvent and selected_layer != substrate', show_label=False),
-            Item('changematerial', label='Configure Layer', show_label=False, enabled_when='selected_layer is not None'),
+            Item('changematerial', label='Configure Layer Material', show_label=False, enabled_when='selected_layer is not None'),
             Item('layer_type', label='Choose Material Type', style='simple'),
             ), 
 

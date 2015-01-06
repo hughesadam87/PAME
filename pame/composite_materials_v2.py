@@ -10,7 +10,7 @@ from material_mixer_v2 import MG_Mod, Bruggeman, QCACP, MG
 class CompositeMaterial(BasicMaterial):
     '''Still inherits basic traits like earray, narray and how they are interrelated'''
 
-    modeltree = Instance(Model,())
+    modeltree = Instance(Model)#,())
 
     Material1=Instance(IMaterial)
     Material2=Instance(IMaterial)   #Make these classes later
@@ -18,12 +18,14 @@ class CompositeMaterial(BasicMaterial):
     Mat1History=List(IMaterial)  #When the materials change, this logs them.  Useful for advanced stuff
     Mat2History=List(IMaterial)
 
-    MixingStyle=Enum('MGMOD', 'Bruggeman', 'QCACP', 'MG')
     Mix=Instance(IMixer)
+
+    MixingStyle=Enum('MGMOD', 'Bruggeman (root)', 'QCACP (root)', 'MG (root)')
     Vfrac=DelegatesTo('Mix')	#Coordinates with parameter in mixer
     earray=DelegatesTo('Mix', prefix='mixedarray')
 
-    selectmat1=Button ; selectmat2=Button
+    selectmat1=Button 
+    selectmat2=Button
 
     mixgroup=Group(   VGroup(
         HGroup(
@@ -61,7 +63,10 @@ class CompositeMaterial(BasicMaterial):
         self.update_allplots()
 
     def get_usefultraits(self):
-        return {'Material':self.mat_name, 'Solute':self.Material1, 'Solvent':self.Material2, 'Vfrac':self.Vfrac}
+        return {'Material':self.mat_name,
+                'Solute':self.Material1,
+                'Solvent':self.Material2, 
+                'Vfrac':self.Vfrac}
 
 #	def update_allplots(self): 
 #			self.allplots={'Dielectric '+str(self.Material1.mat_name):self.Material1.eplot,  'Dielectric '+str(self.Material2.mat_name):self.Material2.eplot, 
@@ -110,13 +115,13 @@ class CompositeMaterial(BasicMaterial):
 
 
     def update_mix(self):
-        if self.MixingStyle=='MG':
+        if self.MixingStyle=='MG (root)':
             self.Mix=MG(Vfrac=self.Vfrac) #vfrac because don't want it to reset to default
 
-        elif self.MixingStyle=='Bruggeman':
+        elif self.MixingStyle=='Bruggeman (root)':
             self.Mix=Bruggeman(Vfrac=self.Vfrac)
 
-        elif self.MixingStyle=='QCACP':
+        elif self.MixingStyle=='QCACP (root)':
             self.Mix=QCACP(Vfrac=self.Vfrac)
 
         elif self.MixingStyle=='MGMOD':
@@ -125,7 +130,7 @@ class CompositeMaterial(BasicMaterial):
 
     def _selectmat1_fired(self): 
         '''Used to select material.  The exceptions are if the user returns nothing or selects a folder rather than an object for example'''
-        self.modeltree.configure_traits(kind='modal')
+        self.modeltree.configure_traits(kind='modal') #Leave as configure traits not edit traits
         try:
             selected_adapter=self.modeltree.current_selection
             selected_adapter.populate_object()
@@ -151,7 +156,7 @@ class CompositeMaterial_Equiv(CompositeMaterial):
     r_shell=Float(2)
     MixingStyle=Enum('Equivalence', 'Custom Equiv') 
 
-    traits_view=View=View(Item('r_particle'), 
+    traits_view=View=View(#Item('r_particle'), 
                        HGroup(
                           Item('mviewbutton', show_label=False, label='Show Composite Core/Shell Material'),
                           Item('MixingStyle'),

@@ -27,7 +27,7 @@ class BasicLayer(HasTraits):
     ### Do i need synching and delegation???   
     mat_name=DelegatesTo('material')  #Useful so user can change through editor
 
-    basictree=Instance(Model,())  #Although defined here, it's not really used until composite, nanoparticle layers
+    modeltree=Instance(Model)#,())  #Although defined here, it's not really used until composite, nanoparticle layers
     sync_status=Bool(False)  #Used by editor, but only really valid for composite materials  
 
 
@@ -37,7 +37,10 @@ class BasicLayer(HasTraits):
     def __init__(self, *args, **kwargs):
         super(BasicLayer, self).__init__(*args, **kwargs)
         self.sync_trait('specparms', self.material, 'specparms')
-        self.sync_trait('mat_name', self.material, 'mat_name',mutual=True)
+        self.sync_trait('mat_name', self.material, 'mat_name', mutual=True)
+        self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)
+        print '\n\nIN BASIC LAYER MODELTREE is\n\n', self.modeltree
+        
 
     def _material_default(self): 
         return Dispwater() 
@@ -45,6 +48,7 @@ class BasicLayer(HasTraits):
     def _material_changed(self): 
         self.sync_trait('specparms', self.material, 'specparms', mutual=True)  	  #This is necessary because syncing is only done for the obje
         self.sync_trait('mat_name', self.material, 'mat_name', mutual=True)
+        self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)        
 
     def get_usefultraits(self):
         return {'Layer Thickness':self.d, 'Material':self.mat_name}
@@ -60,11 +64,12 @@ class Composite(BasicLayer):
 
     oldsolvent=Instance(IMaterial)  #Used for syncing layers, called by layer_editor
 
-    def _material_default(self): return self.SphericalInclusions_Disk()
+    def _material_default(self): 
+        return self.SphericalInclusions_Disk()
 
-    def __init__(self, *args, **kwargs):
-        super(Composite, self).__init__(*args, **kwargs)
-        self.sync_trait('basictree', self.material, 'modeltree', mutual=True)  #Syncs basic materials tree
+    #def __init__(self, *args, **kwargs):
+        #super(Composite, self).__init__(*args, **kwargs)
+        #self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)  #Syncs basic materials tree
 
     def sync_solvent(self, solvent):
         '''Used to override materials from layereditor'''
@@ -79,7 +84,7 @@ class Composite(BasicLayer):
         self.sync_status=False
 
     def _material_changed(self): 
-        self.sync_trait('basictree', self.material, 'modeltree', mutual=True)
+        self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)
         self.sync_trait('specparms', self.material, 'specparms', mutual=True)  	  #This is necessary because syncing is only done for the obje
 
 class Nanoparticle(Composite):

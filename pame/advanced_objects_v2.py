@@ -274,6 +274,8 @@ class NanoSphereShell(NanoSphere):
         self.sync_trait('ShellMaterial', self.CoreShellComposite, 'Material2')
         self.sync_trait('r_core', self.CoreShellComposite, 'r_particle')
         self.sync_trait('r_shell', self.CoreShellComposite, 'r_shell')
+        self.sync_trait('modeltree', self.CoreShellComposite, 'modeltree')
+        
 
         self.sync_trait('CoreShellComposite', self.TotalMix, 'Material1')
         self.sync_trait('MediumMaterial', self.TotalMix, 'Material2')

@@ -271,7 +271,6 @@ class LiveSearch ( HasTraits ):
         self.selected_match = 1
 
     def _source_files_changed ( self ):
-        print 'source files changed'
         if len( self.source_files ) > 0:
             self.selected = self.source_files[0]
         else:
