@@ -9,12 +9,12 @@ from traitsui.table_filter \
      import EvalFilterTemplate, MenuFilterTemplate, RuleFilterTemplate, \
      EvalTableFilter
 from main_parms import FiberParms, SpecParms
+from modeltree_v2 import Model
+from material_models import Dispwater
 
 
 class BasicLayer(HasTraits):
     '''Class used to store layer in an interactive tabular environment'''
-    from material_models import Dispwater
-    from modeltree_v2 import Model
 
     specparms=Instance(SpecParms,())  #Passed through to the material; not necessarily used in layers
 
@@ -40,7 +40,7 @@ class BasicLayer(HasTraits):
         self.sync_trait('mat_name', self.material, 'mat_name',mutual=True)
 
     def _material_default(self): 
-        return self.Dispwater() 
+        return Dispwater() 
 
     def _material_changed(self): 
         self.sync_trait('specparms', self.material, 'specparms', mutual=True)  	  #This is necessary because syncing is only done for the obje
@@ -121,7 +121,7 @@ class Solvent(Boundary):
     name=Str('Solvent')
 
     def _material_default(self): 
-        return self.Dispwater()
+        return Dispwater()
 
 
 

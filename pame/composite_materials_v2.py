@@ -4,11 +4,11 @@ from traits.api import *
 from traitsui.api import *	
 from interfaces import IMixer, IStorage, IMaterial
 import math
+from modeltree_v2 import Model
+from material_mixer_v2 import MG_Mod, Bruggeman, QCACP, MG
 
 class CompositeMaterial(BasicMaterial):
     '''Still inherits basic traits like earray, narray and how they are interrelated'''
-    from modeltree_v2 import Model
-    from material_mixer_v2 import MG_Mod, Bruggeman, QCACP, MG
 
     modeltree = Instance(Model,())
 
@@ -78,10 +78,12 @@ class CompositeMaterial(BasicMaterial):
         return mat2def
 
     def _Mix_default(self): 
-        return self.MG_Mod()
+        return MG_Mod()
+
     
     def _mat_name_default(self): 
         return self.Material1.mat_name + '  IN   ' + self.Material2.mat_name
+
 
     def _MixingStyle_changed(self): 
         self.update_mix()
@@ -93,29 +95,32 @@ class CompositeMaterial(BasicMaterial):
         self.update_allplots()
         self.Mat1History.append(self.Material1)
 
+
     def _Material2_changed(self): 
         self.sync_trait('specparms', self.Material2, 'specparms', mutual=True)  	  #This is necessary because syncing is only done for the object
         self.sync_trait('Material2', self.Mix, 'solventmaterial')
         self.update_allplots()
         self.Mat2History.append(self.Material2)
 
+
     def _Mix_changed(self):
         '''When I change mix, I make a new object, so this guarantees they are synchd'''
         self.sync_trait('Material1', self.Mix, 'solutematerial')
         self.sync_trait('Material2', self.Mix, 'solventmaterial')
 
+
     def update_mix(self):
         if self.MixingStyle=='MG':
-            self.Mix=self.MG(Vfrac=self.Vfrac) #vfrac because don't want it to reset to default
+            self.Mix=MG(Vfrac=self.Vfrac) #vfrac because don't want it to reset to default
 
         elif self.MixingStyle=='Bruggeman':
-            self.Mix=self.Bruggeman(Vfrac=self.Vfrac)
+            self.Mix=Bruggeman(Vfrac=self.Vfrac)
 
         elif self.MixingStyle=='QCACP':
-            self.Mix=self.QCACP(Vfrac=self.Vfrac)
+            self.Mix=QCACP(Vfrac=self.Vfrac)
 
         elif self.MixingStyle=='MGMOD':
-            self.Mix=self.MG_Mod(Vfrac=self.Vfrac)
+            self.Mix=MG_Mod(Vfrac=self.Vfrac)
 
 
     def _selectmat1_fired(self): 
@@ -147,14 +152,19 @@ class CompositeMaterial_Equiv(CompositeMaterial):
     MixingStyle=Enum('Equivalence', 'Custom Equiv') 
 
     traits_view=View=View(Item('r_particle'), 
-                          HGroup(
-                              Item('mviewbutton', label='Show Material'),
-                              Item('MixingStyle')
-                              ),
+                       HGroup(
+                          Item('mviewbutton', show_label=False, label='Show Composite Core/Shell Material'),
+                          Item('MixingStyle'),
+                          Item('Material1', label='Inclusion Material'), 
+                          Item('Material2', label='Solvent Material'),                       
+                          ),
+
                           Item('Mix', style='custom'),  
                           HGroup(
-                              Item('selectmat1'), Item('selectmat2'),
-                              Item('Material1'), Item('Material2')
+                              # These labels are kind of specific to nanoparticles, probably want more general
+                              # but how do I set labels from advanced_object_v2.py calling this view?
+                              Item('selectmat1', show_label=False, label='Choose Inclusion Material'),
+                              Item('selectmat2', show_label=False, label='Choose Solvent Material'),
                           )
                           )
 

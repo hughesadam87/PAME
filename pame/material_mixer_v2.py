@@ -241,11 +241,11 @@ class CustomEquiv(EquivMethod):
     mix_name='Custom Equiv Method'
 
     #Correction parameters for fine tuning shell, core to meet#
-    core_scaling=Range(low=0.0,high=5.0,value=1.0) 
-    shell_scaling= Range(low=0.0, high=3.0,value=1.0)
+    core_scaling=Range(low=0.0,high=25.0,value=1.0) 
+    shell_scaling= Range(low=0.0, high=15.0,value=1.0)
 
-    e_core_scaling=Range(low=1.0,high=3.0,value=1.0)  
-    e_shell_scaling=Range(low=1.0,high=3.0,value=1.0)  #This is the shell not overall medium
+    e_core_scaling=Range(low=1.0,high=10.0,value=1.0)  
+    e_shell_scaling=Range(low=1.0,high=10.0,value=1.0)  #This is the shell not overall medium
 
     rcore_eff=Property(Float, depends_on=['core_scaling, r_particle'])
     rshell_eff=Property(Float, depends_on=['shell_scaling, r_shell'])

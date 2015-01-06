@@ -208,8 +208,11 @@ class NanoSphereShell(NanoSphere):
 
     d_shell=Property(Float, depends_on='r_shell')
 
-    def _get_d_shell(self): return 2.0*self.r_shell
-    def _set_d_shell(self, d): self.r_shell=d/2.0    
+    def _get_d_shell(self): 
+        return 2.0*self.r_shell
+    
+    def _set_d_shell(self, d): 
+        self.r_shell=d/2.0    
 
     opticalgroup=Group(
         Tabbed(
@@ -226,12 +229,14 @@ class NanoSphereShell(NanoSphere):
 
     coregroup=Group(
         Item('CoreMaterial', style='custom', show_label=False), 
-        Item('selectmat1', label='Choose Core Material', show_label=False) , label='Core Material',
+        Item('selectmat1', label='Choose Core Material', show_label=False) , 
+        label='Core Material',
     )
 
     mediumgroup=Group(	
         Item('MediumMaterial', editor=InstanceEditor(),style='custom', show_label=False),
-        Item('selectmat2', label='Choose Medium Material', show_label=False) , label='Medium Material', 
+        Item('selectmat2', label='Choose Medium Material', show_label=False) , 
+        label='Medium Material', 
     )
 
     compnpgroup=Group(
@@ -244,7 +249,7 @@ class NanoSphereShell(NanoSphere):
             Tabbed(
                 Include('coregroup'),
                 Include('mediumgroup'),
-                Item('ShellMaterial', editor=InstanceEditor(),style='custom', label='Shell Material', show_label=False),
+#                Item('ShellMaterial', editor=InstanceEditor(), style='custom', label='Shell Material', show_label=False),
                 Include('opticalgroup'),
                 Item('CoreShellComposite', style='custom', label='CoreShellComposite Mix', show_label=False),
                 Item('TotalMix', style='custom', label='Surface Coverage', show_label=False),
