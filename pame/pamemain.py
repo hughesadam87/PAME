@@ -15,6 +15,7 @@ from modeltree_v2 import Model
 from gensim import LayerVfrac, GeneralSim
 from handlers import WarningDialog
 
+
 ### Used to present a summary of the state of the program.   ###
 ###This may be deprecated or unuseful and is not all that important I think ###
 
