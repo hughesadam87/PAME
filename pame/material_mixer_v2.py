@@ -131,7 +131,7 @@ class RootFinder(DoubleMixer):
             
             
             eeff[i] = findroot(partialfunc, 
-                               (0.5, 1, 2), 
+                               (0.5, 1, 2),  #This is a root that we are guessing for 3 params
                                solver='muller',
                                )            
             
