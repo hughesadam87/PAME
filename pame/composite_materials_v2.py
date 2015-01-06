@@ -10,7 +10,7 @@ class CompositeMaterial(BasicMaterial):
     from modeltree_v2 import Model
     from material_mixer_v2 import MG_Mod, Bruggeman, QCACP, MG
 
-    modeltree=Instance(Model,())
+    modeltree = Instance(Model,())
 
     Material1=Instance(IMaterial)
     Material2=Instance(IMaterial)   #Make these classes later
@@ -40,11 +40,15 @@ class CompositeMaterial(BasicMaterial):
                            Item('Material2', editor=InstanceEditor(), style='custom', label='Solvent', show_label=False),
                            ),
                        HGroup(		
-                           Item('selectmat1', label='Change Solute', show_label=False), Item('selectmat2', label='Change Solvent', show_label=False),
+                           Item('selectmat1', label='Change Solute', show_label=False), 
+                           Item('selectmat2', label='Change Solvent', show_label=False),
                            ),
                        label='Materials')
 
-    traits_view=View(Item('allbutt', label='Show Allview'),Item('specparms', style='custom'),Include('compmatgroup' ), Include('mixgroup'), 
+    traits_view=View(Item('allbutt', label='Show Allview'),
+                     Item('specparms', style='custom'),
+                     Include('compmatgroup' ),
+                     Include('mixgroup'), 
                      #Item('Mat1History', editor=ListEditor(), style='custom'), 
                      resizable=True, buttons=OKCancelButtons)
 
@@ -73,8 +77,11 @@ class CompositeMaterial(BasicMaterial):
         self.Mat2History.append(mat2def)
         return mat2def
 
-    def _Mix_default(self): return self.MG_Mod()
-    def _mat_name_default(self): return  (self.Material1.mat_name + '  IN   ' + self.Material2.mat_name)
+    def _Mix_default(self): 
+        return self.MG_Mod()
+    
+    def _mat_name_default(self): 
+        return self.Material1.mat_name + '  IN   ' + self.Material2.mat_name
 
     def _MixingStyle_changed(self): 
         self.update_mix()
@@ -98,13 +105,15 @@ class CompositeMaterial(BasicMaterial):
         self.sync_trait('Material2', self.Mix, 'solventmaterial')
 
     def update_mix(self):
-        print 'updating mix'
         if self.MixingStyle=='MG':
             self.Mix=self.MG(Vfrac=self.Vfrac) #vfrac because don't want it to reset to default
+
         elif self.MixingStyle=='Bruggeman':
             self.Mix=self.Bruggeman(Vfrac=self.Vfrac)
+
         elif self.MixingStyle=='QCACP':
             self.Mix=self.QCACP(Vfrac=self.Vfrac)
+
         elif self.MixingStyle=='MGMOD':
             self.Mix=self.MG_Mod(Vfrac=self.Vfrac)
 
@@ -113,7 +122,7 @@ class CompositeMaterial(BasicMaterial):
         '''Used to select material.  The exceptions are if the user returns nothing or selects a folder rather than an object for example'''
         self.modeltree.configure_traits(kind='modal')
         try:
-            selected_adapter=self.modeltree.current_selection[0]    #For some reason this returns a list
+            selected_adapter=self.modeltree.current_selection
             selected_adapter.populate_object()
             self.Material1=selected_adapter.matobject	
         except (TypeError, AttributeError):  #If user selects none, or selects a folder object, not an actual selection
@@ -122,7 +131,7 @@ class CompositeMaterial(BasicMaterial):
     def _selectmat2_fired(self): 
         self.modeltree.configure_traits(kind='modal')
         try:
-            selected_adapter=self.modeltree.current_selection[0]  #For some reason this returns a list
+            selected_adapter=self.modeltree.current_selection
             selected_adapter.populate_object()
             self.Material2=selected_adapter.matobject
         except (TypeError, AttributeError):  

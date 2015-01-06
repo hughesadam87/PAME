@@ -215,7 +215,9 @@ class NanoSphereShell(NanoSphere):
         Tabbed(
             Item('FullMie', editor=InstanceEditor(), style='custom', label='Full Shell Particle', show_label=False, ),
             Group( 
-                Item('CompositeMie', editor=InstanceEditor(), style='custom', label='Mixed Mie Particle', show_label=False), 	
+                Item('CompositeMie', 
+                     editor=InstanceEditor(), 
+                     style='custom', label='Mixed Mie Particle', show_label=False), 	
                 #				Item('CompositeMixStyle', style='custom', show_label=False),
                 #				Item('CompositeMix', style='custom', show_label=False),				     
                 label='Composite Shell/core')
@@ -282,14 +284,27 @@ class NanoSphereShell(NanoSphere):
         self.sync_trait('r_shell', self.FullMie, 'r_shell')
 
 #	def _ShellMaterial_default(self): return self.SphericalInclusions_Shell()
-    def _ShellMaterial_default(self): return self.Constant(constant_index=1.4330)  #NOTE THIS DOESN'T AUTOMATICALLY TRIGGER UDPATES!!
-    def _CoreShellComposite_default(self): return self.CompositeMaterial_Equiv()
-    def _TotalMix_default(self): return SphericalInclusions_Disk()   
-    def _FullMie_default(self): return self.sphere_shell()
-    def _CompositeMie_default(self): return self.sphere_full()
-    def _mat_name_default(self): return str('Composite NP:  ')+str(self.Material1.mat_name)+' IN '+str(self.Material2.mat_name)
+    def _ShellMaterial_default(self): 
+        return self.Constant(constant_index=1.4330)  #NOTE THIS DOESN'T AUTOMATICALLY TRIGGER UDPATES!!
+    
+    def _CoreShellComposite_default(self): 
+        return self.CompositeMaterial_Equiv()
 
-    def _doublescattview_default(self): return self.DoubleSview(scatt1=self.FullMie.sview, scatt2=self.CompositeMie.sview)
+    def _TotalMix_default(self): 
+        return SphericalInclusions_Disk()   
+
+    def _FullMie_default(self): 
+        return self.sphere_shell()
+
+    def _CompositeMie_default(self): 
+        return self.sphere_full()
+
+    def _mat_name_default(self): 
+        return str('Composite NP:  ')+str(self.Material1.mat_name)+' IN '+str(self.Material2.mat_name)
+
+    def _doublescattview_default(self): 
+        return self.DoubleSview(scatt1=self.FullMie.sview, 
+                                scatt2=self.CompositeMie.sview)
 
 #	def update_allplots(self): 
 #		''' I replaced this with doublescattview anyway'''
