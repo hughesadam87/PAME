@@ -195,12 +195,13 @@ class sphere_electrostatics(ABCsphere):
 
 class bare_sphere(ABCsphere):
     '''Full mie solution to plain sphere'''
-
+    
     bare_sphere_group=Group(Include('basic_group'), 
                             HGroup(
-                                Item('r_core', label='Core (or effective) Radius'), 
+                                Item('r_core', label='Core Radius'), 
                                 ), 
                             )
+    
     traits_view=View(VGroup(
         Include('bare_sphere_group'), 
         #      Item('specparms', style='custom'), 
@@ -250,6 +251,21 @@ class bare_sphere(ABCsphere):
 
         self.update_sview()
         
+class effective_sphere(bare_sphere):
+    """ Bare sphere, but r_core is implied to mean effective radius,
+    usually r_core + r_shell passed in from another model.  Used by
+    NanoSphereShell, which handles the r_core + r_shell sum.
+    
+    Computationally, this is identical to bare sphere (no shell parameters 
+    into play in the cross section)
+    """
+    
+    bare_sphere_group=Group(Include('basic_group'), 
+                            HGroup(
+                                Item('r_core', label='EFFECTIVE Radius')
+                                ), 
+                            )    
+
 
 class sphere_shell(bare_sphere, shell):
     '''This is a sphere with a surrounding shell; inherits from basic sphere'''

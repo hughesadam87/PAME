@@ -5,7 +5,7 @@ from interfaces import IMie, IMaterial, IMixer, IStorage
 from numpy import empty, array
 import os.path as op
 import math, cmath
-from mie_traits_v2 import bare_sphere
+from mie_traits_v2 import bare_sphere, effective_sphere
 from composite_materials_v2 import SphericalInclusions_Disk #For inheritance
 
 from pame import XNK_dir
@@ -329,7 +329,7 @@ class NanoSphereShell(NanoSphere):
     
     # Just a sphere BUT CORE RADIUS IS EFFECTIVE RADIUS!!!
     def _CompositeMie_default(self): 
-        return bare_sphere()
+        return effective_sphere(r_core = self.r_core + self.r_shell, label='EFFECTIVE Radius')
     
     @on_trait_change('r_core, r_shell')
     def r_eff(self):
