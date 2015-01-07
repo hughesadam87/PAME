@@ -101,7 +101,7 @@ class FiberParms(HasTraits):
     Config=Enum('Reflection', 'Transmission')
 
     # Don't change these or BasicReflectance.update_R will get mad
-    Mode=Enum('S-polarized', 'P-polarized', 'Mixed')
+    Mode=Enum('S-polarized', 'P-polarized', 'Unpolarized')
     Lregion=Float(1500) #um or cm
     Dcore=Float(62.5)  #um
     Rcore=Property(Float, depends_on=['Dcore'])

@@ -186,9 +186,12 @@ class CompositeMaterial_Equiv(CompositeMaterial):
         self.sync_trait('r_particle', self.Mix, 'r_particle', mutual=True)  
         self.sync_trait('r_shell', self.Mix, 'r_shell', mutual=True) #Yes neccessary 	  		  	
 
-    def _MixingStyle_default(self): return 'Custom Equiv'
+    def _MixingStyle_default(self): 
+        return 'Custom Equiv'
 
-    def _Mix_default(self): return self.CustomEquiv()
+    def _Mix_default(self):
+        return self.CustomEquiv()
+
 
 class SphericalInclusions(CompositeMaterial):
     '''Essentially a composite material except inclusions of spheres are integrated with the VFrac parameter in volume'''

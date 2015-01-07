@@ -105,29 +105,49 @@ class BasicReflectance(HasTraits):
 
     # RENAME
     def update_optical_stack(self):
-        '''Actually computes R'''
+        """ Calls the transfer method matrix vectorially (for each wavelength) and for each angle.
+        Results are stored in a pandas Panel of Item Axis Angle.  For each angle, there's a 
+        DataFrame which stores R(lam), T(lam), r(lam) etc... ie the vectorized reflectance, 
+        transmittance, reflectance amplitude etc... anything returned by vector_com_tmm().
+        
+        If polarization is both, the average of these values at each polariziation is stored.  For example
+        Rs + Rp / 2.0 gives the average, unpolarized reflection coefficient.  This should work for
+        complex quantities like the reflection amplitude (ie rs + rp / 2.0); however, the average
+        (possilby complex) reflection amplitude squared is not necessarily equal to Rs + Rp /2 unless
+        rs and rp are real.  
+        
+        The takeaway is that for unpolarized light, the operation (results_s + results_p) / 2.0 is performed
+        on the DataFrames, irregardless of a real or complex value in each columns.  We confirmed this works
+        as expected, and when plotted, only the real part will be plotted anyway (default behavior of pandas plot).
+        """
         print 'recomputing optical stack'
 
         if self.Mode == 'S-polarized':
             pol = 's'
         elif self.Mode == 'P-polarized':
             pol = 'p'
-        elif self.Mode == 'Mixed':
-            pol = '????'
-            print '\n\n\nSKIPPING MIXED MODE!!!\n\n\n\n'          
+        elif self.Mode == 'Unpolarized':
+            pol = 'both'
         else:
-            raise ReflectanceError('Mode must be "S-polarized", "P-polarized" or Mixed; crashing intentionally.')
+            raise ReflectanceError('Mode must be "S-polarized", "P-polarized" or Unpolarized; crashing intentionally.')
             sys.exit()
 
-        paneldict = {}
+        paneldict = {}        
         for ang in self.angles:
             ang = math.radians(ang)
-            paneldict[ang] = vector_com_tmm(pol, 
-                                            self.ns,
-                                            self.ds, 
-                                            ang, 
-                                            self.lambdas
+            
+            if pol == 'both':
+                result_dataframe = \
+                    vector_com_tmm('s', self.ns, self.ds, ang, self.lambdas) + \
+                    vector_com_tmm('p', self.ns, self.ds, ang, self.lambdas)                  
+                result_dataframe = result_dataframe / 2.0
+                
+            else:
+                result_dataframe = vector_com_tmm(
+                    pol, self.ns, self.ds, ang,self.lambdas
                                             )
+
+            paneldict[ang] = result_dataframe
 
         # UPDATE optical_stack!
         self.optical_stack = Panel(paneldict)

@@ -39,7 +39,6 @@ class BasicLayer(HasTraits):
         self.sync_trait('specparms', self.material, 'specparms')
         self.sync_trait('mat_name', self.material, 'mat_name', mutual=True)
         self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)
-        print '\n\nIN BASIC LAYER MODELTREE is\n\n', self.modeltree
         
 
     def _material_default(self): 

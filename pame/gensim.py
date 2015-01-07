@@ -25,7 +25,6 @@ from interfaces import IMaterial, ISim
 from layer_editor import LayerEditor
 
 
-
 class SimObject(HasTraits):
     '''Basic editor for editing traits and values in these simulations, an adapter basically.  Stores an array for
        incremental updating.'''
