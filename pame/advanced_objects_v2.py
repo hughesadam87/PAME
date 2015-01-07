@@ -270,7 +270,11 @@ class NanoSphereShell(NanoSphere):
         self.sync_trait('specparms', self.CoreShellComposite, 'specparms')
         
         self.sync_trait('CoreMaterial', self.CoreShellComposite, 'Material1')
-        self.sync_trait('ShellMaterial', self.CoreShellComposite, 'Material2')
+        self.sync_trait('ShellMaterial', self.CoreShellComposite, 'Material2')  
+        
+        # Sync my solvent to shellmaterial solvent
+        self.sync_trait('MediumMaterial', self.ShellMaterial, 'Material2')
+        
         
 
         # Material 2 is set in CoreShellComposite itself (ie the inclusion matera
@@ -293,7 +297,7 @@ class NanoSphereShell(NanoSphere):
         
         
         # Sync materials to composite mie, including shell!
-        self.sync_trait('CoreMaterial', self.CompositeMie, 'CoreShellComposite') #<-- IMPORTANT
+        self.sync_trait('CoreShellComposite', self.CompositeMie, 'CoreMaterial') #<-- IMPORTANT
         self.sync_trait('MediumMaterial', self.CompositeMie, 'MediumMaterial')
 
         self.sync_trait('CoreMaterial', self.FullMie, 'CoreMaterial', mutual=False) 
@@ -329,9 +333,7 @@ class NanoSphereShell(NanoSphere):
     
     @on_trait_change('r_core, r_shell')
     def r_eff(self):
-        print '\nUPDATING R_EFF\n'
         self.CompositeMie.r_core = self.r_core + self.r_shell
-        # Trigger update cross?
 
     def _mat_name_default(self): 
         return str('Composite NP:  ')+str(self.Material1.mat_name)+' IN '+str(self.Material2.mat_name)
@@ -347,8 +349,11 @@ class NanoSphereShell(NanoSphere):
     def get_usefultraits(self):
         ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
         ### Eventually, make complex materials liked mixed shell call down levels of this.  aka self.shellmaterial.get_usefultraits()
-        return {'Core Material':self.CoreMaterial.mat_name, 'Shell Inclusion':self.ShellMaterial.mat_name,
-                'Medium Material':self.MediumMaterial.mat_name, 'Core Diameter':self.d_core, 'Shell Thickness':self.d_shell}
+        return {'Core Material':self.CoreMaterial.mat_name, 
+                'Shell Inclusion':self.ShellMaterial.mat_name,
+                'Medium Material':self.MediumMaterial.mat_name, 
+                'Core Diameter':self.d_core,
+                'Shell Thickness':self.d_shell}
 
 
 if __name__ == '__main__':

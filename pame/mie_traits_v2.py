@@ -198,7 +198,7 @@ class bare_sphere(ABCsphere):
 
     bare_sphere_group=Group(Include('basic_group'), 
                             HGroup(
-                                Item('r_core', label='Core Radius'), 
+                                Item('r_core', label='Core (or effective) Radius'), 
                                 ), 
                             )
     traits_view=View(VGroup(
