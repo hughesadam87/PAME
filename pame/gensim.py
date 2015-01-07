@@ -191,18 +191,18 @@ class GeneralSim(HasTraits):
         md_ext='.mdat'   #metadata extensions
 
         ### Make sure simulation has taken place
-        if self.outpanel == None:
+        if self.outpanel is None:
             message('Cannot save simulation, %s, outpanel trait is None. \
 	    Perhaps simulation was not run yet?'%self.outname, title='Warning')
             return
 
         ### If no explicitly passed, outname and outpath delegate to stored defaults
-        if outname == None:
+        if outname is None:
             outname=self.outname
         else:
             self.outname=outname  #Not sure if I'll ever use, but useful for overwriting
 
-        if outpath == None:
+        if outpath is None:
             outpath=self.outdir #delegate from base_app
 
         ### If outname has file extension, and its not pickle, convert it
@@ -338,7 +338,10 @@ class LayerVfrac(GeneralSim):
             print "Iteration\t", i+1, "\t of \t", self.inc, "\t completed"
 
         ### Make a full panel out of paneldic with trials as the items
+        
+        print paneldic, 'HI SAVING PANELDIC'
         self.outpanel=Panel.from_dict(paneldic, orient='minor')
+        print 'FINISHED\n\n\n'
 
         ####################################
         ### DEPRECATE #####################
