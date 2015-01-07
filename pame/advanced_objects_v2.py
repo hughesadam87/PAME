@@ -21,15 +21,16 @@ class NanoSphere(SphericalInclusions_Disk):
     '''Technically a nanosphere always needs a medium anyway, so make it composite object'''
     from material_models import Dispwater
 
-    mat_name=Str('Bare Nanosphere')
-    FullMie=Instance(IMie)  #Used to compute scattering properties	
+    mat_name = Str('Bare Nanosphere')
+    FullMie = Instance(IMie)  #Used to compute scattering properties	
 
-    MediumMaterial=Instance(IMaterial)
-    CoreMaterial=Instance(IMaterial)
+    MediumMaterial = Instance(IMaterial)
+    CoreMaterial = Instance(IMaterial)
 
-    r_core=Float(12)
+    r_core = Float(12)
 
-    d_core=Property(Float, depends_on='r_core')
+    d_core = Property(Float,
+                      depends_on='r_core')
 
     def _get_d_core(self): 
         return 2.0*self.r_core
@@ -205,15 +206,7 @@ class NanoSphereShell(NanoSphere):
 
     CompositeMie=Instance(IMie)  #This will store optical properties of the composite scattering cross section
 
-    r_shell = Float(2)	
-
-    d_shell = Property(Float, depends_on='r_shell')
-
-    def _get_d_shell(self): 
-        return 2.0*self.r_shell
-    
-    def _set_d_shell(self, d): 
-        self.r_shell=d/2.0    
+    shell_width = Float(2)	
 
     opticalgroup=Group(
         Tabbed(
@@ -242,8 +235,9 @@ class NanoSphereShell(NanoSphere):
 
     compnpgroup=Group(
         HGroup(            
-            Item('d_core', label='NP Core diameter'), Item('d_shell', label='NP Shell thickness'),
-            Item('r_core', label='NP Core radius'), Item('r_shell', label='NP Shell radius'), 
+            Item('d_core', label='NP Core diameter'),
+            Item('shell_width', label='NP Shell thickness'),
+            Item('r_core', label='NP Core radius'),
             #Item('specparms', style='custom'), 
             Item('mviewbutton', label='Show Full material', show_label=False)),
         Group(
@@ -279,10 +273,10 @@ class NanoSphereShell(NanoSphere):
 
         # Material 2 is set in CoreShellComposite itself (ie the inclusion matera
         self.sync_trait('r_core', self.CoreShellComposite, 'r_particle')
-        self.sync_trait('r_shell', self.CoreShellComposite, 'r_shell')
+        self.sync_trait('shell_width', self.CoreShellComposite, 'shell_width')
 
         self.sync_trait('r_core', self.ShellMaterial, 'r_platform')
-        self.sync_trait('r_shell', self.ShellMaterial, 'd_particle') # !!<----        
+        self.sync_trait('shell_width', self.ShellMaterial, 'shell_width') # !!<----        
         
         self.sync_trait('modeltree', self.CoreShellComposite, 'modeltree')
         self.sync_trait('modeltree', self.ShellMaterial, 'modeltree')        
@@ -290,7 +284,7 @@ class NanoSphereShell(NanoSphere):
         # Mixes the Complex Particle and Medium (SHOULD SYNC R_EFFECTIVE, NO?)
         self.sync_trait('CoreShellComposite', self.TotalMix, 'Material1')
         self.sync_trait('MediumMaterial', self.TotalMix, 'Material2')
-        self.sync_trait('r_core', self.TotalMix, 'r_particle', mutual=False)
+        self.sync_trait('r_core', self.TotalMix, 'r_particle', mutual=False) #<-- USES RCORE NOT R_EFF
 
         self.sync_trait('specparms', self.CompositeMie, 'specparms')
         self.sync_trait('specparms', self.FullMie, 'specparms')      
@@ -305,7 +299,7 @@ class NanoSphereShell(NanoSphere):
         
         # Sync materials to full mie
         self.sync_trait('ShellMaterial', self.FullMie, 'ShellMaterial')
-        self.sync_trait('r_shell', self.FullMie, 'r_shell')
+        self.sync_trait('shell_width', self.FullMie, 'shell_width')
         # COMPOSITE MIE RADII ARE SYNCED MANUALLY IN DECORATOR
 
     def _ShellMaterial_default(self): 
@@ -329,11 +323,11 @@ class NanoSphereShell(NanoSphere):
     
     # Just a sphere BUT CORE RADIUS IS EFFECTIVE RADIUS!!!
     def _CompositeMie_default(self): 
-        return effective_sphere(r_core = self.r_core + self.r_shell, label='EFFECTIVE Radius')
+        return effective_sphere(r_core = self.r_core + self.shell_width, label='EFFECTIVE Radius')
     
-    @on_trait_change('r_core, r_shell')
+    @on_trait_change('r_core, shell_width')
     def r_eff(self):
-        self.CompositeMie.r_core = self.r_core + self.r_shell
+        self.CompositeMie.r_core = self.r_core + self.shell_width
 
     def _mat_name_default(self): 
         return str('Composite NP:  ')+str(self.Material1.mat_name)+' IN '+str(self.Material2.mat_name)
@@ -353,7 +347,7 @@ class NanoSphereShell(NanoSphere):
                 'Shell Inclusion':self.ShellMaterial.mat_name,
                 'Medium Material':self.MediumMaterial.mat_name, 
                 'Core Diameter':self.d_core,
-                'Shell Thickness':self.d_shell}
+                'Shell Thickness':self.shell_width}
 
 
 if __name__ == '__main__':

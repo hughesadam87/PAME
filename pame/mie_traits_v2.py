@@ -166,16 +166,16 @@ class shell(Mie):
     ShellMaterial=Instance(IMaterial)
     eshell=DelegatesTo('ShellMaterial', prefix='earray')
     nshell=DelegatesTo('ShellMaterial', prefix='narray')
-    r_shell=Float(2.0)
+    shell_width=Float(2.0)
 
-    basic_shell_group=Group( Item('r_shell') )
+    basic_shell_group=Group( Item('shell_width') )
 
-    traits_view=View( Item('r_shell') )
+    traits_view=View( Item('shell_width') )
 
     def _ShellMaterial_default(self): 
         return Sellmeir()
     
-    def _r_shell_changed(self): 
+    def _shell_width_changed(self): 
         self.update_cross()
 
     def _ShellMaterial_changed(self): 
@@ -286,7 +286,7 @@ class sphere_shell(bare_sphere, shell):
             ext_term=0.0;	scatt_term=0.0;	 ext_old=50.0 	  #Loop related parameters to ensure proper entry
             k=self.k_medium[i]
             x=k*float(self.r_core)         #N (nm CANCEL so conv not needed)
-            y=k*float(self.r_shell+self.r_core)  #THIS IS IMPORTANT!!
+            y=k*float(self.shell_width+self.r_core)  #THIS IS IMPORTANT!!
             m1=self.ncore[i]/self.nmedium[i]
             m2=self.nshell[i]/self.nmedium[i]
             n=0

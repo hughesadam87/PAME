@@ -180,10 +180,10 @@ class EquivMethod(DoubleMixer):
     """
     mix_name='Equivalence Method'
 
-#	mie=Instance(IMie)  #Since I want mie to store the main representation for r_particle and r_shell, and delgation control the rest, this needs to be here
+#	mie=Instance(IMie)  #Since I want mie to store the main representation for r_particle and shell_width, and delgation control the rest, this needs to be here
     r_particle=Float(12)
-    r_shell=Float(8)
-    shell_core_ratio=Property(Float, depends_on=['r_particle', 'r_shell'])  #Make this to tune proportion
+    shell_width=Float(8)
+    shell_core_ratio=Property(Float, depends_on=['r_particle', 'shell_width'])  #Make this to tune proportion
     gamma=Array
 
 
@@ -192,7 +192,7 @@ class EquivMethod(DoubleMixer):
         Item('mix_name',label='Mixing Style Name'), 
         HGroup(
             Item('r_particle', style='readonly'), 
-            Item('r_shell', style='readonly'), 		
+            Item('shell_width', style='readonly'), 		
             Item('shell_core_ratio', label='Shell/Core Ratio', style='readonly'),
             ),
 
@@ -205,20 +205,20 @@ class EquivMethod(DoubleMixer):
     def _r_particle_changed(self):
         self.update_mix()
     
-    def _r_shell_changed(self): 
+    def _shell_width_changed(self): 
         self.update_mix()
 
     def _get_shell_core_ratio(self): 
-        return round(self.r_shell/self.r_particle,2)
+        return round(self.shell_width/self.r_particle,2)
 
     def _set_shell_core_ratio(self, input_value): 
         '''If user changes ratio, this will adjust the shell (by choice) and not the core to fit the ratio'''
-        self.r_shell=input_value * self.r_particle
+        self.shell_width=input_value * self.r_particle
 
     def update_mix(self):
         eeff = np.empty(self.esolute.shape, dtype='complex')
         r1 = self.r_particle
-        r2 = self.r_shell+self.r_particle        #KEY THAT r2 is not just r_shell
+        r2 = self.shell_width+self.r_particle        #KEY THAT r2 is not just shell_width
         A = (r1/r2)**3
         B = self.esolvent/self.esolute
         
@@ -246,7 +246,7 @@ class CustomEquiv(EquivMethod):
     e_shell_scaling=Range(low=1.0,high=10.0,value=1.0)  #This is the shell not overall medium
 
     rcore_eff=Property(Float, depends_on=['core_scaling, r_particle'])
-    rshell_eff=Property(Float, depends_on=['shell_scaling, r_shell'])
+    shell_width_effective=Property(Float, depends_on=['shell_scaling, shell_width'])
 
     traits_view=View(         #FOR SOME REASON 'shell_core_ratio' causes the view to crash!
                               VGroup(
@@ -257,16 +257,16 @@ class CustomEquiv(EquivMethod):
                                          Item('e_shell_scaling', label='Scaling of shell dielectric')
                                          ),
                                   HGroup(Item('r_particle', style='readonly'), 
-                                         Item('r_shell', style='readonly')), 
+                                         Item('shell_width', style='readonly')), 
                                   HGroup(Item('rcore_eff'),
-                                         Item('rshell_eff') ),# Item('shell_core_ratio') ),
+                                         Item('shell_width_effective') ),# Item('shell_core_ratio') ),
                               )
                               )
 
     def _rcore_eff_changed(self): 
         self.update_mix()
     
-    def _rshell_eff_changed(self): 
+    def _shell_width_effective_changed(self): 
         self.update_mix()
 
     def _e_core_scaling_changed(self): 
@@ -278,13 +278,13 @@ class CustomEquiv(EquivMethod):
     def _get_rcore_eff(self): 
         return self.core_scaling * self.r_particle
 
-    def _get_rshell_eff(self): 
-        return self.shell_scaling * self.r_shell
+    def _get_shell_width_effective(self): 
+        return self.shell_scaling * self.shell_width
 
     def update_mix(self):
 
         r1=self.rcore_eff
-        r2=self.rshell_eff+self.rcore_eff        #KEY THAT r2 is not just r_shell
+        r2=self.shell_width_effective+self.rcore_eff        #KEY THAT r2 is not just shell_width
         A=(r1/r2)**3
 
         #Solvent in this case is shell on np not surrounding matrix/solution (VERIFIED 4_13_12)
