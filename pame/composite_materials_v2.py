@@ -150,7 +150,12 @@ class CompositeMaterial(BasicMaterial):
 
 
 class CompositeMaterial_Equiv(CompositeMaterial):
-    '''Like composite material except it uses equivalence method to mix spheres with shells'''
+    '''From Effective THeory of composites with interphase:
+         
+    Computes a complex sphere from a core/shell sphere.  In this case, material 1 refers to the
+    core material and material 2 refers to the shell material.  Thus, the interpretation of inclusion/solvent
+    is no longer valid!
+    '''
     from material_mixer_v2 import EquivMethod, CustomEquiv
     r_particle=Float(12)
     r_shell=Float(2)
@@ -160,16 +165,17 @@ class CompositeMaterial_Equiv(CompositeMaterial):
                        HGroup(
                           Item('mviewbutton', show_label=False, label='Show Composite Core/Shell Material'),
                           Item('MixingStyle'),
-                          Item('Material1', label='Inclusion Material'), 
-                          Item('Material2', label='Solvent Material'),                       
+                          Item('Material1', label='Equivalent Core Material'), 
+                          Item('Material2', label='Equivalent Shell Material'),   
+                          Item('Vfrac', label='TEST INCLUSION MIX FRAC')
                           ),
 
                           Item('Mix', style='custom'),  
                           HGroup(
                               # These labels are kind of specific to nanoparticles, probably want more general
                               # but how do I set labels from advanced_object_v2.py calling this view?
-                              Item('selectmat1', show_label=False, label='Choose Inclusion Material'),
-                              Item('selectmat2', show_label=False, label='Choose Solvent Material'),
+                              Item('selectmat1', show_label=False, label='Choose Equivalent Core Material'),
+                              Item('selectmat2', show_label=False, label='Choose Equivalent Solvent Material'),
                           )
                           )
 
@@ -181,8 +187,10 @@ class CompositeMaterial_Equiv(CompositeMaterial):
     def update_mix(self):
         if self.MixingStyle=='Equivalence':
             self.Mix=self.EquivMethod()
+
         elif self.MixingStyle=='Custom Equiv':
             self.Mix=self.CustomEquiv()
+
         self.sync_trait('r_particle', self.Mix, 'r_particle', mutual=True)  
         self.sync_trait('r_shell', self.Mix, 'r_shell', mutual=True) #Yes neccessary 	  		  	
 

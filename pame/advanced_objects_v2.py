@@ -5,9 +5,12 @@ from interfaces import IMie, IMaterial, IMixer, IStorage
 from numpy import empty, array
 import os.path as op
 import math, cmath
+from mie_traits_v2 import bare_sphere
 from composite_materials_v2 import SphericalInclusions_Disk #For inheritance
 
 from pame import XNK_dir
+from material_files import XNKFile
+
 
 def free_path_correction():
     ''' Size correction for the reduced mean free path.  Cited in many papers, in fact I'm writing this from,
@@ -16,9 +19,7 @@ def free_path_correction():
 
 class NanoSphere(SphericalInclusions_Disk):
     '''Technically a nanosphere always needs a medium anyway, so make it composite object'''
-    from mie_traits_v2 import sphere_full, sphere
     from material_models import Dispwater
-    from material_files import XNKFile
 
     mat_name=Str('Bare Nanosphere')
     FullMie=Instance(IMie)  #Used to compute scattering properties	
@@ -67,10 +68,10 @@ class NanoSphere(SphericalInclusions_Disk):
 
 
     def _FullMie_default(self): 
-        return self.sphere_full()			
+        return bare_sphere()			
 
     def _CoreMaterial_default(self):  ### Overwrite as package data eventually
-        return self.XNKFile(file_path = op.join(XNK_dir, 'JC_Gold.nk'))
+        return XNKFile(file_path = op.join(XNK_dir, 'JC_Gold.nk'))
 
     def _MediumMaterial_default(self): 
         return self.Dispwater()#specparms=self.specparms)
@@ -200,13 +201,13 @@ class NanoSphereShell(NanoSphere):
     earray=DelegatesTo('TotalMix')
     Vfrac=DelegatesTo('TotalMix')
 
-    ## selected_material.ShellMaterial.Vfrac is shell trait
+    # selected_material.ShellMaterial.Vfrac is shell trait
 
     CompositeMie=Instance(IMie)  #This will store optical properties of the composite scattering cross section
 
-    r_shell=Float(2)	
+    r_shell = Float(2)	
 
-    d_shell=Property(Float, depends_on='r_shell')
+    d_shell = Property(Float, depends_on='r_shell')
 
     def _get_d_shell(self): 
         return 2.0*self.r_shell
@@ -216,14 +217,14 @@ class NanoSphereShell(NanoSphere):
 
     opticalgroup=Group(
         Tabbed(
-            Item('FullMie', editor=InstanceEditor(), style='custom', label='Full Shell Particle', show_label=False, ),
+            Item('FullMie', editor=InstanceEditor(), style='custom', label='Mie Particle w/ Shell', show_label=False, ),
             Group( 
                 Item('CompositeMie', 
                      editor=InstanceEditor(), 
                      style='custom', label='Mixed Mie Particle', show_label=False), 	
                 #				Item('CompositeMixStyle', style='custom', show_label=False),
                 #				Item('CompositeMix', style='custom', show_label=False),				     
-                label='Composite Shell/core')
+                label='Equivalent Particle')
             ),
         label='Optical Properties')
 
@@ -249,7 +250,7 @@ class NanoSphereShell(NanoSphere):
             Tabbed(
                 Include('coregroup'),
                 Include('mediumgroup'),
-#                Item('ShellMaterial', editor=InstanceEditor(), style='custom', label='Shell Material', show_label=False),
+                Item('ShellMaterial', editor=InstanceEditor(), style='custom', label='Shell Material', show_label=False),
                 Include('opticalgroup'),
                 Item('CoreShellComposite', style='custom', label='CoreShellComposite Mix', show_label=False),
                 Item('TotalMix', style='custom', label='Surface Coverage', show_label=False),
@@ -264,47 +265,73 @@ class NanoSphereShell(NanoSphere):
 
     def __init__(self, *args, **kwds):
         super(NanoSphereShell, self).__init__(*args, **kwds)
-        ## sync syntx ('Trait name here', Object to sync with, 'trait name there'##
-        self.sync_trait('r_shell', self.ShellMaterial, 'r_particle')
-        self.sync_trait('r_core', self.ShellMaterial, 'r_platform')
-        self.sync_trait('MediumMaterial', self.ShellMaterial, 'Material2')
+        # sync syntx ('Trait name here', Object to sync with, 'trait name there'##
 
         self.sync_trait('specparms', self.CoreShellComposite, 'specparms')
+        
         self.sync_trait('CoreMaterial', self.CoreShellComposite, 'Material1')
         self.sync_trait('ShellMaterial', self.CoreShellComposite, 'Material2')
-        self.sync_trait('r_core', self.CoreShellComposite, 'r_particle')
-        self.sync_trait('r_shell', self.CoreShellComposite, 'r_shell')
-        self.sync_trait('modeltree', self.CoreShellComposite, 'modeltree')
         
 
+        # Material 2 is set in CoreShellComposite itself (ie the inclusion matera
+        self.sync_trait('r_core', self.CoreShellComposite, 'r_particle')
+        self.sync_trait('r_shell', self.CoreShellComposite, 'r_shell')
+
+        self.sync_trait('r_core', self.ShellMaterial, 'r_platform')
+        self.sync_trait('r_shell', self.ShellMaterial, 'd_particle') # !!<----        
+        
+        self.sync_trait('modeltree', self.CoreShellComposite, 'modeltree')
+        self.sync_trait('modeltree', self.ShellMaterial, 'modeltree')        
+
+        # Mixes the Complex Particle and Medium (SHOULD SYNC R_EFFECTIVE, NO?)
         self.sync_trait('CoreShellComposite', self.TotalMix, 'Material1')
         self.sync_trait('MediumMaterial', self.TotalMix, 'Material2')
         self.sync_trait('r_core', self.TotalMix, 'r_particle', mutual=False)
 
-        self.sync_trait('r_shell', self.CompositeMie, 'r_shell', mutual=False)  #So I can play with it
-        self.sync_trait('r_core', self.CompositeMie, 'r_core', mutual=False)
         self.sync_trait('specparms', self.CompositeMie, 'specparms')
-        self.sync_trait('CoreShellComposite', self.CompositeMie, 'CoreMaterial') 
+        self.sync_trait('specparms', self.FullMie, 'specparms')      
+        
+        
+        # Sync materials to composite mie, including shell!
+        self.sync_trait('CoreMaterial', self.CompositeMie, 'CoreShellComposite') #<-- IMPORTANT
         self.sync_trait('MediumMaterial', self.CompositeMie, 'MediumMaterial')
 
+        self.sync_trait('CoreMaterial', self.FullMie, 'CoreMaterial', mutual=False) 
+        self.sync_trait('MediumMaterial', self.FullMie, 'MediumMaterial')        
+        
+        # Sync materials to full mie
         self.sync_trait('ShellMaterial', self.FullMie, 'ShellMaterial')
         self.sync_trait('r_shell', self.FullMie, 'r_shell')
+        # COMPOSITE MIE RADII ARE SYNCED MANUALLY IN DECORATOR
 
-#	def _ShellMaterial_default(self): return self.SphericalInclusions_Shell()
     def _ShellMaterial_default(self): 
-        return self.Constant(constant_index=1.4330)  #NOTE THIS DOESN'T AUTOMATICALLY TRIGGER UDPATES!!
+        return self.SphericalInclusions_Shell()
+
+#    def _ShellMaterial_default(self): 
+#        return self.Constant(constant_index=1.4330)  #NOTE THIS DOESN'T AUTOMATICALLY TRIGGER UDPATES!!
     
     def _CoreShellComposite_default(self): 
+        """ This is the complex core/shell represented as a single particle.  This does
+        not take into account medium.  That's handled in MIE.
+        """
         return self.CompositeMaterial_Equiv()
 
     def _TotalMix_default(self): 
         return SphericalInclusions_Disk()   
-
+    
+    # Sphere and shell
     def _FullMie_default(self): 
         return self.sphere_shell()
-
+    
+    # Just a sphere BUT CORE RADIUS IS EFFECTIVE RADIUS!!!
     def _CompositeMie_default(self): 
-        return self.sphere_full()
+        return bare_sphere()
+    
+    @on_trait_change('r_core, r_shell')
+    def r_eff(self):
+        print '\nUPDATING R_EFF\n'
+        self.CompositeMie.r_core = self.r_core + self.r_shell
+        # Trigger update cross?
 
     def _mat_name_default(self): 
         return str('Composite NP:  ')+str(self.Material1.mat_name)+' IN '+str(self.Material2.mat_name)

@@ -1,3 +1,10 @@
+"""
+Module to compute mie scattering coefficients using exact and approximate methods for various particles
+Follows from some sources and mainly the textbook  "Abs and scattering of light by small particles by Huffamn and Bohren"
+Program will accept dielectric or index representations of materials, with dielectric chosen as the canonical representation
+May want to include some consistency tests to verify array lengths to avoid improper user input
+"""
+
 import math, sys, os, re
 from scipy import special
 from numpy.lib import scimath as SM
@@ -9,10 +16,9 @@ from main_parms import SpecParms
 from interfaces import IMaterial, IMie
 from material_models import DrudeBulk, Sellmeir, Dispwater
 
-#Program to compute mie scattering coefficients using exact and approximate methods for various particles
-#Follows from some sources and mainly the textbook  "Abs and scattering of light by small particles by Huffamn and Bohren"
-#Program will accept dielectric or index representations of materials, with dielectric chosen as the canonical representation
-#May want to include some consistency tests to verify array lengths to avoid improper user input
+from pame import XNK_dir
+from material_files import XNKFile
+import os.path as op
 
 class Mie(HasTraits):
     '''Class to compute scattering coefficients given an input of a dielectric array'''
@@ -73,8 +79,8 @@ class Mie(HasTraits):
     def _Cscatt_default(self):
         return empty(self.ecore.shape[0], dtype='float')
 
-    def _CoreMaterial_default(self): 
-        return DrudeBulk()
+    def _CoreMaterial_default(self):  ### Overwrite as package data eventually
+        return XNKFile(file_path = op.join(XNK_dir, 'JC_Gold.nk'))
 
     def _MediumMaterial_default(self): 
         return Dispwater()
@@ -141,7 +147,7 @@ class Mie(HasTraits):
         return(Psi, dPsi, Zi, dZi, Xi, dXi)
 
 
-class sphere(Mie):
+class ABCsphere(Mie):
     '''Scattering functions for a plain sphere'''
     r_core=Float(12)
     basic_sphere_group=Group( Item('r_core') )
@@ -150,7 +156,8 @@ class sphere(Mie):
 #	traits_view=View(Include('basic_sphere_group'), Include('basic_group') )
     traits_view=View(Item('MediumMaterial'), Item('sviewbutton'), Item('rcore'))
 
-    def _r_core_changed(self): self.update_cross()
+    def _r_core_changed(self): 
+        self.update_cross()
 
 
 class shell(Mie):
@@ -165,12 +172,19 @@ class shell(Mie):
 
     traits_view=View( Item('r_shell') )
 
-    def _ShellMaterial_default(self): return Sellmeir()
-    def _r_shell_changed(self): self.update_cross()
-    def _ShellMaterial_changed(self): self.update_cross()
-    def _eshell_changed(self): self.update_cross()
+    def _ShellMaterial_default(self): 
+        return Sellmeir()
+    
+    def _r_shell_changed(self): 
+        self.update_cross()
 
-class sphere_electrostatics(sphere):
+    def _ShellMaterial_changed(self): 
+        self.update_cross()
+
+    def _eshell_changed(self):
+        self.update_cross()
+
+class sphere_electrostatics(ABCsphere):
     '''Scattering cross section for a sphere using the conditions x<<1 and |m|x<<1 pg 136''' 
 
     def update_cross(self):
@@ -179,23 +193,23 @@ class sphere_electrostatics(sphere):
 
         self.update_sview()	
 
-class sphere_full(sphere):
+class bare_sphere(ABCsphere):
     '''Full mie solution to plain sphere'''
 
-    sphere_full_group=Group(Include('basic_group'), 
+    bare_sphere_group=Group(Include('basic_group'), 
                             HGroup(
                                 Item('r_core', label='Core Radius'), 
-                                Item('r_shell', label='Shell Radius')
                                 ), 
                             )
     traits_view=View(VGroup(
-        Include('sphere_full_group'), 
+        Include('bare_sphere_group'), 
         #      Item('specparms', style='custom'), 
         HGroup(
             Item('MediumMaterial', editor=InstanceEditor(), style='simple', show_label=False),
             Item('CoreMaterial', editor=InstanceEditor(), style='simple', show_label=False),
             )), buttons=[ 'OK', 'Cancel', 'Undo', 'Help']
-                     )
+            )
+
     def update_cross(self):
         for i in range(self.ecore.shape[0]):   #Can't get rid of this because bessel functions can't generate with full arrays
             ext_term=0.0  ; scatt_term=0.0 ; ext_old=50
@@ -235,10 +249,11 @@ class sphere_full(sphere):
             self.Cabs[i]=self.Cext[i]-self.Cscatt[i]
 
         self.update_sview()
+        
 
-class sphere_shell(sphere_full, shell):
+class sphere_shell(bare_sphere, shell):
     '''This is a sphere with a surrounding shell; inherits from basic sphere'''
-    sphere_shell_group=Group(Include('sphere_full_group') )
+    sphere_shell_group=Group(Include('bare_sphere_group') )
 
     traits_view=View(VGroup(
         Include('sphere_shell_group'),
