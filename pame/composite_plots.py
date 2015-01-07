@@ -43,13 +43,13 @@ class MultiView(HasTraits):
         Item('selectedplot', show_label=False, editor=ComponentEditor()),
         width=800, height=600, resizable=True   )
 
+
 class DoubleSview(HasTraits):
     ''' Container for two instances of scatter view.  Takes in full Sview objects, so that composite
         plots can be built up using these '''
 
     scatt1=Instance(ScatterView) 
     scatt2=Instance(ScatterView)
-
 
     datanames=['Scattering', 'Absorbance', 'Extinction']
     hideplots=List( editor = CheckListEditor(
@@ -68,10 +68,12 @@ class DoubleSview(HasTraits):
     doubleplot=Instance(Plot)
 
     def _alldata_default(self): 
-        ''' Default ArrayPlotData with reserved names which will be updated when individual plot data objects are changed'''
+        """ Default ArrayPlotData with reserved names which will be updated when individual plot data
+        objects are changed.
+        names for the ArrayPlotData objects based on datanames (sig, absorb) plus the id and delimiter.  I reserve
+        only one instance of 'x' """
         alldata=ArrayPlotData()
-        ''' I set up names for the ArrayPlotData objects based on datanames (sig, absorb) plus the id and delimiter.  I reserve
-		    only one instance of 'x' '''
+
         for name in self.datanames: 
             alldata.set_data(name+self.delimiter+self.s1_id, [] )  
             alldata.set_data(name+self.delimiter+self.s2_id, [] )  
@@ -90,6 +92,7 @@ class DoubleSview(HasTraits):
                 plot.plot(('x', name), name=name, linewidth=5, color=color)
         return plot
 
+
     @on_trait_change('scatt1.data.arrays, scatt2.data.arrays')
     def update_alldata(self):
         ''' This is how the plots update in real time, by listening to data.arrays.  I extract 'x' from
@@ -98,10 +101,13 @@ class DoubleSview(HasTraits):
             if name == 'x':
                 self.alldata.set_data((str(name)), self.scatt1.data.arrays[name] )
             else:
-                self.alldata.set_data((str(name)+self.delimiter+self.s1_id), self.scatt1.data.arrays[name] )
+                self.alldata.set_data((str(name)+self.delimiter+self.s1_id), 
+                                      self.scatt1.data.arrays[name] )
         for name in self.scatt2.data.arrays:
             if name != 'x':
-                self.alldata.set_data((str(name)+self.delimiter+self.s2_id), self.scatt2.data.arrays[name] )
+                self.alldata.set_data((str(name)+self.delimiter+self.s2_id), 
+                                      self.scatt2.data.arrays[name] )
+
 
     @on_trait_change('hideplots')
     def update_lines(self):	
@@ -131,6 +137,7 @@ class DoubleSview(HasTraits):
 
 
 class DoubleView(HasTraits):
+    """ What the hell is this?"""
     DV=List(IMaterial)
     my_selection=Instance(IMaterial)
     alview=Property(depends_on='my_selection')
@@ -156,10 +163,13 @@ class DoubleView(HasTraits):
             return self.my_selection.trait_names()
 
 
-
     traits_view=View( Item('DV', editor=ListStrEditor(selected='my_selection')), 
-                      Item('alview', style='simple', editor=InstanceEditor()), Item('get2', style='simple', editor=InstanceEditor()), Item('get2', style='custom', editor=InstanceEditor()),
-                      resizable=True, width=800, height=600)
+                      Item('alview', style='simple', editor=InstanceEditor()), 
+                      Item('get2', style='simple', editor=InstanceEditor()), 
+                      Item('get2', style='custom', editor=InstanceEditor()),
+                      resizable=True, 
+                      width=800, 
+                      height=600)
 
 
 if __name__ == '__main__':

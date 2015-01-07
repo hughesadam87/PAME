@@ -309,9 +309,9 @@ class ScatterView(HasTraits):
     scatarray=Array()
     absarray=Array()
 
-    exmax=Tuple(0,0)     #Technically properties but don't update with view for some reason
-    absmax=Tuple(0,0)    #Pukes if 0,0 default not provided, but this is probably due to my program not tuple trait
-    scatmax=Tuple(0,0)
+    exmax=Tuple(Float,Float)     #Technically properties but don't update with view for some reason
+    absmax=Tuple(Float,Float)    #Pukes if 0,0 default not provided, but this is probably due to my program not tuple trait
+    scatmax=Tuple(Float,Float)
     exarea=Float         #Store the area under the curve for now, although this should be gotten in curve analysis data
     absarea=Float
     scatarea=Float 
@@ -333,10 +333,10 @@ class ScatterView(HasTraits):
     )
 
     def compute_max_xy(self, array):
-        rounding=3  #Change for rounding of these 
-        value=max(array)
-        index=int(where(array==value)[0])  #'where' returns tuple since is can be used on n-dim arrays
-        x=self.xarray[index]
+        rounding = 3  #Change for rounding of these 
+        value = max(array)
+        index = int(where(array==value)[0])  #'where' returns tuple since is can be used on n-dim arrays
+        x = self.xarray[index]
         return (round(x,rounding), round(value,rounding))
 
     def compute_area(self, array):
@@ -363,7 +363,12 @@ class ScatterView(HasTraits):
         plot.title = title_keyword + 'vs. Wavelength'
         plot.legend.visible = True
 
-        bottom_axis = PlotAxis(plot, orientation='bottom', title=self.xunit, label_color='red', label_font='Arial', tick_color='green', tick_weight=1)
+        bottom_axis = PlotAxis(plot, orientation='bottom', 
+                               title=self.xunit, 
+                               label_color='red',
+                               label_font='Arial', 
+                               tick_color='green', tick_weight=1)
+
         vertical_axis = PlotAxis(plot, orientation='left',
                                  title=str(title_keyword))
 
@@ -376,8 +381,11 @@ class ScatterView(HasTraits):
         plot.overlays.append(zoom)
 
     def update(self, xarray, extarray, scatarray, absarray, xunit):         
-        self.xunit=xunit ;self.xarray=xarray
-        self.extarray=extarray ; self.absarray=absarray ; self.scatarray=scatarray
+        self.xunit=xunit 
+        self.xarray=xarray
+        self.extarray=extarray 
+        self.absarray=absarray 
+        self.scatarray=scatarray
 
         if self.data == None:
             self.data = ArrayPlotData(x=self.xarray, Scattering=self.scatarray, Absorbance=self.absarray , Extinction=self.extarray)

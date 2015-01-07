@@ -276,7 +276,7 @@ class NanoSphereShell(NanoSphere):
         self.sync_trait('shell_width', self.CoreShellComposite, 'shell_width')
 
         self.sync_trait('r_core', self.ShellMaterial, 'r_platform')
-        self.sync_trait('shell_width', self.ShellMaterial, 'shell_width') # !!<----        
+        self.sync_trait('shell_width', self.ShellMaterial, 'shell_width') # <---- Will set r_inclusion, confirmed        
         
         self.sync_trait('modeltree', self.CoreShellComposite, 'modeltree')
         self.sync_trait('modeltree', self.ShellMaterial, 'modeltree')        
@@ -305,6 +305,8 @@ class NanoSphereShell(NanoSphere):
     def _ShellMaterial_default(self): 
         return self.SphericalInclusions_Shell()
 
+    
+
 #    def _ShellMaterial_default(self): 
 #        return self.Constant(constant_index=1.4330)  #NOTE THIS DOESN'T AUTOMATICALLY TRIGGER UDPATES!!
     
@@ -325,7 +327,7 @@ class NanoSphereShell(NanoSphere):
     def _CompositeMie_default(self): 
         return effective_sphere(r_core = self.r_core + self.shell_width, label='EFFECTIVE Radius')
     
-    @on_trait_change('r_core, shell_width')
+    @on_trait_change('r_core, shell_width, ShellMaterial.Material1, ShellMaterial.Material2')
     def r_eff(self):
         self.CompositeMie.r_core = self.r_core + self.shell_width
 

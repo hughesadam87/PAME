@@ -4,6 +4,7 @@ from traitsui.api import View, Item, Group, Include
 from interfaces import IMaterial, IAdapter
 from simple_materials_adapter import ABCFileAdapter
 from material_files import ABCExternal
+import os.path as op
 import numpy as np
 
 import yaml
@@ -64,7 +65,18 @@ class YamlAdapter(ABCFileAdapter):
     COMMENTS = Str('Not Found')
     FORMULA = Any
 
+    root = None #Used for compatibility with modeltree to set special name
+
     _is_model = Property(Bool)
+
+    def _get_name(self):
+        """ Uses folder heirarchy and basename (ie main_AU_Johnson) """
+        if not self.root:
+            return '%s' % op.basename( self.file_path )
+        
+        # Strip root off path
+        relative_path = op.relpath(self.file_path, self.root)
+        return relative_path.replace(op.sep, '_')
 
     def _get__is_model(self):
         """ If yaml has a FORMULA key, this is a model. """

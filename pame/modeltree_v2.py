@@ -148,13 +148,14 @@ class Model( HasTraits ):
         return out
 
     def _riinfodb_default(self):
-        """ Read all files form RI_INFO database """
+        """ Read all files form RI_INFO database. """
         out = []
         if config.USERIINFO:           
             for d, folders, files in os.walk(riinfo_dir):
                 if files:
                     for f in files:
-                        obj = YamlAdapter(file_path = op.join(d, f))
+                        obj = YamlAdapter(file_path = op.join(d, f),
+                                          root=riinfo_dir) #THIS WILL SORT
                         out.append(obj)
         return out 
     

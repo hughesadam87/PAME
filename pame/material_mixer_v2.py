@@ -196,7 +196,8 @@ class EquivMethod(DoubleMixer):
             Item('shell_core_ratio', label='Shell/Core Ratio', style='readonly'),
             ),
 
-        Item('solutematerial'), Item('solventmaterial'),
+        Item('solutematerial'), 
+        Item('solventmaterial'),
     )
 
 
@@ -250,16 +251,16 @@ class CustomEquiv(EquivMethod):
 
     traits_view=View(         #FOR SOME REASON 'shell_core_ratio' causes the view to crash!
                               VGroup(
+                                  HGroup(Item('r_particle', style='readonly'), 
+                                         Item('shell_width', style='readonly')), 
+                                  HGroup(Item('rcore_eff'),
+                                         Item('shell_width_effective') ),
                                   HGroup(Item('core_scaling'), 
                                          Item('shell_scaling')
                                          ), 
                                   HGroup(Item('e_core_scaling', label='Scaling of core dielectric'), 
                                          Item('e_shell_scaling', label='Scaling of shell dielectric')
-                                         ),
-                                  HGroup(Item('r_particle', style='readonly'), 
-                                         Item('shell_width', style='readonly')), 
-                                  HGroup(Item('rcore_eff'),
-                                         Item('shell_width_effective') ),# Item('shell_core_ratio') ),
+                                         ),                                  # Item('shell_core_ratio') ),
                               )
                               )
 

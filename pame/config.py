@@ -12,10 +12,10 @@ MATDELIM = '\t'
    
 # Material databases to use by default
 USESOPRA = True
-USERIINFO = False #slows performance
+USERIINFO = True #slows performance
 
 # Spectral parameters
-xstart = 300 
-xend = 800
+xstart = 400 
+xend = 700
 xpoints = 100 
 xunit = 'Nanometers'

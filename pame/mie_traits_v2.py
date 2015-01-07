@@ -253,8 +253,8 @@ class bare_sphere(ABCsphere):
         
 class effective_sphere(bare_sphere):
     """ Bare sphere, but r_core is implied to mean effective radius,
-    usually r_core + r_shell passed in from another model.  Used by
-    NanoSphereShell, which handles the r_core + r_shell sum.
+    usually r_core + shell_width passed in from another model.  Used by
+    NanoSphereShell, which handles the r_core + shell_width sum.
     
     Computationally, this is identical to bare sphere (no shell parameters 
     into play in the cross section)

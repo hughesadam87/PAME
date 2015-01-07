@@ -150,32 +150,31 @@ class CompositeMaterial(BasicMaterial):
 
 
 class CompositeMaterial_Equiv(CompositeMaterial):
-    '''From Effective THeory of composites with interphase:
-         
+    """From Effective THeory of composites with interphase:
+          
     Computes a complex sphere from a core/shell sphere.  In this case, material 1 refers to the
     core material and material 2 refers to the shell material.  Thus, the interpretation of inclusion/solvent
-    is no longer valid!
-    '''
+    is no longer valid!  Medium material never involved in this computation
+    """
     from material_mixer_v2 import EquivMethod, CustomEquiv
     r_particle=Float(12)
     shell_width=Float(2)
     MixingStyle=Enum('Equivalence', 'Custom Equiv') 
 
     traits_view=View=View(#Item('r_particle'), 
+                       Item('mviewbutton', show_label=False, label='Show Equivalent Complex Dielectric'),
                        HGroup(
-                          Item('mviewbutton', show_label=False, label='Show Composite Core/Shell Material'),
                           Item('MixingStyle'),
-                          Item('Material1', label='Equivalent Core Material'), 
-                          Item('Material2', label='Equivalent Shell Material'),   
-                          Item('Vfrac', label='TEST INCLUSION MIX FRAC')
+                          Item('Material1', label='Core Material'), 
+                          Item('Material2', label='Shell Material'),   
                           ),
 
                           Item('Mix', style='custom'),  
                           HGroup(
                               # These labels are kind of specific to nanoparticles, probably want more general
                               # but how do I set labels from advanced_object_v2.py calling this view?
-                              Item('selectmat1', show_label=False, label='Choose Equivalent Core Material'),
-                              Item('selectmat2', show_label=False, label='Choose Equivalent Solvent Material'),
+                              Item('selectmat1', show_label=False, label='Choose Core Material'),
+                              Item('selectmat2', show_label=False, label='Choose Shell Material'),
                           )
                           )
 
@@ -232,8 +231,7 @@ class SphericalInclusions(CompositeMaterial):
         return 2.0*self.r_particle #Shell thickness is d_particle
     
     def _set_shell_width(self, width):
-        """ Updates r_particle """
-        print 'setting shell width', width
+        """ Updates r_particle to 1/2 shell_width"""
         self.r_particle = 0.5 * width
 
 
