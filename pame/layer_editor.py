@@ -121,14 +121,14 @@ class LayerEditor(HasTraits):
         self.stack.remove(self.selected_layer)
         self.selected_layer=self.stack[self.selected_index-1]   #Simply moves the selected layer one down from the one deleted
 
-    def _changematerial_fired(self):
-        
-
-        print 'IN CHANG EMATERIAL MODELTREE\n\n', self.modeltree
-        
+    def _changematerial_fired(self):        
+        """ Change material sets a new layer by prompting user to choose a material
+        from model tree, then it populates the adapter.
+        """
         self.selectedtree.configure_traits(kind='modal')
+
         try:
-            selected_adapter=self.selectedtree.current_selection[0]    #For some reason this returns a list
+            selected_adapter=self.selectedtree.current_selection    #
             selected_adapter.populate_object()
             newmat=selected_adapter.matobject	
 
@@ -145,20 +145,28 @@ class LayerEditor(HasTraits):
             else:
 
                 if self.layer_type=='Mixed Bulk Materials':
-                    newlayer=Composite(material=newmat, d=self.selected_d) 
+                    newlayer=Composite(material=newmat, 
+                                       d = self.selected_d) 
+               
                 elif self.layer_type=='Bulk Material':
-                    newlayer=BasicLayer(material=newmat, d=self.selected_d)
-                elif self.layer_type=='Nanoparticle Objects':
-                    newlayer=Nanoparticle(material=newmat, d=self.selected_d)
+                    print 'entering basic layerl'
+                    newlayer=BasicLayer(material=newmat, 
+                                        d = self.selected_d)
 
+                elif self.layer_type=='Nanoparticle Objects':
+                    newlayer=Nanoparticle(material=newmat, 
+                                          d = self.selected_d)
+
+            print self.selected_index
             self.stack[self.selected_index] = newlayer
             self.selected_layer = self.stack[self.selected_index]
 
             self.sync_trait('modeltree', newlayer, 'modeltree')    #AGAIN NOT SURE IF NECESSARY, if i can just initialize 
             self.sync_trait('specparms', newlayer, 'specparms')
 
-        except (TypeError, AttributeError):  #If user selects none, or selects a folder object, not an actual selection
+        except (TypeError, AttributeError) as exc:  #If user selects none, or selects a folder object, not an actual selection
             print 'in exception in layereditor change materal', self.stack[self.selected_index], self.selected_layer
+            raise exc
             pass
 
 

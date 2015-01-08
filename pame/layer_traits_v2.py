@@ -21,7 +21,7 @@ class BasicLayer(HasTraits):
     implements(ILayer)     
     name=Str('Single Bulk Material')
     material=Instance(IMaterial)
-    d=Float(10.0)  
+    d = Float(10.0)  
     designator=Enum('basic', 'composite', 'nanoparticle')  #Used to determine special properties like how to sync
 
     ### Do i need synching and delegation???   

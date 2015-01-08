@@ -99,7 +99,8 @@ class Mie(HasTraits):
 
     ###Following methods are utilities to go between e/n represnetation of materials and also get wave vectors. Used as needed in inheriting objects belows###
 
-    def complex_e_to_n(self, earray): return SM.sqrt(earray)  #Sometimes book uses index of refraction so good to have the option to use it
+    def complex_e_to_n(self, earray): 
+        return SM.sqrt(earray)  #Sometimes book uses index of refraction so good to have the option to use it
 
     def complex_n_to_e(self, narray): 		
         earray=np.empty(narray.shape, dtype='complex')  #This is necessary if changing lambdas, so everything works

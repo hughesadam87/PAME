@@ -17,7 +17,6 @@ from mpmath import findroot
 
 from functools import partial
 
-
 class DoubleMixer(HasTraits):
     solutematerial=Instance(IMaterial)
     solventmaterial=Instance(IMaterial)
@@ -62,7 +61,7 @@ class MG_Mod(DoubleMixer):
     dipolar interactions are negligible, or if particle arrangement is spatially cubic.
     """
     mix_name='Maxwell Garnett Modification'
-    K=Range(low=0.0, high=10.0, value=2.0)   #Parameter in Maxwell Garnett Mixing Model
+    K=Range(low= -100.0, high= 100.0, value=0.0)   #Parameter in Maxwell Garnett Mixing Model
 
     traits_view=View( 
         Item('mix_name', label='Mixing Style Name'), 

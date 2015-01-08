@@ -10,7 +10,7 @@ Can call the initialization with a pickled filename for faster use (eg):
 Stores simulation results in a pandas Panel object, with each increment
 being an item, and the state of the system at that point as a dataframe. 
 
-The simulated parameter values are stored separately in a dataframe called df_parms.  
+The simulated parameter values are stored separately in a dataframe called sim_parms.  
 
 Other important parameters in the program are stored in parms dictionary.
 
@@ -46,7 +46,7 @@ class SimParser(HasTraits):
     ### Varying and static parameters of the simulation.
     simparms=Dict()         
     parms=Dict(Str, Dict)  #Dictionary of dictionaries for parameters not involved in simulation 
-    df_parms=Property(depends_on='simparms')
+    sim_parms=Property(depends_on='simparms')
 
     ### This is used to replace ugly trait variable with nice ones and vice versa for looking at results.
     translator=Dict()       
@@ -61,8 +61,6 @@ class SimParser(HasTraits):
             except IOError as e:
                 print '\n Could not initialize parameters from file %s, received the following error:\n %s'%(infile,e)
 
-
-
     def translate(self, df):
         ''' Replace index of dataframe with ugly trait indicies by those with nicer ones in the translator dict.'''
         newnames=[]   
@@ -75,7 +73,7 @@ class SimParser(HasTraits):
         return df
 
 
-    def _get_df_parms(self):
+    def _get_sim_parms(self):
         ''' Make dataframe from dictionary of simulation parameters.'''
         ### Replace commented line after bug fix
 #        df=DataFrame.from_dict(self.simparms, orient='index')
@@ -134,7 +132,7 @@ class SimParser(HasTraits):
 
         if full==True:
             print '**Results panel** (self.results)\n\n', self.results
-            print '\n**Parameters Dataframe** (self.df_parms)\n\n', self.df_parms
+            print '\n**Parameters Dataframe** (self.sim_parms)\n\n', self.sim_parms
 
         print '\nVariable parameters:\n'
 
@@ -193,7 +191,7 @@ class SimParser(HasTraits):
         if paneloutname:
             self.results.save(paneloutname)
         if activeoutname:
-            self.df_parms.save(activeoutname)
+            self.sim_parms.save(activeoutname)
         if passiveoutname:
             self.parms_to_csv(passiveoutname, **csvargs)    
 

@@ -58,7 +58,7 @@ class GeneralSim(HasTraits):
     outdir=DelegatesTo('base_app')
 
     implements(ISim)
-    inc=Range(low=1,high=20,value=1)
+    inc=Range(low=1,high=100,value=1) # Need as range for now I think
 
     notes=Str('<NOTES GO HERE>')
 
@@ -358,7 +358,7 @@ class LayerVfrac(GeneralSim):
         print sorted_keys
         self.outpanel = self.outpanel.reindex_axis(sorted_keys, 
                                                    axis=2, #minor axis 
-                                                   copy=False)
+                                                   copy=False) #save memory
         print sorted_keys
         print self.outpanel
         print 'SAVING PANELDIC FINISHED'

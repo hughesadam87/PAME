@@ -62,10 +62,13 @@ class NanoSphere(SphericalInclusions_Disk):
                     Item('selectmat2', label='Change Medium Material'),
                     Item('MediumMaterial',style='custom'), 
                     label='Medium Material'),
+                Group(
+                    Item('Mix', label='Mixture Coverage')
+                    ),
                 layout='tabbed',
                 ),
             ),
-    )
+       )
 
 
     def _FullMie_default(self): 
