@@ -26,10 +26,11 @@ from layer_editor import LayerEditor
 
 
 class SimObject(HasTraits):
-    '''Basic editor for editing traits and values in these simulations, an adapter basically.  Stores an array for
-       incremental updating.'''
+    """Basic editor for editing traits and values in these simulations, an adapter basically.  
+    Stores an array for incremental updating.
+    """
     trait_name=Str('add trait name')
-    ### THESE VALUES ARE SET WHEN BY CLASSES THAT CONTROL THE SIMS
+    # THESE VALUES ARE SET WHEN BY CLASSES THAT CONTROL THE SIMS
     inc=Int() 
     start=Float()
     end=Float()
@@ -59,10 +60,10 @@ class GeneralSim(HasTraits):
     implements(ISim)
     inc=Range(low=1,high=20,value=1)
 
-    notes=Str('Run Notes:')
+    notes=Str('<NOTES GO HERE>')
 
     key_title=Str('Trial')  #This is used to give each increment a name rather than 1,2,3
-    key_delimiter=Str('%')	#Needed to put in this way to ensure proper sorting in simulationplots.py
+    key_delimiter=Str('_')	#Needed to put in this way to ensure proper sorting in simulationplots.py
     ## Also set to % in composite plots but that doesn't seem to be a problem
 
     ### Restore all traits to original values after simulation is over
@@ -107,25 +108,29 @@ class GeneralSim(HasTraits):
         )
 
     @cached_property
-    def _get_sim_traits_list(self): return self.simulation_traits.keys()
+    def _get_sim_traits_list(self): 
+        return self.simulation_traits.keys()
 
     def get_usefultraits(self):
         '''Method for returning parameters/metadata about the simulation'''
-        return {'Simulation Name':self.outname, 'Steps':self.inc, 'Run Time':self.time, 'Run Notes':self.notes,
-                'Simulated Traits':self.sim_traits_list}
+        return {'Simulation Name':self.outname, 
+                'Steps':self.inc, 
+                'Run Time':self.time, 
+                'Run Notes':self.notes,
+                'Simulated Traits':self.sim_traits_list
+                }
 
     def get_alltraits(self):
         ''' Aggregates all interesting simulation-wide parameters for output'''
         dic={}
         ### Keys must be single string for correct attribute promotion if desirable ###
-        dic['Simulation_Parameters']=self.get_usefultraits()
-        dic['Selected_Material_Parameters']=(self.base_app.selected_material.get_usefultraits())
-        dic['Spectral_Parameters']=(self.base_app.specparms.get_usefultraits())
-        dic['Fiber_Parameters']=(self.base_app.fiberparms.get_usefultraits())
+        dic['Simulation_Parameters'] = self.get_usefultraits()
+        dic['Selected_Material_Parameters'] = (self.base_app.selected_material.get_usefultraits())
+        dic['Spectral_Parameters'] = (self.base_app.specparms.get_usefultraits())
+        dic['Fiber_Parameters'] = (self.base_app.fiberparms.get_usefultraits())
         ### Layer editor is already KEY:List, so already has proper heirarchy
 #	dic.update(self.base_app.layer_editor.get_usefultraits())
         return dic
-
 
 
     def _tvals_changed(self): 
@@ -133,7 +138,8 @@ class GeneralSim(HasTraits):
         self.selected_traits.trait_name=self.translator[self.tvals]
 
     ### Need to make a class tot
-    def _get_translist(self): return self.translator.keys()  
+    def _get_translist(self): 
+        return self.translator.keys()  
 
     def _get__completed(self):
         if self.outpanel == None:
@@ -141,7 +147,8 @@ class GeneralSim(HasTraits):
         else:
             return True
 
-    def _sim_obs_default(self): return []
+    def _sim_obs_default(self): 
+        return []
 
     @on_trait_change('inc, selected_traits')  #Updates with user selection, for some reason selected_traits.start, selected_traits.end notation not makin a difference
     def update_storage(self):
@@ -178,7 +185,8 @@ class GeneralSim(HasTraits):
         for trait in self.simulation_traits.keys():
             xsetattr(self.base_app, trait, self.original_values[trait]) #Restore all traits to original values
 
-    def runsim(self): pass
+    def runsim(self): 
+        pass
 
     def output_simulation(self, outpath=None, outname=None, confirmwindow=True):
         ''' Output simulation into a SimParser object and save.  Simparser object is then suited
@@ -219,8 +227,6 @@ class GeneralSim(HasTraits):
             ### break out and don't save###
             if ui.result==False:
                 return
-
-
 
         ### Translator is actually reversed in scope of use in simparser
         trans_rev=dict((v,k) for k,v in self.translator.items())
@@ -279,13 +285,18 @@ class LayerVfrac(GeneralSim):
                'NP Shell Fill Fraction':'selected_material.CoreShellComposite.Vfrac' }
 
 #	def _R_list_default(self):=return SimViewList(trials_delimiter=self.key_delimiter)      #Stores reflectance plots per iteration
-    def _R_list_default(self): return ReflectanceStorage(trials_delimiter=self.key_delimiter)
-    def _M_list_default(self): return MaterialStorage(trials_delimiter=self.key_delimiter)
+    def _R_list_default(self): 
+        return ReflectanceStorage(trials_delimiter=self.key_delimiter)
+
+    def _M_list_default(self): 
+        return MaterialStorage(trials_delimiter=self.key_delimiter)
 
     ### AdHoc ###
-    def _Scatt_list_default(self): return ScattStorage(trials_delimiter=self.key_delimiter)
+    def _Scatt_list_default(self): 
+        return ScattStorage(trials_delimiter=self.key_delimiter)
 
-    def _outname_default(self): return 'Layersim'
+    def _outname_default(self): 
+        return 'Layersim'
 
     def _selected_material_changed(self): self.update_storage()
 
@@ -306,10 +317,13 @@ class LayerVfrac(GeneralSim):
 
         paneldic={}
 
+        sorted_keys = []
         for i in range(self.inc):
             for trait in self.simulation_traits.keys():
                 xsetattr(self.base_app, trait, self.simulation_traits[trait][i]) #Object, traitname, traitvalue
-            key=self.key_title+self.key_delimiter+str(i)
+#            key=self.key_title+self.key_delimiter+str(i)
+            key = '%s_%s' % (str(i), self.key_title)
+            sorted_keys.append(key)
 
             ### Update relavent methods in case trait's i'm changing don't necessarily trigger these (for example coefficients of
             ### dispersion relation don't trigger a change in the shell of nanoparticles 
@@ -339,9 +353,15 @@ class LayerVfrac(GeneralSim):
 
         ### Make a full panel out of paneldic with trials as the items
         
-        print paneldic, 'HI SAVING PANELDIC'
-        self.outpanel=Panel.from_dict(paneldic, orient='minor')
-        print 'FINISHED\n\n\n'
+        print 'HI SAVING PANELDIC'
+        self.outpanel = Panel.from_dict(paneldic, orient='minor')
+        print sorted_keys
+        self.outpanel = self.outpanel.reindex_axis(sorted_keys, 
+                                                   axis=2, #minor axis 
+                                                   copy=False)
+        print sorted_keys
+        print self.outpanel
+        print 'SAVING PANELDIC FINISHED'
 
         ####################################
         ### DEPRECATE #####################
