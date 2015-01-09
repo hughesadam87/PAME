@@ -3,7 +3,8 @@ They each have special get/set methods for communicating with simulations in gen
 getters and setter model components.'''
 
 from enable.api import Component, ComponentEditor
-from traits.api import HasTraits, Instance, Array, Property, CArray, Str, Float, Tuple, Any, Dict, List, Enum, Bool, cached_property, implements
+from traits.api import HasTraits, Instance, Array, Property, CArray, Str, Float, Tuple, Any, Dict, List, \
+     Enum, Bool, cached_property, implements, DelegatesTo
 from traitsui.api import Item, Group, View, Tabbed, Action, HGroup, InstanceEditor, VGroup, ListStrEditor
 
 # Chaco imports
@@ -26,6 +27,123 @@ import matplotlib.cm as cm
 import config
 
 class OpticalView(HasTraits):
+    optic_model = Any # BasicReflectance object, must be initialized with this by calling fcn
+    
+    optic_stack = DelegatesTo('optic_model')
+    lambdas = DelegatesTo('optic_model')  #Xarray everywhere will need replaced
+    angles = DelegatesTo('optic_model')
+    average = Bool(False)  #Averaging style
+    plot = Instance(Plot)
+    
+    # CHANGE TO HEADER
+    choose = Enum('r', 't', 'R', 'T', 'A','power_entering', 'vw', 'kz', 'angle_propagation')  # SHOULD DELEGATE OR HAVE ADAPTER     
+
+    data = Instance(ArrayPlotData,())
+
+    traits_view = View( Item('average'),
+                             Item('choose', 
+                             label='Choose selected plot', 
+                             show_label=False, 
+                             style='simple'),
+                  Item('plot', show_label=False, editor=ComponentEditor()),
+                  width=800, 
+                  height=600,
+                  resizable=True
+                  )
+
+    
+    
+    def update(self):
+        """Deviates from other plots in that these plots aren't meant to update in realtime
+        via set-data, so it's easier to just wipe plotdata and redraws lines, basically as a
+        static plot would work.  Therefore, I don't separate update_data() and create_plots()
+        and so forth.  This method literally creates the plot from scratch.
+        """
+        # At this point, assumes that arrays have been redraw so overwrite data or just
+    
+        self.plot = ToolbarPlot(self.data) #Requires access to arrayplotdata
+
+        self.data.arrays={} #Clear DATA!!!
+        self.data.set_data('x', self.lambdas)
+        
+        if self.average:
+            avg_array = self.optic_model.compute_average(self.choose)
+            self.data.set_data('y', avg_array.real.astype(float)) 
+            print avg_array.real
+            self.plot.plot( ("x", "y"), name='Averaged Angles', color='red')
+
+        # Plot angle dependence, bruteforce colromap
+        else:
+            # http://stackoverflow.com/questions/15140072/how-to-map-number-to-color-using-matplotlibs-colormap
+            norm = mpl.colors.Normalize(vmin=self.angles[0], vmax=self.angles[-1])
+            cmapper = cm.ScalarMappable(norm=norm, cmap=config.LINECMAP ).to_rgba  #THIS IS A FUNCTION
+    
+            for i, angle in enumerate(self.angles):
+                pass
+#                print 'lol'
+
+    def create_plots(self):
+        """ Creates several toolbar plots"""
+        self.plot = ToolbarPlot(self.data) #Requires access to arrayplotdata
+
+        # http://stackoverflow.com/questions/15140072/how-to-map-number-to-color-using-matplotlibs-colormap
+        norm = mpl.colors.Normalize(vmin=self.angles[0], vmax=self.angles[-1])
+        cmapper = cm.ScalarMappable(norm=norm, cmap=config.LINECMAP ).to_rgba #THIS IS A FUNCTION
+
+        for i, angle in enumerate(self.angles):
+            
+            linecolor = cmapper(angle)
+
+#            print self.RefArray[i,:], self.RefArray[i,:].shape, type(self.RefArray[i,:]), np.isnan(np.sum(self.RefArray[i,:]))
+            self.data.set_data(('RTheta' + str(i)), self.RefArray[i,:])
+            
+#            plt.plot(self.xarray, self.RefArray[i,:])
+
+            self.Refplot.plot( ("x", ('RTheta' + str(i))), 
+                               name=('%.2f'% angle ),
+                               color=linecolor)
+
+            self.data.set_data(('TTheta' + str(i)), self.TransArray[i,:])
+            self.Transplot.plot( ("x", ('TTheta' + str(i))), 
+                                 name=('%.2f' % angle),
+                                 color=linecolor)
+
+            # Hack 
+            self.data.set_data(('ATheta' + str(i)), self.AbsArray[i,:])
+            self.Absplot.plot( ("x", ('ATheta' + str(i))), 
+                                 name=('%.2f' % angle),
+                                 color=linecolor)
+
+        self.Avgplot.plot( ("x", 'Avg'), name='Averaged Angles', color='red' )
+
+        self.add_tools_title(self.Refplot, 'Reflectance')
+        self.add_tools_title(self.Transplot, 'Transmittance')
+        self.add_tools_title(self.Absplot, 'Absorbance')
+        self.add_tools_title(self.Avgplot, 'Averaged Reflectance')
+    
+
+    def add_tools_title(self, plot, title):
+        '''Used to add same tools to multiple plots'''
+        plot.title = title
+        plot.padding = 50
+        
+        # Legend settings
+        # http://code.enthought.com/projects/files/ETS3_API/enthought.chaco.legend.Legend.html
+        plot.legend.labels = list([i for i in self.angles]) #Sort numerically, not alphabetically
+        plot.legend.visible = True
+        plot.legend.bgcolor = (.5,.5,.5) #gray
+        plot.legend.border_visible = True
+        plot.legend.resizable = 'hv'
+
+        
+        # Attach some tools to the plot
+        plot.tools.append(PanTool(plot))
+        zoom = BetterSelectingZoom(component=plot, tool_mode="box", always_on=False)
+#		plot.overlays.append(RangeSelectionOverlay(component=plot))
+        plot.overlays.append(zoom)
+    
+
+class OpticalViewOld(HasTraits):
     """ Multiple lineplots for optics in Stack for attributes like Reflectance, Tramission etc...
     
     Reflectance data is already stored as a panel, but to be consistent with simulation and legacy
@@ -234,10 +352,17 @@ class MaterialView(HasTraits):
     )
 
 
-    def _get_ereal(self): return self.earray.real
-    def _get_eimag(self): return self.earray.imag
-    def _get_nreal(self): return self.narray.real
-    def _get_nimag(self): return self.narray.imag
+    def _get_ereal(self):
+        return self.earray.real
+    
+    def _get_eimag(self): 
+        return self.earray.imag
+
+    def _get_nreal(self): 
+        return self.narray.real
+
+    def _get_nimag(self): 
+        return self.narray.imag
 
     def create_plots(self):
         self.eplot = ToolbarPlot(self.data)
@@ -260,7 +385,12 @@ class MaterialView(HasTraits):
         plot.title = title_keyword + 'vs. Wavelength'
         plot.legend.visible = True
 
-        bottom_axis = PlotAxis(plot, orientation='bottom', title=self.xunit, label_color='red', label_font='Arial', tick_color='green', tick_weight=1)
+        bottom_axis = PlotAxis(plot, orientation='bottom',
+                               title=self.xunit, 
+                               label_color='red', 
+                               label_font='Arial', 
+                               tick_color='green',
+                               tick_weight=1)
         vertical_axis = PlotAxis(plot, orientation='left',
                                  title='Relative'+str(title_keyword))
 
@@ -281,8 +411,11 @@ class MaterialView(HasTraits):
 
     def update(self, xarray, earray, narray, xunit):    
         '''Method to update plots; draws them if they don't exist; otherwise it simply updates the data'''     
-        self.xunit=xunit ;  self.xarray=xarray
-        self.earray=earray; self.narray=narray
+        self.xunit=xunit 
+        self.xarray=xarray
+        self.earray=earray
+        self.narray=narray
+        
         if self.data == None:
             self.data = ArrayPlotData(x=self.xarray, er=self.ereal, nr=self.nreal, ei=self.eimag, ni=self.nimag)
             self.create_plots()
@@ -300,17 +433,22 @@ class MaterialView(HasTraits):
     ####### USED FOR SIMULATION STORAGE MOSTLY #####
 
     def get_sexy_data(self):
-        '''Returns the data in a list that can be immediately read back in another instance of opticview.  Note this is not the same as the arrayplotdata getdata() function'''
+        '''Returns the data in a list that can be immediately read back in another instance of opticview.  
+        Note this is not the same as the arrayplotdata getdata() function'''
         return [self.xarray, self.ereal, self.nreal, self.eimag, self.nimag]
 
     def set_sexy_data(self, data_list):
         '''Takes in data formatted deliberately from "get_sexy_data" and forces an update'''
         self.update(data_list[0], data_list[1], data_list[2], data_list[3])
 
+    # Migrate to model!!
     def get_dataframe(self):
         ''' Returns dataframe of data for easier concatenation into a runpanel dataframe used by
         simulations'''
-        d = {'er' : self.ereal, 'nr':self.nreal, 'ei':self.eimag, 'ni':self.nimag}   
+        d = {'er' : self.ereal, 
+             'nr':self.nreal,
+             'ei':self.eimag,
+             'ni':self.nimag}   
         return DataFrame(d, index=self.xarray)
 
 class ScatterView(HasTraits):

@@ -29,6 +29,7 @@ from numpy import cos, inf, zeros, array, exp, conj, nan, isnan
 import scipy as sp
 import numpy as np
 from pandas import DataFrame
+from pame import globalparms
 import cmath
 
 import sys
@@ -181,7 +182,7 @@ def vector_com_tmm(pol, n_matrix, d_list, angle, vacuum_wavelengths):
     """
 
     # MUST CORRESPOND IN LENGTH TO RETURN OF coh_tmm() 
-    header = ['r', 't', 'R', 'T', 'A','power_entering', 'vw', 'kz', 'angle_propagation'] #<-- A added myself    
+    header = globalparms.header.keys() 
     
     # n = m x lambda   where m is number of layers
     if n_matrix.shape[1] != vacuum_wavelengths.shape[0]:

@@ -5,11 +5,11 @@ import logging
 from traits.api import *
 from traitsui.api import *
 from enable.component_editor import ComponentEditor
-from sim_traits import BasicReflectance
+from opticalstack import DielectricSlab
 from basicplots import OpticalView
 from layer_editor import LayerEditor
 from main_parms import FiberParms, SpecParms
-from interfaces import ISim, ILayer, IMaterial, IStorage
+from interfaces import IOptic, ILayer, IMaterial, IStorage, ISim
 from fiberview import FiberView
 from modeltree_v2 import Model
 from gensim import LayerVfrac, GeneralSim
@@ -24,13 +24,13 @@ state_editor =\
     TableEditor(
         auto_size=False,  #Set in View
         columns=[
-            # These are all sim_traits.BasicReflectance traits
+            # These are all sim_traits.DielectricSlab traits
             ExpressionColumn(expression='object.Mode', label='Fiber Mode'),
             ExpressionColumn(expression='object.angles', label='Angle'),
             ExpressionColumn(expression='object.stack', label='Stack'),
             ExpressionColumn(expression='object.ds', label='DS'),
             ExpressionColumn(expression='object.angle_avg', label='Averaging Style'),            
-            ObjectColumn(name='sim_designator', label='State Designator'), #What ist his?
+#            ObjectColumn(name='sim_designator', label='State Designator'), #What ist his?
             ],
         deletable=False,
         selected='current_state',
@@ -65,8 +65,8 @@ class GlobalScene(HasTraits):
 
     fview=Instance(FiberView,())     #May want to pass specparms and fiberparms to this later if it requries them
 
-    current_state = Instance(ISim)
-    opticstate = Instance(ISim)
+    current_state = Instance(IOptic)
+    opticstate = Instance(IOptic)
     opticview = DelegatesTo('opticstate')
 
     save=Button
@@ -117,7 +117,7 @@ class GlobalScene(HasTraits):
     )                      
 
     fibergroup=Group(
-        # Angle_avg depends on the BasicReflectance
+        # Angle_avg depends on the DielectricSlab
 #        Item('angle_avg', label='Angle Averaging Method',show_label=False),
         Item('fiberparms', editor=InstanceEditor(), style='custom', show_label=False),
         Item('fview', style='custom', show_label=False),
@@ -195,7 +195,7 @@ class GlobalScene(HasTraits):
         self.sync_trait('modeltree', self.layereditor, 'modeltree')
 
         ### NEED TO RENAME AND REWRITE THIS... ITS NOT "opticstate"
-        self.opticstate=BasicReflectance()
+        self.opticstate=DielectricSlab()
         self.sync_trait('specparms', self.opticstate, 'specparms')
         self.sync_trait('fiberparms', self.opticstate, 'fiberparms')
         self.sync_trait('layereditor', self.opticstate, 'layereditor')
