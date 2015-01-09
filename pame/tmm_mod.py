@@ -181,7 +181,7 @@ def vector_com_tmm(pol, n_matrix, d_list, angle, vacuum_wavelengths):
     """
 
     # MUST CORRESPOND IN LENGTH TO RETURN OF coh_tmm() 
-    header = ['r', 't', 'R', 'T', 'power_entering', 'vw', 'kz', 'angles_at_each']    
+    header = ['r', 't', 'R', 'T', 'A','power_entering', 'vw', 'kz', 'angle_propagation'] #<-- A added myself    
     
     # n = m x lambda   where m is number of layers
     if n_matrix.shape[1] != vacuum_wavelengths.shape[0]:
@@ -237,6 +237,7 @@ def coh_tmm(pol, n_list, d_list, th_0, lam_vac, dict_output=True):
     * t--transmission amplitude
     * R--reflected wave power (as fraction of incident)
     * T--transmitted wave power (as fraction of incident)
+    * A--total absorbed power (as fraction of incident) = (1 - (R+T) )
     * power_entering--Power entering the first layer, usually (but not always)
       equal to 1-R (see manual).
     * vw_list-- n'th element is [v_n,w_n], the forward- and backward-traveling
@@ -344,10 +345,12 @@ def coh_tmm(pol, n_list, d_list, th_0, lam_vac, dict_output=True):
     #power.
     R = R_from_r(r)
     T = T_from_t(pol, t, n_list[0], n_list[-1], th_0, th_list[-1])
+    A = 1.0 - (R+T) #<--- ADDED MYSEFLF
+
     power_entering = power_entering_from_r(pol, r, n_list[0], th_0)
 
-    # CHANGE THE RETURN
-    return (r, t, R, T, power_entering, vw_list, kz_list, th_list)
+    # CHANGED THE RETURN!!
+    return (r, t, R, T, A, power_entering, vw_list, kz_list, th_list)
 
     #return {'r': r, 
             #'t': t, 
@@ -363,7 +366,11 @@ def coh_tmm_reverse(pol, n_list, d_list, th_0, lam_vac):
     Reverses the order of the stack then runs coh_tmm.
     """
     th_f = snell(n_list[0],n_list[-1],th_0)
-    return coh_tmm(pol,n_list[::-1],d_list[::-1],th_f,lam_vac)
+    return coh_tmm(pol,
+                   n_list[::-1],
+                   d_list[::-1],
+                   th_f,
+                   lam_vac)
 
 def ellips(n_list, d_list, th_0, lam_vac):
     """

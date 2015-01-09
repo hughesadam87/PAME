@@ -64,7 +64,13 @@ class Constant(ABCMaterialModel):
     )
 
 class Sellmeir(ABCMaterialModel):
-    '''Returns sellmeir dispersion of glass'''
+    """Returns sellmeir dispersion of glass.  Valid between 210-2200nm 
+    according to:
+    
+    Sharma, Gupta.
+    "On the performance of different bimetallic combinations in surface plasmon 
+    resonance based fiber optic sensors."  J. APpl. Phys. 101, 092111 (2007)
+    """
     mat_name=Str('Dispersive Glass')
     model_id=Str('sellmeir')   
 

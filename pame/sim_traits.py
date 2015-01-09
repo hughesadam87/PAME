@@ -40,6 +40,7 @@ class BasicReflectance(HasTraits):
     Reflectance=Property(Array, depends_on='optical_stack')
     Transmittance=Property(Array, depends_on='optical_stack')
     Reflectance_AVG=Property(Array, depends_on='Reflectance, angle_avg')
+    Absorbance=Property(Array, depends_on='optical_stack')
 
     opticview=Instance(OpticalView,())
     ui=Any
@@ -77,6 +78,7 @@ class BasicReflectance(HasTraits):
                             self.angles,
                             self.Reflectance,
                             self.Transmittance,
+                            self.Absorbance,
                             self.Reflectance_AVG)
 
     #@cached_property
@@ -152,10 +154,8 @@ class BasicReflectance(HasTraits):
         # UPDATE optical_stack!
         self.optical_stack = Panel(paneldict)
 
-    #Don't forget about pandas swapaxes(0,1) etc.. for changing orientation
 
     #@cached_property
-    
     def as_stack(self, attr, as_float=True):
         """ Return attribute from optical stack in a 2darray.  IE if have 5 angles and 
         for each angle have 100 reflectance coefficients, returns a 5x100 matrix.  Used
@@ -167,13 +167,16 @@ class BasicReflectance(HasTraits):
         if as_float:
             out_2d = out_2d.astype(float)
         return out_2d
-
+    
     def _get_Reflectance(self):  
         return self.as_stack('R')
     
     #@cached_property
     def _get_Transmittance(self): 
         return self.as_stack('T')
+    
+    def _get_Absorbance(self): 
+        return self.as_stack('A')    
 
     def _angle_avg_default(self):
         return 'Equal'

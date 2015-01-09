@@ -43,7 +43,11 @@ class OpticalView(HasTraits):
     Transplot = Instance(Plot)             #Traits are populated on update usually
     Avgplot= Instance(Plot)
 
-    chooseplot=Enum('Reflectance', 'Transmittance', 'Averaged Reflectance')   #For second view
+    chooseplot=Enum('Reflectance', 
+                    'Transmittance',
+                    'Absorbance',
+                    'Averaged Reflectance'
+                    )   #For second view
     selected=Property(depends_on='chooseplot')
 
     data = Instance(ArrayPlotData)
@@ -53,6 +57,7 @@ class OpticalView(HasTraits):
         
     RefArray=Array()
     TransArray=Array()
+    AbsArray=Array()
     Reflectance_AVG=Array()
 
     # Radio button View
@@ -81,6 +86,8 @@ class OpticalView(HasTraits):
             return self.Refplot
         elif self.chooseplot == 'Transmittance': 
             return self.Transplot
+        elif self.chooseplot == 'Absorbance': 
+            return self.Absplot        
         elif self.chooseplot == 'Averaged Reflectance': 
             return self.Avgplot
 
@@ -88,6 +95,7 @@ class OpticalView(HasTraits):
         """ Creates several toolbar plots"""
         self.Refplot = ToolbarPlot(self.data) #Requires access to arrayplotdata
         self.Transplot= ToolbarPlot(self.data)
+        self.Absplot = ToolbarPlot(self.data)
         self.Avgplot= ToolbarPlot(self.data)
 
         print self.RefArray.shape, 'in create plot', self.Refplot
@@ -114,10 +122,17 @@ class OpticalView(HasTraits):
                                  name=('%.2f' % angle),
                                  color=linecolor)
 
+            # Hack 
+            self.data.set_data(('ATheta' + str(i)), self.AbsArray[i,:])
+            self.Absplot.plot( ("x", ('ATheta' + str(i))), 
+                                 name=('%.2f' % angle),
+                                 color=linecolor)
+
         self.Avgplot.plot( ("x", 'Avg'), name='Averaged Angles', color='red' )
 
         self.add_tools_title(self.Refplot, 'Reflectance')
         self.add_tools_title(self.Transplot, 'Transmittance')
+        self.add_tools_title(self.Absplot, 'Absorbance')
         self.add_tools_title(self.Avgplot, 'Averaged Reflectance')
     
 
@@ -141,12 +156,13 @@ class OpticalView(HasTraits):
 #		plot.overlays.append(RangeSelectionOverlay(component=plot))
         plot.overlays.append(zoom)
 
-    def update(self, xarray, anglearray, RefArray, TransArray, Reflectance_AVG):   
+    def update(self, xarray, anglearray, RefArray, TransArray, AbsArray, Reflectance_AVG):   
         print 'UPDATING OPTIC VIEW'
         self.xarray=xarray
         self.angles=anglearray
         self.RefArray=RefArray
         self.TransArray=TransArray
+        self.AbsArray=AbsArray
         self.Reflectance_AVG=Reflectance_AVG
 
         # Totally makes new dat and redraws plots instead of updating data.  Otherwise, need 5 array
@@ -155,6 +171,7 @@ class OpticalView(HasTraits):
                                   angs=self.angles, 
                                   Ref=self.RefArray, 
                                   Trans=self.TransArray, 
+                                  AbsArray=self.AbsArray,
                                   Avg=self.Reflectance_AVG)
         self.create_plots()
 
@@ -273,8 +290,10 @@ class MaterialView(HasTraits):
             self.update_data()
 
     def update_data(self):
-        self.data.set_data('x',self.xarray) ; self.data.set_data('er', self.ereal)
-        self.data.set_data('nr', self.nreal) ; self.data.set_data('ei', self.eimag)
+        self.data.set_data('x',self.xarray) 
+        self.data.set_data('er', self.ereal)
+        self.data.set_data('nr', self.nreal) 
+        self.data.set_data('ei', self.eimag)
         self.data.set_data('ni', self.nimag)
         self.eplot.request_redraw() ; self.nplot.request_redraw()
 
@@ -388,7 +407,10 @@ class ScatterView(HasTraits):
         self.scatarray=scatarray
 
         if self.data == None:
-            self.data = ArrayPlotData(x=self.xarray, Scattering=self.scatarray, Absorbance=self.absarray , Extinction=self.extarray)
+            self.data = ArrayPlotData(x=self.xarray, 
+                                      Scattering=self.scatarray, 
+                                      Absorbance=self.absarray , 
+                                      Extinction=self.extarray)
             self.create_plots()
         else:
             self.update_data()

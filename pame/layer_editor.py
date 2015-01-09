@@ -116,10 +116,12 @@ class LayerEditor(HasTraits):
             return self.compositetree
         if self.layer_type=='Nanoparticle Objects': 
             return self.nanotree
+        
 
     def _remove_fired(self): 
         self.stack.remove(self.selected_layer)
         self.selected_layer=self.stack[self.selected_index-1]   #Simply moves the selected layer one down from the one deleted
+
 
     def _changematerial_fired(self):        
         """ Change material sets a new layer by prompting user to choose a material
