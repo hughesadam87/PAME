@@ -137,7 +137,7 @@ class OpticalView(HasTraits):
             self.data.set_data('y', yout) 
             plot_line_points(self.plot, ("x", "y"), 
                              name='%s Avg.' % (self.choose),
-                             style='line',
+                             style='both',
                              line_width=4)  #<--- Thick line
 
         # Plot angle dependence, bruteforce colromap
@@ -158,7 +158,7 @@ class OpticalView(HasTraits):
                                  ("x", linename), 
                                  name = linename, 
                                  color = linecolor,
-                                 style = 'both'   #<-- Don't plot marker
+                                 style = 'line'   #<-- Don't plot marker
                                  )
   
         # Update plot title, legend, tools
