@@ -23,11 +23,11 @@ from collections import OrderedDict
 '''
 
 _header = (
-    ('r','ref. Amp'), 
-    ('t','trans. Amp.'),
-    ('R', 'Reflected'),
-    ('T', 'Transmitted'),
-    ('A', 'Absorbed'),
+    ('r','Reflection Amplitude'), 
+    ('t','Transmission Amplitude'),
+    ('R', 'Reflectance'),
+    ('T', 'Transmittance'),
+    ('A', 'Absorbance'),
     ('pe', '1st Layer Power'),
     ('vw','vw_list'),
     ('kz','kz_list'),

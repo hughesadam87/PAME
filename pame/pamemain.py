@@ -84,7 +84,6 @@ class GlobalScene(HasTraits):
         pickle.dump(self.simulations , open( "test.p", "wb" ) )
         
     def _refresh_fired(self):
-        print 'refresh fired'
         self.opticstate.update_opticview()
         
     def _outdir_default(self):
@@ -244,17 +243,15 @@ class GlobalScene(HasTraits):
     # Show Reflectance --------
     def compute_optics(self):
         """ Refresh and popup optics plot """
-    #	self.opticstate.update_R()   #FOR SOME REASON EVEN THOUGH I UPDATE THE STACK WHEN LAYERS ARE CHANGED, IT ONLY UNDERSTANDS WHEN LAYERS ARE REMOVED ORA DDED
-        print 'updating reflectance'
         self.opticstate.update_opticview()
-        self.opticstate.opticview.edit_traits()#view='radio_view')
-    #	pass
+        self.opticstate.opticview.edit_traits()
 
 def main():
     # HACK FOR DEBUG UNTIL DATA CAN BE IMPORTED CORRECTLY
     # os.chdir('/home/glue/Desktop/fibersim')    
     
     popup=GlobalScene()
+    popup.opticstate.update_opticview()
     popup.configure_traits()    
     
     

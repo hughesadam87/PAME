@@ -2,8 +2,12 @@
 
 import matplotlib.cm as cm
 
+LINEWIDTH = 2
+MARKERSIZE = 3
+
 # Default Colormap of Reflectance plot
 LINECMAP = cm.coolwarm #Divergent red/blue/gray middle
+LINECOLOR = 'red'
 
 # Delimiter for reading in material files 
 MATDELIM = '\t'

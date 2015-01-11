@@ -126,23 +126,29 @@ class DielectricSlab(HasTraits):
 
         paneldict = {}        
         for ang in self.angles:
-            ang = math.radians(ang)
+            # CALCULATION IN RADIAN MODE
+            ang_rad = math.radians(ang)
             
             if pol == 'both':
                 result_dataframe = \
-                    vector_com_tmm('s', self.ns, self.ds, ang, self.lambdas) + \
-                    vector_com_tmm('p', self.ns, self.ds, ang, self.lambdas)                  
+                    vector_com_tmm('s', self.ns, self.ds, ang_rad, self.lambdas) + \
+                    vector_com_tmm('p', self.ns, self.ds, ang_rad, self.lambdas)                  
                 result_dataframe = result_dataframe / 2.0
                 
             else:
                 result_dataframe = vector_com_tmm(
-                    pol, self.ns, self.ds, ang,self.lambdas
+                    pol, self.ns, self.ds, ang_rad, self.lambdas
                                             )
 
             paneldict[ang] = result_dataframe
 
         # UPDATE optical_stack!
         self.optical_stack = Panel(paneldict)
+        #print self.optical_stack, self.optical_stack.shape, self.optical_stack.items, self.optical_stack.minor_axis,\
+              #self.optical_stack.major_axis, self.optical_stack[self.angles[2]]['r'], 'FOO\n\n'
+        
+        #x = self.optical_stack[self.angles[2]]['r']
+        #print x, 'BAM'
 
 
     #@cached_property
@@ -168,7 +174,6 @@ class DielectricSlab(HasTraits):
             return self.gupta_averaging(attr)
 
         elif self.angle_avg=='Equal': 
-            print 'hi', matrix
             return np.average(matrix, axis=0)            
         
         else:
@@ -179,7 +184,7 @@ class DielectricSlab(HasTraits):
         """ CITE ME!!
         matrix is the return of as_stack(attr) where attr can be Reflectance, Transmittance 
         etc..."""
-        P_num=empty((self.angles.shape[0], self.nsubstrate.shape[0]), dtype=float)
+        P_num=empty((self.angles.shape[0], self.nsubstrate.shape[0]), dtype=float)  #<-- COMPLEX!? RN IS NOW COMPLEX
         P_den=empty((self.angles.shape[0], self.nsubstrate.shape[0]), dtype=float)
         
         sa = np.sin(self.angles_radians)

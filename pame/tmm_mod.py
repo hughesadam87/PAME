@@ -203,7 +203,7 @@ def vector_com_tmm(pol, n_matrix, d_list, angle, vacuum_wavelengths):
                                 lam,
                                 dict_output=False)  #<<< IMPORTANT FOR MAKING PANEL
                         )
-        
+
     return DataFrame(outvals, columns=header, index=vacuum_wavelengths)    
     
 

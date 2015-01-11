@@ -4,7 +4,7 @@ getters and setter model components.'''
 
 from enable.api import Component, ComponentEditor
 from traits.api import HasTraits, Instance, Array, Property, CArray, Str, Float, Tuple, Any, Dict, List, \
-     Enum, Bool, cached_property, implements, DelegatesTo
+     Enum, Bool, cached_property, implements, DelegatesTo, on_trait_change
 from traitsui.api import Item, Group, View, Tabbed, Action, HGroup, InstanceEditor, VGroup, ListStrEditor
 
 # Chaco imports
@@ -23,8 +23,44 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.cm as cm
 
-# pame config
+# pame imports
 import config
+import globalparms
+
+class PlotError(Exception):
+    """ """
+
+def plot_line_points(*args, **kwargs):
+    """ plots a line and/or markers.  Colors/styles default to config.  
+    First positional arg must be a Plot object, remaining args,kwargs passing
+    into Plot.plot().  
+    
+    kwargs
+    ------
+    
+    style: both, line or scatter
+        Plot lines, markers or both
+    """
+    args = list(args)
+    plotobj = args[0]
+    if not isinstance(plotobj, Plot):
+        raise PlotError('Expected Plot type as first arg, got %s' % plotobj)
+    del args[0]
+
+    style = kwargs.pop('style', 'both').lower()
+    
+    if style in ['both', 'line']:
+        kwargs['type'] ='line'        
+        kwargs.setdefault('color' ,config.LINECOLOR)
+        kwargs.setdefault('line_width', config.LINEWIDTH) #Note undersocre in line_width kwarg
+        plotobj.plot( *args, **kwargs)
+        kwargs.pop('line_width')
+
+    if style in ['both', 'scatter']:
+        kwargs['type'] ='scatter'
+        kwargs.setdefault('marker_size', config.MARKERSIZE)    
+        plotobj.plot( *args, **kwargs)
+
 
 class OpticalView(HasTraits):
     optic_model = Any # BasicReflectance object, must be initialized with this by calling fcn
@@ -32,27 +68,54 @@ class OpticalView(HasTraits):
     optic_stack = DelegatesTo('optic_model')
     lambdas = DelegatesTo('optic_model')  #Xarray everywhere will need replaced
     angles = DelegatesTo('optic_model')
+    real_or_complex = Enum('real', 'imaginary')
+    _is_complex = Bool(False)
+    show_legend=Bool(False)
     average = Bool(False)  #Averaging style
     plot = Instance(Plot)
     
     # CHANGE TO HEADER
-    choose = Enum('r', 't', 'R', 'T', 'A','power_entering', 'vw', 'kz', 'angle_propagation')  # SHOULD DELEGATE OR HAVE ADAPTER     
-
+    choose = Enum(globalparms.header.keys())  # SHOULD DELEGATE OR HAVE ADAPTER     
+    chosen_name = Property(Str, depends_on='choose')
+    
     data = Instance(ArrayPlotData,())
 
-    traits_view = View( Item('average'),
+    traits_view = View( HGroup(
+                             Item('average'),
                              Item('choose', 
-                             label='Choose selected plot', 
-                             show_label=False, 
-                             style='simple'),
-                  Item('plot', show_label=False, editor=ComponentEditor()),
+                                  label='Choose selected plot', 
+                                  show_label=False, 
+                                  style='simple'
+                                  ),
+                             Item('real_or_complex', 
+                                  visible_when='_is_complex==True', 
+                                  label='Component'
+                                  ),          
+                             Item('show_legend', label='Legend'),
+                             #Item('chosen_name', 
+                                  #style='readonly',
+                                  #label='Displaying'
+                                  #)
+                             ),
+                  Item('plot', 
+                       show_label=False, 
+                       editor=ComponentEditor()),
+
                   width=800, 
                   height=600,
                   resizable=True
                   )
 
+    def _get_chosen_name(self):
+        """ Long name corresponding to selected plot attribute"""
+        return globalparms.header[self.choose]
     
-    
+    @on_trait_change('choose, average, real_or_complex, show_legend')
+    def _update_shiz(self):
+        """ Change which data (R, T, A...) to view.  These all trigger
+        full redraw."""
+        self.update()
+        
     def update(self):
         """Deviates from other plots in that these plots aren't meant to update in realtime
         via set-data, so it's easier to just wipe plotdata and redraws lines, basically as a
@@ -66,11 +129,16 @@ class OpticalView(HasTraits):
         self.data.arrays={} #Clear DATA!!!
         self.data.set_data('x', self.lambdas)
         
+        # FROM HERE DOWN, ASSUMES SINGLE LAYER LIKE R
         if self.average:
-            avg_array = self.optic_model.compute_average(self.choose)
-            self.data.set_data('y', avg_array.real.astype(float)) 
-            print avg_array.real
-            self.plot.plot( ("x", "y"), name='Averaged Angles', color='red')
+            avg_array = self.optic_model.compute_average(self.choose).astype(complex)
+            yout = self.infer_complex(avg_array)
+          
+            self.data.set_data('y', yout) 
+            plot_line_points(self.plot, ("x", "y"), 
+                             name='%s Avg.' % (self.choose),
+                             style='line',
+                             line_width=4)  #<--- Thick line
 
         # Plot angle dependence, bruteforce colromap
         else:
@@ -78,246 +146,63 @@ class OpticalView(HasTraits):
             norm = mpl.colors.Normalize(vmin=self.angles[0], vmax=self.angles[-1])
             cmapper = cm.ScalarMappable(norm=norm, cmap=config.LINECMAP ).to_rgba  #THIS IS A FUNCTION
     
-            for i, angle in enumerate(self.angles):
-                pass
-#                print 'lol'
+            for idx, angle in enumerate(self.angles):
+                linecolor = cmapper(angle)    
+                linename = str(round(angle,2))
 
-    def create_plots(self):
-        """ Creates several toolbar plots"""
-        self.plot = ToolbarPlot(self.data) #Requires access to arrayplotdata
-
-        # http://stackoverflow.com/questions/15140072/how-to-map-number-to-color-using-matplotlibs-colormap
-        norm = mpl.colors.Normalize(vmin=self.angles[0], vmax=self.angles[-1])
-        cmapper = cm.ScalarMappable(norm=norm, cmap=config.LINECMAP ).to_rgba #THIS IS A FUNCTION
-
-        for i, angle in enumerate(self.angles):
-            
-            linecolor = cmapper(angle)
-
-#            print self.RefArray[i,:], self.RefArray[i,:].shape, type(self.RefArray[i,:]), np.isnan(np.sum(self.RefArray[i,:]))
-            self.data.set_data(('RTheta' + str(i)), self.RefArray[i,:])
-            
-#            plt.plot(self.xarray, self.RefArray[i,:])
-
-            self.Refplot.plot( ("x", ('RTheta' + str(i))), 
-                               name=('%.2f'% angle ),
-                               color=linecolor)
-
-            self.data.set_data(('TTheta' + str(i)), self.TransArray[i,:])
-            self.Transplot.plot( ("x", ('TTheta' + str(i))), 
-                                 name=('%.2f' % angle),
-                                 color=linecolor)
-
-            # Hack 
-            self.data.set_data(('ATheta' + str(i)), self.AbsArray[i,:])
-            self.Absplot.plot( ("x", ('ATheta' + str(i))), 
-                                 name=('%.2f' % angle),
-                                 color=linecolor)
-
-        self.Avgplot.plot( ("x", 'Avg'), name='Averaged Angles', color='red' )
-
-        self.add_tools_title(self.Refplot, 'Reflectance')
-        self.add_tools_title(self.Transplot, 'Transmittance')
-        self.add_tools_title(self.Absplot, 'Absorbance')
-        self.add_tools_title(self.Avgplot, 'Averaged Reflectance')
-    
-
-    def add_tools_title(self, plot, title):
-        '''Used to add same tools to multiple plots'''
-        plot.title = title
-        plot.padding = 50
+                array = self.optic_model.optical_stack[angle][self.choose].astype(complex)
+                yout = self.infer_complex(array)
+                                
+                self.data.set_data(linename, yout)                    
+                plot_line_points(self.plot, 
+                                 ("x", linename), 
+                                 name = linename, 
+                                 color = linecolor,
+                                 style = 'both'   #<-- Don't plot marker
+                                 )
+  
+        # Update plot title, legend, tools
+        # -----------------------------------
+        self.plot.title = '%s' % self.chosen_name
+#        self.plot.padding = 50
+        
+        self.plot.x_axis.label='x'   #<--- doesn't work
+        self.plot.index_axis.label='y'
         
         # Legend settings
         # http://code.enthought.com/projects/files/ETS3_API/enthought.chaco.legend.Legend.html
-        plot.legend.labels = list([i for i in self.angles]) #Sort numerically, not alphabetically
-        plot.legend.visible = True
-        plot.legend.bgcolor = (.5,.5,.5) #gray
-        plot.legend.border_visible = True
-        plot.legend.resizable = 'hv'
-
+        if self.show_legend:
+            #self.plot.legend.labels = list([i for i in self.angles]) #Sort numerically, not alphabetically
+            self.plot.legend.visible = True
+            self.plot.legend.bgcolor = (.8,.8,.8) #lightgray
+            self.plot.legend.border_visible = True
+            self.plot.legend.resizable = 'hv' #<--- doesn't work
         
-        # Attach some tools to the plot
-        plot.tools.append(PanTool(plot))
-        zoom = BetterSelectingZoom(component=plot, tool_mode="box", always_on=False)
-#		plot.overlays.append(RangeSelectionOverlay(component=plot))
-        plot.overlays.append(zoom)
+        ## Attach some tools to the plot
+        self.plot.tools.append(PanTool(self.plot))
+        zoom = BetterSelectingZoom(component=self.plot, tool_mode="box", always_on=False)
+        self.plot.overlays.append(zoom)
     
-
-class OpticalViewOld(HasTraits):
-    """ Multiple lineplots for optics in Stack for attributes like Reflectance, Tramission etc...
     
-    Reflectance data is already stored as a panel, but to be consistent with simulation and legacy
-    design, uses numpy arrays.  (IView)
-    
-    Uses update methods rather than delegating to StackData so it can be used independtly, although
-    such an interface is probably never going to be used.  If it ends up simplifying things to just
-    let the data in here have access to the opticstack panel from sim_traits, just do that.
-    """
-    implements(IView)
-
-    name=Str('Test') #??
-
-    Refplot = Instance(Plot)
-    Transplot = Instance(Plot)             #Traits are populated on update usually
-    Avgplot= Instance(Plot)
-
-    chooseplot=Enum('Reflectance', 
-                    'Transmittance',
-                    'Absorbance',
-                    'Averaged Reflectance'
-                    )   #For second view
-    selected=Property(depends_on='chooseplot')
-
-    data = Instance(ArrayPlotData)
-
-    xarray=Array() #Wavelengths
-    angles=Array()
-        
-    RefArray=Array()
-    TransArray=Array()
-    AbsArray=Array()
-    Reflectance_AVG=Array()
-
-    # Radio button View
-    traits_view = View( Item('chooseplot', 
-                             label='Choose selected plot', 
-                             show_label=False, 
-                             style='custom'),
-                  Item('selected', show_label=False, editor=ComponentEditor()),
-                  width=800, height=600, resizable=True   )
-
-    # Tabs
-    #tabbed_view = View(
-        #Tabbed(
-            #Item('Refplot', editor=ComponentEditor(), dock='tab', label='Reflectance'),
-            #Item('Transplot', editor=ComponentEditor(), dock='tab', label='Transmittance'), 
-            #Item('Avgplot', editor=ComponentEditor(), dock='tab', label='Theta averaged'),		
-            #show_labels=False         #Side label not tab label
-            #),
-        #width=800, height=600,
-        #resizable=True
-    #)
-
-
-    def _get_selected(self): 
-        if self.chooseplot == 'Reflectance': 
-            return self.Refplot
-        elif self.chooseplot == 'Transmittance': 
-            return self.Transplot
-        elif self.chooseplot == 'Absorbance': 
-            return self.Absplot        
-        elif self.chooseplot == 'Averaged Reflectance': 
-            return self.Avgplot
-
-    def create_plots(self):
-        """ Creates several toolbar plots"""
-        self.Refplot = ToolbarPlot(self.data) #Requires access to arrayplotdata
-        self.Transplot= ToolbarPlot(self.data)
-        self.Absplot = ToolbarPlot(self.data)
-        self.Avgplot= ToolbarPlot(self.data)
-
-        print self.RefArray.shape, 'in create plot', self.Refplot
-
-        # http://stackoverflow.com/questions/15140072/how-to-map-number-to-color-using-matplotlibs-colormap
-        norm = mpl.colors.Normalize(vmin=self.angles[0], vmax=self.angles[-1])
-        cmapper = cm.ScalarMappable(norm=norm, cmap=config.LINECMAP ).to_rgba #THIS IS A FUNCTION
-
-        for i, angle in enumerate(self.angles):
+    def infer_complex(self, carray):
+        """ From an array to be plotted, inspects if it has a real AND imaginary component.
+        Set _is_complex variable and handles logic of self.real_or_complex.  If imaginary
+        component is 0, we don't want the plot to let users select the imaginary channel.
+        """
+        #http://docs.scipy.org/doc/numpy/reference/generated/numpy.iscomplex.html        
+        if np.sum(np.iscomplex(carray)):  #<--- if all imaginary components are 0
+            self._is_complex = True
             
-            linecolor = cmapper(angle)
-
-#            print self.RefArray[i,:], self.RefArray[i,:].shape, type(self.RefArray[i,:]), np.isnan(np.sum(self.RefArray[i,:]))
-            self.data.set_data(('RTheta' + str(i)), self.RefArray[i,:])
+        else:
+            self._is_complex = False
+            self.real_or_complex = 'real'  #Necessary for view logic completion
             
-#            plt.plot(self.xarray, self.RefArray[i,:])
-
-            self.Refplot.plot( ("x", ('RTheta' + str(i))), 
-                               name=('%.2f'% angle ),
-                               color=linecolor)
-
-            self.data.set_data(('TTheta' + str(i)), self.TransArray[i,:])
-            self.Transplot.plot( ("x", ('TTheta' + str(i))), 
-                                 name=('%.2f' % angle),
-                                 color=linecolor)
-
-            # Hack 
-            self.data.set_data(('ATheta' + str(i)), self.AbsArray[i,:])
-            self.Absplot.plot( ("x", ('ATheta' + str(i))), 
-                                 name=('%.2f' % angle),
-                                 color=linecolor)
-
-        self.Avgplot.plot( ("x", 'Avg'), name='Averaged Angles', color='red' )
-
-        self.add_tools_title(self.Refplot, 'Reflectance')
-        self.add_tools_title(self.Transplot, 'Transmittance')
-        self.add_tools_title(self.Absplot, 'Absorbance')
-        self.add_tools_title(self.Avgplot, 'Averaged Reflectance')
-    
-
-    def add_tools_title(self, plot, title):
-        '''Used to add same tools to multiple plots'''
-        plot.title = title
-        plot.padding = 50
+        # Choose real or complex channel
+        if self.real_or_complex == 'real':
+            return carray.real
+        else:
+            return carray.imag
         
-        # Legend settings
-        # http://code.enthought.com/projects/files/ETS3_API/enthought.chaco.legend.Legend.html
-        plot.legend.labels = list([i for i in self.angles]) #Sort numerically, not alphabetically
-        plot.legend.visible = True
-        plot.legend.bgcolor = (.5,.5,.5) #gray
-        plot.legend.border_visible = True
-        plot.legend.resizable = 'hv'
-
-        
-        # Attach some tools to the plot
-        plot.tools.append(PanTool(plot))
-        zoom = BetterSelectingZoom(component=plot, tool_mode="box", always_on=False)
-#		plot.overlays.append(RangeSelectionOverlay(component=plot))
-        plot.overlays.append(zoom)
-
-    def update(self, xarray, anglearray, RefArray, TransArray, AbsArray, Reflectance_AVG):   
-        print 'UPDATING OPTIC VIEW'
-        self.xarray=xarray
-        self.angles=anglearray
-        self.RefArray=RefArray
-        self.TransArray=TransArray
-        self.AbsArray=AbsArray
-        self.Reflectance_AVG=Reflectance_AVG
-
-        # Totally makes new dat and redraws plots instead of updating data.  Otherwise, need 5 array
-        # plot data objects and speed increase is minimal
-        self.data = ArrayPlotData(x=self.xarray, 
-                                  angs=self.angles, 
-                                  Ref=self.RefArray, 
-                                  Trans=self.TransArray, 
-                                  AbsArray=self.AbsArray,
-                                  Avg=self.Reflectance_AVG)
-        self.create_plots()
-
-    def get_sexy_data(self):
-        '''Returns the data in a list that can be immediately read back in another instance of opticview.  
-        Note this is not the same as the arrayplotdata getdata() function'''
-        return [self.xarray, self.angles, self.RefArray, self.TransArray, self.Reflectance_AVG]
-
-    def set_sexy_data(self, data_list):
-        '''Takes in data formatted deliberately from "get_sexy_data" and forces an update'''
-        self.update(data_list[0], data_list[1], data_list[2], data_list[3], data_list[4])
-
-    # Legacy: gets average T and R values 
-    def get_dataframe(self):
-        ''' Returns dataframe of data for easier concatenation into a runpanel dataframe used by
-        simulations'''
-
-        delim='_' #Separate R,T modes (R1, R2 for each mode)
-        d={}
-        for theta, i in enumerate(self.angles):
-            d['R'+delim+str(theta)+delim+str(i)]=self.RefArray[i]
-            d['T'+delim+str(theta)+delim+str(i)]=self.TransArray[i]
-
-        #rowwise mean of reflectance at various angles (Note, avgarray is the angles used
-        tavg=np.mean(self.TransArray, axis=0)    
-        ravg=np.mean(self.RefArray, axis=0)
-        d.update({'Ravg':ravg, 'Tavg':tavg})
-        return DataFrame(d, index=self.xarray)
 
 
 class MaterialView(HasTraits):
@@ -367,15 +252,11 @@ class MaterialView(HasTraits):
     def create_plots(self):
         self.eplot = ToolbarPlot(self.data)
         self.nplot= ToolbarPlot(self.data)
-        self.eplot.plot(("x", "er"), name="ereal", color="red", linewidth=4)
-        self.eplot.plot(("x", "er"), name="ereal data", color="orange", type='scatter', marker_size=2)
-        self.eplot.plot(("x", "ei"), name="eimag", color="green", linewidth=4)
-        self.eplot.plot(("x", "ei"), name="eimag data", color="orange", type='scatter', marker_size=2)
 
-        self.nplot.plot(("x", "nr"), name="nreal", color="red", linewidth=4)
-        self.nplot.plot(("x", "nr"), name="nreal data", color="orange", type='scatter', marker_size=2)
-        self.nplot.plot(("x", "ni"), name="nimag", color="green", linewidth=4)
-        self.nplot.plot(("x", "ni"), name="nimag data", color="orange", type='scatter', marker_size=2)	
+        plot_line_points(self.eplot, ('x','er'), color='orange', name='ereal')
+        plot_line_points(self.eplot, ('x','ei'), color='green', name='eimag')
+        plot_line_points(self.nplot, ('x','nr'), color='orange', name='nreal')
+        plot_line_points(self.nplot, ('x','ni'), color='green', name='nimag')
 
         self.add_tools_title(self.eplot, 'Dielectric ')
         self.add_tools_title(self.nplot, 'Index of Refraction ')
