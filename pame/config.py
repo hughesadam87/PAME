@@ -23,3 +23,11 @@ xstart = 400
 xend = 700
 xpoints = 100 
 xunit = 'Nanometers'
+
+# Simulation
+# ----------
+
+# File extension
+SIMEXT = '.mdat'
+
+SAVEDEPTH = ['light', 'medium', 'heavy']

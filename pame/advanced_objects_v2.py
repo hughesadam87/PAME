@@ -142,6 +142,7 @@ class DrudeNew(ABCMetalModel, NanoSphere):
         self.earray=eeff
         self.CoreMaterial=self
 
+
 class DrudeNP_corrected(DrudeBulk, NanoSphere):
     '''Corrects plasma frequency for free electron term; from Gupta 2'''
 
@@ -153,10 +154,14 @@ class DrudeNP_corrected(DrudeBulk, NanoSphere):
 
     ###USES VF IN NM/S SO THAT L CAN BE IN NM AS WELL SO THIS OBJECT IS DEPENDENT ON UNITS###
 
-    def _valid_metals_changed(self): self.update_data()
-    def _r_core_changed(self): self.update_data()
-    def _apply_correction_changed(self): self.update_data()	
+    def _valid_metals_changed(self): 
+        self.update_data()
+    
+    def _r_core_changed(self):
+        self.update_data()
 
+    def _apply_correction_changed(self): 
+        self.update_data()	
 
     def update_data(self):   #THIS DOES FIRE AT INSTANTIATION
         if self.valid_metals == 'gold':               #These effects may be size dependent, need to look into it.  
@@ -180,9 +185,13 @@ class DrudeNP_corrected(DrudeBulk, NanoSphere):
         self.CoreMaterial=self
 
     traits_view=View(Item('r_core'), Item('valid_metals'),
-                     Item('lam_plasma', style='readonly'), Item('lam_collis', style='readonly'),Item('mviewbutton'), Item('apply_correction', label='Free Path Correction'),
+                     Item('lam_plasma', style='readonly'),
+                     Item('lam_collis', style='readonly'),
+                     Item('mviewbutton'),
+                     Item('apply_correction', label='Free Path Correction'),
                      Item('FullMie')
                      )
+
 
 class NanoSphereShell(NanoSphere):
     '''This is a single object, but it inherits from composite material to allow for trait changes and stuff to be understood'''		
@@ -292,7 +301,6 @@ class NanoSphereShell(NanoSphere):
         self.sync_trait('specparms', self.CompositeMie, 'specparms')
         self.sync_trait('specparms', self.FullMie, 'specparms')      
         
-        
         # Sync materials to composite mie, including shell!
         self.sync_trait('CoreShellComposite', self.CompositeMie, 'CoreMaterial') #<-- IMPORTANT
         self.sync_trait('MediumMaterial', self.CompositeMie, 'MediumMaterial')
@@ -307,11 +315,6 @@ class NanoSphereShell(NanoSphere):
 
     def _ShellMaterial_default(self): 
         return self.SphericalInclusions_Shell()
-
-    
-
-#    def _ShellMaterial_default(self): 
-#        return self.Constant(constant_index=1.4330)  #NOTE THIS DOESN'T AUTOMATICALLY TRIGGER UDPATES!!
     
     def _CoreShellComposite_default(self): 
         """ This is the complex core/shell represented as a single particle.  This does
@@ -346,7 +349,7 @@ class NanoSphereShell(NanoSphere):
 #		self.allplots={'full':self.FullMie.sview, 'comp':self.CompositeMie.sview}
 
     def get_usefultraits(self):
-        ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
+        """ Method to return dictionary of traits that may be useful as output for paramters and or this and that"""
         ### Eventually, make complex materials liked mixed shell call down levels of this.  aka self.shellmaterial.get_usefultraits()
         return {'Core Material':self.CoreMaterial.mat_name, 
                 'Shell Inclusion':self.ShellMaterial.mat_name,
