@@ -49,7 +49,7 @@ class BasicLayer(HasTraits):
         self.sync_trait('mat_name', self.material, 'mat_name', mutual=True)
         self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)        
 
-    def get_usefultraits(self):
+    def simulation_requested(self):
         return {'Layer Thickness':self.d, 'Material':self.mat_name}
 
 class Composite(BasicLayer):

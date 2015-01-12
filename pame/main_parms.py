@@ -40,7 +40,7 @@ class SpecParms(HasTraits):
              )
         )
 
-    def get_usefultraits(self):
+    def simulation_requested(self):
         ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
         ### trait_get is shortcut to return dic if the keys are adequate descriptors for output
         return self.trait_get('x_start', 'x_end', 'x_increment', 'x_samples')
@@ -123,7 +123,7 @@ class FiberParms(HasTraits):
     N=Property(Array, depends_on=['Config', 'angles', 'Lregion', 'Dcore'])  #NUMBER OF REFLECTIONS
 
     
-    def get_usefultraits(self):
+    def simulation_requested(self):
         ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
         traitdic={'Optical Configuration':self.Config, 
                   'Mode':self.Mode, 

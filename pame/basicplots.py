@@ -19,7 +19,7 @@ from pandas import DataFrame
 import numpy as np
 
 # Use matplotlib color maps because chaco's confuse me on lineplot
-# http://stackoverflow.com/questions/15140072/how-to-map-number-to-color-using-matplotlibs-colormap
+# http://stackoverflow.com/questions/15140072/how-to-map-number-to-color-using-matplotlibs-
 import matplotlib as mpl
 import matplotlib.cm as cm
 

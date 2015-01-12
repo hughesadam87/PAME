@@ -67,8 +67,8 @@ class LayerEditor(HasTraits):
         )
 
 
-    def get_usefultraits(self):
-        return {'Stack':[layer.get_usefultraits() for layer in stack]}
+    def simulation_requested(self):
+        return {'Stack':[layer.simulation_requested() for layer in stack]}
 
     ####BUTTONS MOSTLY FOR TESTING, IF YOU COULD HAVE A ROW FACTORY THAT NEW HOW TO ADD AND ASSIGN SPEC PARMS VARIABLE (AKA A ROW FACTOR THAT WAS AN OBJECT FUNCTION, THIS BE BETTER###
 

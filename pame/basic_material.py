@@ -83,7 +83,7 @@ class BasicMaterial(HasTraits):
         self.eplot = self.mview.eplot
         self.nplot = self.mview.nplot
 
-    def get_usefultraits(self):
+    def simulation_requested(self):
         """Dictionary of various traits that are useful for outputting as parameters. Overwrite
         with personal tastes.
         """

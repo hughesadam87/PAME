@@ -62,7 +62,7 @@ class CompositeMaterial(BasicMaterial):
         self.sync_trait('Material2', self.Mix, 'solventmaterial') 
         self.update_allplots()
 
-    def get_usefultraits(self):
+    def simulation_requested(self):
         return {'Material':self.mat_name,
                 'Solute':self.Material1,
                 'Solvent':self.Material2, 

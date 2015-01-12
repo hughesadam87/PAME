@@ -25,11 +25,63 @@ from interfaces import IMaterial, ISim
 from layer_editor import LayerEditor
 import config
 
+class SimConfigure(HasTraits):
+    """ Configuration what is stored/output in simulation."""
+    
+    save = Button
+    outpath = File
+    style = Enum('light','medium', 'heavy', 'custom')
+    
+    # Simulation object to be stored
+    optics_summary = Bool(False)  # Most useful traits like average reflectance
+    optics_full = Bool(False)   # Store full optical model panel for every iteration
+    optics_fuckit = Bool(False)
+    
+    
+    @on_trait_change('optics_summary, optics_full')
+    def update_style(self):
+        self.style == 'custom'
+        #Will this lead to infinite loop
+        
+    def _style_changed(self):
+        if style == 'custom':
+            return 
+        
+        self.all_false() #<--- Set all to false
 
-class SimObject(HasTraits):
-    """Basic editor for editing traits and values in these simulations, an adapter basically.  
-    Stores an array for incremental updating.
-    """
+        if self.style == 'light':
+            print 'style is light'
+            
+        elif self.style == 'medium':
+            print 'style is medium'
+            
+        elif self.style == 'heavy':
+            print 'style is heavy'
+            
+        # If custom, just pass
+    
+    def set_style_light(self):
+        """ """    
+        self.optics_summary = True
+        
+    def set_style_medium(self):
+        """ """    
+        self.optics_full = True
+        
+    def set_style_heavy(self):
+        """ """    
+
+    def all_false(self):
+        """ Resets all to false """
+        
+
+        
+    def _style_default(self):
+        return 'medium'
+    
+
+class SimAdapter(HasTraits):
+    """Shows selected simulation in table on main view """
     trait_name=Str('add trait name')
     # THESE VALUES ARE SET WHEN BY CLASSES THAT CONTROL THE SIMS
     inc=Int() 
@@ -82,9 +134,9 @@ class GeneralSim(HasTraits):
     sparser=Instance(SimParser)
 
     # Table for selecting objects
-    selected_traits=Instance(SimObject) 
+    selected_traits=Instance(SimAdapter) 
 
-    sim_obs=List(SimObject)
+    sim_obs=List(SimAdapter)
     simulation_traits=Dict  #Dictionary of required trait names, with start, end values in tuple form for iteration.  For example "Volume": (13.2, 120.0)"
     sim_traits_list=Property(List, depends_on='simulation_traits')  #Only used for presenting a nice view to user
     original_values=Dict
@@ -105,14 +157,14 @@ class GeneralSim(HasTraits):
             selected           = 'selected_traits',   #String name is arbitrary and passed as a global variable to other instances
             selection_color    = 0x000000,
             selection_bg_color = 0xFBD391,
-            row_factory=SimObject
+            row_factory=SimAdapter
         )
 
     @cached_property
     def _get_sim_traits_list(self): 
         return self.simulation_traits.keys()
 
-    def get_usefultraits(self):
+    def simulation_requested(self):
         """Method for returning parameters/metadata about the simulation"""
         return {'Simulation Name':self.outname, 
                 'Steps':self.inc, 
@@ -125,12 +177,12 @@ class GeneralSim(HasTraits):
         """ Aggregates all interesting simulation-wide parameters for output"""
         dic={}
         # Keys must be single string for correct attribute promotion if desirable #
-        dic['Simulation_Parameters'] = self.get_usefultraits()
-        dic['Selected_Material_Parameters'] = (self.base_app.selected_material.get_usefultraits())
-        dic['Spectral_Parameters'] = (self.base_app.specparms.get_usefultraits())
-        dic['Fiber_Parameters'] = (self.base_app.fiberparms.get_usefultraits())
+        dic['Simulation_Parameters'] = self.simulation_requested()
+        dic['Selected_Material_Parameters'] = (self.base_app.selected_material.simulation_requested())
+        dic['Spectral_Parameters'] = (self.base_app.specparms.simulation_requested())
+        dic['Fiber_Parameters'] = (self.base_app.fiberparms.simulation_requested())
         # Layer editor is already KEY:List, so already has proper heirarchy
-#	dic.update(self.base_app.layer_editor.get_usefultraits())
+#	dic.update(self.base_app.layer_editor.simulation_requested())
         return dic
 
 
@@ -304,9 +356,9 @@ class LayerVfrac(GeneralSim):
     def _sim_obs_default(self):
         """ Initial traits to start with """
         obs=[]
-        obs.append(SimObject(trait_name='selected_material.Vfrac', start=0.0, end=0.1, inc=self.inc)),  
-        obs.append(SimObject(trait_name='selected_layer.d', start=50., end=100., inc=self.inc)),
-        obs.append(SimObject(trait_name='selected_material.r_core', start=25., end=50., inc=self.inc)),
+        obs.append(SimAdapter(trait_name='selected_material.Vfrac', start=0.0, end=0.1, inc=self.inc)),  
+        obs.append(SimAdapter(trait_name='selected_layer.d', start=50., end=100., inc=self.inc)),
+        obs.append(SimAdapter(trait_name='selected_material.r_core', start=25., end=50., inc=self.inc)),
         return obs 
 
     def runsim(self): 

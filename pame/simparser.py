@@ -34,7 +34,7 @@ class SimParser(HasTraits):
     saved in conjunction.
 
     Decideded to leave complete control over outfilenames/saving to objects that call this, and so have no
-    file-related traits.  Also has load method and stuff for interfacing to pyuvvis.  """
+    file-related traits.  Also has load method and stuff for interfacing to scikit-spectra.  """
 
     # Entire simulation results, panel of increments, storing many arrays
     results=Instance(Panel)

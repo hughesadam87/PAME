@@ -348,9 +348,9 @@ class NanoSphereShell(NanoSphere):
 #		''' I replaced this with doublescattview anyway'''
 #		self.allplots={'full':self.FullMie.sview, 'comp':self.CompositeMie.sview}
 
-    def get_usefultraits(self):
+    def simulation_requested(self):
         """ Method to return dictionary of traits that may be useful as output for paramters and or this and that"""
-        ### Eventually, make complex materials liked mixed shell call down levels of this.  aka self.shellmaterial.get_usefultraits()
+        ### Eventually, make complex materials liked mixed shell call down levels of this.  aka self.shellmaterial.simulation_requested()
         return {'Core Material':self.CoreMaterial.mat_name, 
                 'Shell Inclusion':self.ShellMaterial.mat_name,
                 'Medium Material':self.MediumMaterial.mat_name, 

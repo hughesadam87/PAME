@@ -35,5 +35,3 @@ _header = (
     )
 
 header = OrderedDict((k, v) for k, v in _header)
-    
-print header.values(), 'lol'
