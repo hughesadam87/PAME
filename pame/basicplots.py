@@ -8,7 +8,7 @@ from traits.api import HasTraits, Instance, Array, Property, CArray, Str, Float,
 from traitsui.api import Item, Group, View, Tabbed, Action, HGroup, InstanceEditor, VGroup, ListStrEditor
 
 # Chaco imports
-from chaco.api import ArrayPlotData, Plot, AbstractPlotData, PlotAxis, HPlotContainer, ToolbarPlot
+from chaco.api import ArrayPlotData, Plot, AbstractPlotData, PlotAxis, HPlotContainer, ToolbarPlot, Legend
 from chaco.tools.api import *
 from numpy import where
 from interfaces import IView
@@ -63,12 +63,13 @@ def plot_line_points(*args, **kwargs):
 
 
 class OpticalView(HasTraits):
-    optic_model = Any # BasicReflectance object, must be initialized with this by calling fcn
-    
+    optic_model = Any # DielectricSlab object, must be initialized with this by calling fcn    
     optic_stack = DelegatesTo('optic_model')
     lambdas = DelegatesTo('optic_model')  #Xarray everywhere will need replaced
     angles = DelegatesTo('optic_model')
-    real_or_complex = Enum('real', 'imaginary')
+    x_unit = DelegatesTo('optic_model')
+
+    real_or_imag = Enum('real', 'imaginary')
     _is_complex = Bool(False)
     show_legend=Bool(False)
     average = Bool(False)  #Averaging style
@@ -87,7 +88,7 @@ class OpticalView(HasTraits):
                                   show_label=False, 
                                   style='simple'
                                   ),
-                             Item('real_or_complex', 
+                             Item('real_or_imag', 
                                   visible_when='_is_complex==True', 
                                   label='Component'
                                   ),          
@@ -110,7 +111,7 @@ class OpticalView(HasTraits):
         """ Long name corresponding to selected plot attribute"""
         return globalparms.header[self.choose]
     
-    @on_trait_change('choose, average, real_or_complex, show_legend')
+    @on_trait_change('choose, average, real_or_imag, show_legend')
     def _update_shiz(self):
         """ Change which data (R, T, A...) to view.  These all trigger
         full redraw."""
@@ -161,18 +162,37 @@ class OpticalView(HasTraits):
                                  style = 'line'   #<-- Don't plot marker
                                  )
   
-        # Update plot title, legend, tools
-        # -----------------------------------
-        self.plot.title = '%s' % self.chosen_name
-#        self.plot.padding = 50
+        # Update plot title, legend, tools, labels
+        # ----------------------------------------
+        #self.plot.title = '%s' % self.chosen_name
+        #self.plot.padding = 50
         
-        self.plot.x_axis.label='x'   #<--- doesn't work
-        self.plot.index_axis.label='y'
+        x_axis = PlotAxis(orientation='bottom', #top, bottom, left, righ
+                  title=self.x_unit,
+                  mapper=self.plot.x_mapper,
+                  component=self.plot)       
+        
+        
+        ylabel = '%s' % self.chosen_name
+        if self.real_or_imag == 'imaginary':
+            ylabel = ylabel + ' (imaginary)'
+            
+        y_axis = PlotAxis(orientation='left',
+                  title=ylabel,
+                  mapper=self.plot.y_mapper,
+                  component=self.plot)   
+        
+        self.plot.underlays.append(y_axis)                
+        self.plot.underlays.append(x_axis)        
+        
         
         # Legend settings
         # http://code.enthought.com/projects/files/ETS3_API/enthought.chaco.legend.Legend.html
+        # LEGEND EXAMPLES MISSING FOR CUSTOM OVERLAY
+        # http://docs.enthought.com/chaco/user_manual/basic_elements/overlays.html
         if self.show_legend:
-            #self.plot.legend.labels = list([i for i in self.angles]) #Sort numerically, not alphabetically
+                        
+#            self.plot.legend.labels = list([i for i in self.angles]) #Sort numerically, not alphabetically
             self.plot.legend.visible = True
             self.plot.legend.bgcolor = (.8,.8,.8) #lightgray
             self.plot.legend.border_visible = True
@@ -186,7 +206,7 @@ class OpticalView(HasTraits):
     
     def infer_complex(self, carray):
         """ From an array to be plotted, inspects if it has a real AND imaginary component.
-        Set _is_complex variable and handles logic of self.real_or_complex.  If imaginary
+        Set _is_complex variable and handles logic of self.real_or_imag.  If imaginary
         component is 0, we don't want the plot to let users select the imaginary channel.
         """
         #http://docs.scipy.org/doc/numpy/reference/generated/numpy.iscomplex.html        
@@ -195,10 +215,10 @@ class OpticalView(HasTraits):
             
         else:
             self._is_complex = False
-            self.real_or_complex = 'real'  #Necessary for view logic completion
+            self.real_or_imag = 'real'  #Necessary for view logic completion
             
         # Choose real or complex channel
-        if self.real_or_complex == 'real':
+        if self.real_or_imag == 'real':
             return carray.real
         else:
             return carray.imag

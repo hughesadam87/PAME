@@ -19,17 +19,18 @@ class OpticalModelError(Exception):
 class DielectricSlab(HasTraits):
     '''Class used to store data in an interactive tabular environment'''
 
-    specparms=Instance(SpecParms,())
-    fiberparms=Instance(FiberParms,())
+    specparms = Instance(SpecParms,())
+    fiberparms = Instance(FiberParms,())
 
-    lambdas=DelegatesTo('specparms')	
-    Mode=DelegatesTo('fiberparms')
-    angles=DelegatesTo('fiberparms')
+    x_unit = DelegatesTo('specparms') #<-- Required by optic_view for xaxis, wish easier to acess these globally
+    lambdas = DelegatesTo('specparms')	
+    Mode = DelegatesTo('fiberparms')
+    angles = DelegatesTo('fiberparms')
     angles_radians=DelegatesTo('fiberparms')
 #   betas=DelegatesTo('fiberparms')
 
     angle_avg = DelegatesTo('fiberparms')
-    N=DelegatesTo('fiberparms')
+    N = DelegatesTo('fiberparms')
     
     layereditor=Instance(LayerEditor,())            #Need to initialize this because properties depend on this instance
     stack= DelegatesTo('layereditor')               #Variables are stored here just because they can be useful for future implementations
