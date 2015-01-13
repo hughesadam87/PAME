@@ -4,6 +4,8 @@
 import sys, os
 import time
 import copy
+from collections import OrderedDict
+from pame import globalparms
 
 # ETS imports
 from traits.api import * 
@@ -30,11 +32,32 @@ class SimConfigure(HasTraits):
     
     save = Button
     outpath = File
+
+    # Summary storage
+#    optical_params = 
+    averaging = Enum('Average', 'Not Averaged', 'Both')
+    
+
     style = Enum('light','medium', 'heavy', 'custom')
+    
+    #https://github.com/enthought/traitsui/blob/master/examples/demo/Standard_Editors/CheckListEditor_simple_demo.py
+    choose_optics = List(editor=CheckListEditor(values = globalparms.header.keys(), cols=2))
+
+    choose_layers = Enum('Selected Layer', 'All Layers', 'None')
+    additional = Str()
     
     # Simulation object to be stored
     optics_summary = Bool(False)  # Most useful traits like average reflectance
     optics_full = Bool(False)   # Store full optical model panel for every iteration
+    
+    
+    traits_view = View(
+        Item('choose_optics', style='custom'),
+        Item('choose_layers', style='custom'),
+        Item('averaging', style='custom'),
+        Item('additional', style='custom'),
+        buttons = [ 'Undo', 'OK', 'Cancel', 'Help' ]  #<-- Help?
+                   )       
     
     
     @on_trait_change('optics_summary, optics_full')
@@ -71,7 +94,7 @@ class SimConfigure(HasTraits):
         """ """    
 
     def all_false(self):
-        """ Resets all to false """
+        """ Resets all to False """
         
     def _style_default(self):
         return 'medium'
@@ -95,12 +118,14 @@ class SimAdapter(HasTraits):
         except TypeError:  #Caused by unicode input which seems to happen spontaneously for an unknown reason
             return
 
-class GeneralSim(HasTraits):
+class ABCSim(HasTraits):
     """Basic simulation for iterating over sets of variables that can be incremented over a shared increment.
        Contains methods to make sure traits that are being iterated over exist, and can be restored easily.  
        Simulation variables can be added quickly by changing the simulation_traits attributed"""
 
     base_app=Any  #THIS IS AN INSTANCE OF GLOBAL SCENE, ALL TRAITS WILL DELEGATE TO THIS.  
+
+    sim_configuration = DelegatesTo('base_app') #Instance SimConfiguration
 
     start=Button
     time=Str('Sim not started')   #Stores time that simulation ended
@@ -113,7 +138,6 @@ class GeneralSim(HasTraits):
     notes=Str('<NOTES GO HERE>')
 
     key_title=Str('Trial')  #This is used to give each increment a name rather than 1,2,3
-    key_delimiter=Str('_')	#Needed to put in this way to ensure proper sorting in simulationplots.py
     ## Also set to % in composite plots but that doesn't seem to be a problem
 
     # Restore all traits to original values after simulation is over
@@ -125,8 +149,9 @@ class GeneralSim(HasTraits):
     tvals=Enum(values='translist')
 
     # Output Storage Objects
-    outpanel=Instance(Panel) 
-    _completed=Property(Bool, depends_on='outpanel') #Used to track if simulation is run
+    summary_panel=Instance(Panel)  #<-- Turn into summary panel
+    results_dict = Dict            #
+    _completed=Property(Bool, depends_on='summary_panel') #Used to track if simulation is run
     csvout=Bool(True)  
     sparser=Instance(SimParser)
 
@@ -170,14 +195,17 @@ class GeneralSim(HasTraits):
                 'Simulated Traits':self.sim_traits_list
                 }
 
-    def get_alltraits(self):
-        """ Aggregates all interesting simulation-wide parameters for output"""
+    def state_parameters(self):
+        """ Aggregates simulation-wide state parameters for output.
+        These are primarly to visualizing simulation, not storing results.  Results
+        are stored via run_sim() """
         dic={}
         # Keys must be single string for correct attribute promotion if desirable #
-        dic['Simulation_Parameters'] = self.simulation_requested()
+        dic['Simulation_Parameters'] = self.state_requested()
         dic['Selected_Material_Parameters'] = (self.base_app.selected_material.simulation_requested())
-        dic['Spectral_Parameters'] = (self.base_app.specparms.simulation_requested())
-        dic['Fiber_Parameters'] = (self.base_app.fiberparms.simulation_requested())
+        dic['Spectral_Parameters'] = (self.base_app.specparms.state_requested())
+        dic['Fiber_Parameters'] = (self.base_app.fiberparms.state_requested())
+
         # Layer editor is already KEY:List, so already has proper heirarchy
 #	dic.update(self.base_app.layer_editor.simulation_requested())
         return dic
@@ -192,7 +220,7 @@ class GeneralSim(HasTraits):
         return self.translator.keys()  
 
     def _get__completed(self):
-        if self.outpanel == None:
+        if self.summary_panel == None:
             return False
         else:
             return True
@@ -201,12 +229,15 @@ class GeneralSim(HasTraits):
         return []
 
     @on_trait_change('inc, selected_traits')  #Updates with user selection, for some reason selected_traits.start, selected_traits.end notation not makin a difference
-    def update_storage(self):
+    def check_sim_ready(self):
         """Method to update various storage mechanisms for holding trait values for simulations.  
            Takes user data in table editor and stores it in necessary dictionaries so that 
            traits can be set and things automatically.  Decided to use this over a system
            properties because the properties were conflicting with delegation and other stuff"""
-        sim_traits={};originals={}; missing=[]; warning=''
+        sim_traits={}
+        originals={}
+        missing=[]
+        warning=''
 
         for obj in self.sim_obs:
             obj.inc=self.inc  #Ensures proper increments whether adding new objects to the table or just changing global inc
@@ -226,16 +257,18 @@ class GeneralSim(HasTraits):
                 warning=warning+'\t'+trait + '\t'
         else:
             warning='Simulation ready: all traits found'
-        self.simulation_traits=sim_traits
-        self.warning=warning
-        self.missing_traits=missing
-        self.original_values=originals
+
+        self.simulation_traits = sim_traits
+        self.warning = warning
+        self.missing_traits = missing
+        self.original_values = originals
 
     def restore_original_values(self): 
         for trait in self.simulation_traits.keys():
             xsetattr(self.base_app, trait, self.original_values[trait]) #Restore all traits to original values
 
     def runsim(self): 
+        """ ABC METHOD """
         pass
 
     def output_simulation(self, outpath=None, outname=None, confirmwindow=True):
@@ -247,8 +280,8 @@ class GeneralSim(HasTraits):
             confirmwindow:  Popup message on successful save"""
 
         # Make sure simulation has taken place
-        if self.outpanel is None:
-            message('Cannot save simulation, %s, outpanel trait is None. \
+        if self.summary_panel is None:
+            message('Cannot save simulation, %s, summary_panel trait is None. \
 	    Perhaps simulation was not run yet?'%self.outname, title='Warning')
             return
 
@@ -262,7 +295,7 @@ class GeneralSim(HasTraits):
             outpath=self.outdir #delegate from base_app
 
         # If outname has file extension, and its not pickle, convert it
-        sout, ext=os.path.splitext(outname)
+        sout, ext = os.path.splitext(outname)
         if ext !='' and ext != config.SIMEXT:
             message('Dropping file extension %s, please enter a root filename.'%ext, title='Warning')
         outdata=sout+config.SIMEXT
@@ -279,11 +312,12 @@ class GeneralSim(HasTraits):
         # Translator is actually reversed in scope of use in simparser
         trans_rev=dict((v,k) for k,v in self.translator.items())
 
+        # !!!!XXX!!!
         # Assign proper traits (avoid delegation because that class needs to stand alone)  
         self.sparser=SimParser(translator=trans_rev,
-                               results=self.outpanel,
+                               results=self.summary_panel,
                                simparms=self.simulation_traits, 
-                               parms=self.get_alltraits())
+                               parms=self.state_parameters())
 
         #Save entire object
         self.sparser.save(outfile)
@@ -299,6 +333,7 @@ class GeneralSim(HasTraits):
         self.time=time.asctime( time.localtime(time.time()))
 
     basic_group=VGroup(
+        Item('sim_configuration', label='Configure Simulation Storage'),
         HGroup(Item('restore_status', label='Restore state after simulation' ),
                Item('inc',label='Steps'), 
                Item('start', enabled_when='warning=="Simulation ready: all traits found"', show_label=False), 
@@ -306,27 +341,21 @@ class GeneralSim(HasTraits):
                Item('tvals', label='Common traits'),
                ),
         HGroup(
-            Item('outname',label='Run Name'), Item('warning', style='readonly', label='Warning(s):'),
+            Item('outname',label='Run Name'), 
+            Item('warning', style='readonly', label='Warning(s):'),
             ),
         Item('sim_obs', editor=simeditor, show_label=False),
         Item('notes', style='custom'),
         label='Parameters')
 
 
-class LayerVfrac(GeneralSim): 
+class LayerVfrac(ABCSim): 
 
-    #### New variables specific to this simulation #####
-
-    R_list=Instance(ReflectanceStorage)  #Defaulted below
-    M_list=Instance(MaterialStorage) #Stores dielectric plots per iteration
-    Scatt_list=Instance(ScattStorage)  
     selected_material=DelegatesTo('base_app') #Just for convienence in variable calling
     selected_layer=DelegatesTo('base_app')
 
-    ## Need to make a way for the plot types to be modular.  For example, I can pipe a scatt plot out or
-    ## a reflectance plot, but this program needs to recognize that scattering plots only exist
-    ## for nanoparticle objects for example
-
+    def _outname_default(self): 
+        return 'Layersim'
 
     def _translator_default(self):	
         return{'Layer Fill Fraction':'selected_material.Vfrac',
@@ -334,22 +363,9 @@ class LayerVfrac(GeneralSim):
                'NP Core radius':'selected_material.r_core',
                'NP Shell Fill Fraction':'selected_material.CoreShellComposite.Vfrac' }
 
-#	def _R_list_default(self):=return SimViewList(trials_delimiter=self.key_delimiter)      #Stores reflectance plots per iteration
-    def _R_list_default(self): 
-        return ReflectanceStorage(trials_delimiter=self.key_delimiter)
-
-    def _M_list_default(self): 
-        return MaterialStorage(trials_delimiter=self.key_delimiter)
-
-    # AdHoc #
-    def _Scatt_list_default(self): 
-        return ScattStorage(trials_delimiter=self.key_delimiter)
-
-    def _outname_default(self): 
-        return 'Layersim'
-
     def _selected_material_changed(self): 
-        self.update_storage()
+        """ Selected material required before simulation can start """
+        self.check_sim_ready()
 
     def _sim_obs_default(self):
         """ Initial traits to start with """
@@ -360,58 +376,65 @@ class LayerVfrac(GeneralSim):
         return obs 
 
     def runsim(self): 
+        """ Increments, updates all results."""
 
-        # At some point, make better interface to return all this stuff together into the paneldic
-        svl_dic={}  #Dictionary that stores relevant data by variable
-        mvl_dic={}
-        scatt_dic={}
-
-        paneldic={}
-
+        summarydict = OrderedDict()  #<-- Keyed by increment
         sorted_keys = []
+
+        sys.setrecursionlimit(10000)
         for i in range(self.inc):
             for trait in self.simulation_traits.keys():
                 xsetattr(self.base_app, trait, self.simulation_traits[trait][i]) #Object, traitname, traitvalue
-#            key=self.key_title+self.key_delimiter+str(i)
+                
+            increment_dict = {}  #<--- Results of just this increment
+
             key = '%s_%s' % (str(i), self.key_title)
             sorted_keys.append(key)
-
-            # Update relavent methods in case trait's i'm changing don't necessarily trigger these (for example coefficients of
-            # dispersion relation don't trigger a change in the shell of nanoparticles 
-
-            self.selected_material.FullMie.update_cross()  #This is only in case the trait I'm simulating doesn't automatically trigger an update
-            self.base_app.opticstate.update_opticview()         #Recompute Reflectance		
-
-            # STUPID HACK TO ALLOW SAMPLING OF SCATTERING CROSS SECTIONS BY WRITING THEM INTO NEW LISTS, THEN MAKING A LIST OF LISTS
-            # FOR SOME REASON, TRYING TO ADD THEM EXPLICITLY TO A DICTIONARY WOULD CAUSE ERRORS AFTER THE ITERATIONS!!!
-            scatt_dic[key]=[]  #ext/abs/scattering arrays.
-            for field in self.selected_material.FullMie.sview.get_sexy_data():
-                new_data=[entry for entry in field]
-                scatt_dic[key].append(new_data)
-
-            mvl_dic[key]=self.selected_material.mview.get_sexy_data()     #Get Dielectric plots (Working fine)
-            svl_dic[key]=self.base_app.opticstate.opticview.get_sexy_data()  #Get Reflecatance plots
-
-            # 12/9/12 Dataframes into panel for sim output #
-            mvl_df=self.selected_material.mview.get_dataframe()
-            svl_df=self.base_app.opticstate.opticview.get_dataframe()  
-            scatt_df=self.selected_material.FullMie.sview.get_dataframe()
+            
+            # Update Optical Stack
+            self.base_app.opticstate.simulation_requested()       
+            
+            # Update Selected Material
+            self.selected_material.simulation_requested()
+    
+            summarydict[key] = increment_dict #<---
 
             # Concatenate rowwise
-            paneldic[key]=concat([mvl_df, svl_df, scatt_df], axis=1)         
+#            paneldic[key]=concat([mvl_df, svl_df, scatt_df], axis=1)         
 
             print "Iteration\t", i+1, "\t of \t", self.inc, "\t completed"
+
+        print summarydict[key]
+            
+        #from custom import dump, load
+        
+        #path = '/home/glue/Desktop/test.json'
+        #f = open(path, 'w')
+        #dump(summarydict, f)
+        #f.close()
+        #print x, 'DONE DUMPING\n'
+        #o = open(path, 'r')
+        #y = load(o)
+        #o.close()
+
+        #import pprint
+        #pp = pprint.PrettyPrinter(indent=4)
+        #pp.pprint(y)
+        
+        #print 'SUCCESS\n'
+        #sys.exit()
+        
 
         # Make a full panel out of paneldic with trials as the items
         
         print 'HI SAVING PANELDIC'
-        self.outpanel = Panel.from_dict(paneldic, orient='minor')
+        self.summary_panel = Panel.from_dict(paneldic, orient='minor')
         print sorted_keys
-        self.outpanel = self.outpanel.reindex_axis(sorted_keys, 
+        self.summary_panel = self.summary_panel.reindex_axis(sorted_keys, 
                                                    axis=2, #minor axis 
                                                    copy=False) #save memory
         print sorted_keys
-        print self.outpanel
+        print self.summary_panel
         print 'SAVING PANELDIC FINISHED'
 
         ############

@@ -144,7 +144,13 @@ class OpticalView(HasTraits):
         # Plot angle dependence, bruteforce colromap
         else:
             # http://stackoverflow.com/questions/15140072/how-to-map-number-to-color-using-matplotlibs-colormap
-            norm = mpl.colors.Normalize(vmin=self.angles[0], vmax=self.angles[-1])
+            
+            amin = self.angles[0]
+            amax = self.angles[-1]
+            if amin > amax:  #If counting backwards angles like in transmission
+                amax, amin = amin, amax
+
+            norm = mpl.colors.Normalize(vmin=amin, vmax=amax)
             cmapper = cm.ScalarMappable(norm=norm, cmap=config.LINECMAP ).to_rgba  #THIS IS A FUNCTION
     
             for idx, angle in enumerate(self.angles):

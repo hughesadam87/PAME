@@ -205,6 +205,12 @@ class DielectricSlab(HasTraits):
         tempnum =simps(P_num, axis=0, even='last')
         tempden =simps(P_den, axis=0, even='last')
         return tempnum/tempden
+    
+    def simulation_requested(self):
+        """ Returns optical stack and any other useful traits of dielectric slab for 
+        simulation. """
+        self.update_optical_stack()
+        return {'optical_stack':self.optical_stack}
 
 
 if __name__ == '__main__':

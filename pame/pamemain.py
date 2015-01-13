@@ -12,7 +12,7 @@ from main_parms import FiberParms, SpecParms
 from interfaces import IOptic, ILayer, IMaterial, IStorage, ISim
 from fiberview import FiberView
 from modeltree_v2 import Model
-from gensim import LayerVfrac, GeneralSim
+from gensim import LayerVfrac, ABCSim, SimConfigure
 from handlers import WarningDialog
 
 
@@ -93,6 +93,7 @@ class GlobalScene(HasTraits):
 
     simulations=List(ISim)  
     selected_sim=Instance(ISim)
+    sim_configuration = Instance(SimConfigure)
 
     ###Editors####
     layereditor=Instance(LayerEditor)
@@ -205,9 +206,8 @@ class GlobalScene(HasTraits):
         
     ### Store copy of current simulation 
     def new_sim(self): 
-        self.simulations.append(LayerVfrac(base_app=self, 
+        self.simulations.append(LayerVfrac(base_app=self,  #<--- LayerVFrac.  Base_app = self.copy?
                                            outname='Layersim'+str(len(self.simulations))))
-    
     def save_sim(self): 
         self.selected_sim.output_simulation(self.outdir)
     
@@ -239,6 +239,9 @@ class GlobalScene(HasTraits):
             s.output_simulation(self.outdir, confirmwindow=False)
         message('%s simulation(s) saved to directory: "%s"'%(len(outsims),
                   os.path.split(self.outdir)[1]), title='Success')
+
+    def _sim_configuration_default(self):
+        return SimConfigure()
 
     # Show Reflectance --------
     def compute_optics(self):

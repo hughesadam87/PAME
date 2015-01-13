@@ -66,8 +66,8 @@ class CompositeMaterial(BasicMaterial):
         out = super(CompositeMaterial, self).simulation_requested()
         
         out.update({
-            'material1':self.Material1,
-            'material2':self.Material2, 
+            'material1':self.Material1.simulation_requested(),
+            'material2':self.Material2.simulation_requested(), 
             'mixing_style':self.MixingStyle,
             'Vfrac':self.Vfrac})
         return out
@@ -282,6 +282,8 @@ class SphericalInclusions(CompositeMaterial):
         out['platform'] = self.platform_type
         out['r_particle'] = self.r_particle
         out['r_plastform'] = self.r_platform
+
+        return out
         
 
 class SphericalInclusions_Shell(SphericalInclusions):

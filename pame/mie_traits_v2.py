@@ -177,7 +177,7 @@ class ABCsphere(Mie):
         self.update_cross()
 
     def simulation_requested(self):
-        out = super(ABCsphere, self).simulation_requested(self)
+        out = super(ABCsphere, self).simulation_requested()
         out['r_core'] = self.r_core
         return out
 
@@ -359,7 +359,7 @@ class sphere_shell(bare_sphere, shell):
         self.update_sview()
 
     def simulation_requested(self):
-        out = super(NanoSphere, self).simulation_requested(self)          
+        out = super(sphere_shell, self).simulation_requested()          
         out['shell_width'] = self.shell_width
         return out
         

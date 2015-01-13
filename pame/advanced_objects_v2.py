@@ -80,7 +80,7 @@ class NanoSphere(SphericalInclusions_Disk):
         return self.Dispwater()#specparms=self.specparms)
     
     def simulation_requested(self):
-        out = super(NanoSphere, self).simulation_requested(self)
+        out = super(NanoSphere, self).simulation_requested()
         
         # Core/medium materials and Mie scattering
         out['material_core'] = self.CoreMaterial.simulation_requested()
@@ -366,7 +366,7 @@ class NanoSphereShell(NanoSphere):
         out = super(NanoSphereShell, self).simulation_requested()
 
         # Shell
-        out['material_shell'] = self.CoreMaterial.simulation_requested()
+        out['material_shell'] = self.ShellMaterial.simulation_requested()
         out['shell_thickness'] = self.shell_width                
         
         # Mie
