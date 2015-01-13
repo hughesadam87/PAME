@@ -35,7 +35,6 @@ class SimConfigure(HasTraits):
     # Simulation object to be stored
     optics_summary = Bool(False)  # Most useful traits like average reflectance
     optics_full = Bool(False)   # Store full optical model panel for every iteration
-    optics_fuckit = Bool(False)
     
     
     @on_trait_change('optics_summary, optics_full')
@@ -73,8 +72,6 @@ class SimConfigure(HasTraits):
 
     def all_false(self):
         """ Resets all to false """
-        
-
         
     def _style_default(self):
         return 'medium'
@@ -152,7 +149,7 @@ class GeneralSim(HasTraits):
                 ],
             deletable   = True, 
             auto_size = True,
-            orientation='vertical',    #Orientation between built-in split between table and edit view
+            orientation = 'vertical',    #Orientation between built-in split between table and edit view
             show_toolbar=True,
             selected           = 'selected_traits',   #String name is arbitrary and passed as a global variable to other instances
             selection_color    = 0x000000,
@@ -351,7 +348,8 @@ class LayerVfrac(GeneralSim):
     def _outname_default(self): 
         return 'Layersim'
 
-    def _selected_material_changed(self): self.update_storage()
+    def _selected_material_changed(self): 
+        self.update_storage()
 
     def _sim_obs_default(self):
         """ Initial traits to start with """

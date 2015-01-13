@@ -132,8 +132,10 @@ class Mie(HasTraits):
         djn=jns[1]       #derivative jn
         i=complex(0,1.0)
 
-        jn=complex(jn[n])  ; yn=complex(yn[n])
-        djn=complex(djn[n]); dyn=complex(dyn[n])
+        jn=complex(jn[n])  
+        yn=complex(yn[n])
+        djn=complex(djn[n])
+        dyn=complex(dyn[n])
 
         hn=jn + i*yn      #VERIFIED!!!
         dhn=djn + i*dyn #Derivative (d/dp (j + iy)) = (dj + idy)
@@ -148,6 +150,20 @@ class Mie(HasTraits):
         return(Psi, dPsi, Zi, dZi, Xi, dXi)
 
 
+    def simulation_requested(self):
+        """ Returns interesting parameters during a simulation.  Traits like core
+        radius might be redundantly output by material depending on the calling
+        materials' simulation_requested() method, but that's better than having
+        neither call them...
+        """
+        
+        self.update_cross()
+        return{
+            'extinction':self.Cext,
+            'absorbance':self.Cabs,
+            'scattering':self.Cscatt
+            }
+
 class ABCsphere(Mie):
     '''Scattering functions for a plain sphere'''
     r_core=Float(12)
@@ -159,6 +175,11 @@ class ABCsphere(Mie):
 
     def _r_core_changed(self): 
         self.update_cross()
+
+    def simulation_requested(self):
+        out = super(ABCsphere, self).simulation_requested(self)
+        out['r_core'] = self.r_core
+        return out
 
 
 class shell(Mie):
@@ -184,6 +205,7 @@ class shell(Mie):
 
     def _eshell_changed(self):
         self.update_cross()
+        
 
 class sphere_electrostatics(ABCsphere):
     '''Scattering cross section for a sphere using the conditions x<<1 and |m|x<<1 pg 136''' 
@@ -193,6 +215,7 @@ class sphere_electrostatics(ABCsphere):
         Qscatt=(8.0/3.0 * x**4) * ( abs(self.ecore-self.emedium/ self.ecore+2.0* self.emedium)**2 )  #????QSCAT VS CSCATT???
 
         self.update_sview()	
+
 
 class bare_sphere(ABCsphere):
     '''Full mie solution to plain sphere'''
@@ -250,7 +273,8 @@ class bare_sphere(ABCsphere):
             self.Cscatt[i]=( (2.0*math.pi)/(k**2) ) * scatt_term   #UNITS DEFINED BY 1/K**2
             self.Cabs[i]=self.Cext[i]-self.Cscatt[i]
 
-        self.update_sview()
+        self.update_sview()     
+        
         
 class effective_sphere(bare_sphere):
     """ Bare sphere, but r_core is implied to mean effective radius,
@@ -333,6 +357,12 @@ class sphere_shell(bare_sphere, shell):
             self.Cabs[i]=self.Cext[i]-self.Cscatt[i]
 
         self.update_sview()
+
+    def simulation_requested(self):
+        out = super(NanoSphere, self).simulation_requested(self)          
+        out['shell_width'] = self.shell_width
+        return out
+        
 
 ###FROM PAGE 135, MAY BE WORTH USING LATER###
 #	ncoeff=( (m1**2 - 1.0) / (m1**2 + 2.0) ).imag      #ELECTROSTATIC APPROX

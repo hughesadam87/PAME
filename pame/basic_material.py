@@ -87,7 +87,9 @@ class BasicMaterial(HasTraits):
         """Dictionary of various traits that are useful for outputting as parameters. Overwrite
         with personal tastes.
         """
-        return {'Material':self.mat_name}
+        return {'name':self.mat_name,
+                'earray':self.earray,
+                'narray':self.narray}
 
     def update_allplots(self): 
         self.allplots={'KEY':self.eplot, }#'ni': self.nplot}  #Format is better than _allplots_defaults() for composite objects

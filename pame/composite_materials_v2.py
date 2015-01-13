@@ -63,10 +63,14 @@ class CompositeMaterial(BasicMaterial):
         self.update_allplots()
 
     def simulation_requested(self):
-        return {'Material':self.mat_name,
-                'Solute':self.Material1,
-                'Solvent':self.Material2, 
-                'Vfrac':self.Vfrac}
+        out = super(CompositeMaterial, self).simulation_requested()
+        
+        out.update({
+            'material1':self.Material1,
+            'material2':self.Material2, 
+            'mixing_style':self.MixingStyle,
+            'Vfrac':self.Vfrac})
+        return out
 
 #	def update_allplots(self): 
 #			self.allplots={'Dielectric '+str(self.Material1.mat_name):self.Material1.eplot,  'Dielectric '+str(self.Material2.mat_name):self.Material2.eplot, 
@@ -269,6 +273,17 @@ class SphericalInclusions(CompositeMaterial):
     def _set_coverage(self, coverage):
         self.N_occ=int( (coverage * self.N_tot) / 100.0	)
 
+
+    def simulation_requested(self):
+        out = super(SphericalInclusions, self).simulation_requested()
+        
+        # Probably want more, but lazy
+        out['coverage'] = self.coverage
+        out['platform'] = self.platform_type
+        out['r_particle'] = self.r_particle
+        out['r_plastform'] = self.r_platform
+        
+
 class SphericalInclusions_Shell(SphericalInclusions):
     '''Used for sphere/shell nanoparticles; shell thickness is automatically determined by r_particle (aka biotin radius)'''
 
@@ -294,7 +309,10 @@ class SphericalInclusions_Shell(SphericalInclusions):
         super(SphericalInclusions_Shell, self).__init__(*args, **kwargs)
 
 
-    def _get_VT(self): return round ( (4.0*math.pi/3.0) * (  (self.r_platform+2.0*self.r_particle)**3 - self.r_platform**3 ) , 2)
+    def _get_VT(self): 
+        return round ( 
+            ((4.0*math.pi/3.0) * (  (self.r_platform+2.0*self.r_particle)**3 - self.r_platform**3 )) 
+                    ,2)
 
 
 class SphericalInclusions_Disk(SphericalInclusions):

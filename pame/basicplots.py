@@ -165,7 +165,7 @@ class OpticalView(HasTraits):
         # Update plot title, legend, tools, labels
         # ----------------------------------------
         #self.plot.title = '%s' % self.chosen_name
-        #self.plot.padding = 50
+        self.plot.padding = 50
         
         x_axis = PlotAxis(orientation='bottom', #top, bottom, left, righ
                   title=self.x_unit,

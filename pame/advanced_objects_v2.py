@@ -28,7 +28,6 @@ class NanoSphere(SphericalInclusions_Disk):
     CoreMaterial = Instance(IMaterial)
 
     r_core = Float(12)
-
     d_core = Property(Float,
                       depends_on='r_core')
 
@@ -74,14 +73,25 @@ class NanoSphere(SphericalInclusions_Disk):
     def _FullMie_default(self): 
         return bare_sphere()			
 
-    def _CoreMaterial_default(self):  ### Overwrite as package data eventually
+    def _CoreMaterial_default(self):  # Overwrite as package data eventually
         return XNKFile(file_path = op.join(XNK_dir, 'JC_Gold.nk'))
 
     def _MediumMaterial_default(self): 
         return self.Dispwater()#specparms=self.specparms)
+    
+    def simulation_requested(self):
+        out = super(NanoSphere, self).simulation_requested(self)
+        
+        # Core/medium materials and Mie scattering
+        out['material_core'] = self.CoreMaterial.simulation_requested()
+        out['material_medium'] = self.CoreMaterial.simulation_requested()       
+        out['mie_full'] = self.FullMie.simulation_requested()
+        out['r_core'] = self.r_core
+            
+        return out
 
 
-######## DRUDE MODELS BELOW MAY BE DEPRECATES	
+#### DRUDE MODELS BELOW MAY BE DEPRECATES	
 
 class DrudeNew(ABCMetalModel, NanoSphere):
     '''Drude model with interband contributions(From paper "Advanced Drude Model")'''
@@ -152,7 +162,7 @@ class DrudeNP_corrected(DrudeBulk, NanoSphere):
     def __init__(self, *args, **kwargs):
         super(DrudeNP_corrected, self).__init__(*args, **kwargs)
 
-    ###USES VF IN NM/S SO THAT L CAN BE IN NM AS WELL SO THIS OBJECT IS DEPENDENT ON UNITS###
+    #USES VF IN NM/S SO THAT L CAN BE IN NM AS WELL SO THIS OBJECT IS DEPENDENT ON UNITS#
 
     def _valid_metals_changed(self): 
         self.update_data()
@@ -200,7 +210,7 @@ class NanoSphereShell(NanoSphere):
     from composite_plots import DoubleSview
     from material_models import Constant
 
-    ###Note: CoreMaterial refers to the core/shell composite object that is the "NanoSphere" for this instance ###
+    #Note: CoreMaterial refers to the core/shell composite object that is the "NanoSphere" for this instance #
 
 
     ShellMaterial=Instance(IMaterial)    #Composite Shell	
@@ -350,12 +360,22 @@ class NanoSphereShell(NanoSphere):
 
     def simulation_requested(self):
         """ Method to return dictionary of traits that may be useful as output for paramters and or this and that"""
-        ### Eventually, make complex materials liked mixed shell call down levels of this.  aka self.shellmaterial.simulation_requested()
-        return {'Core Material':self.CoreMaterial.mat_name, 
-                'Shell Inclusion':self.ShellMaterial.mat_name,
-                'Medium Material':self.MediumMaterial.mat_name, 
-                'Core Diameter':self.d_core,
-                'Shell Thickness':self.shell_width}
+        # Eventually, make complex materials liked mixed shell call down levels of this.  aka self.shellmaterial.simulation_requested()
+
+        # Updates earray, narray, matname
+        out = super(NanoSphereShell, self).simulation_requested()
+
+        # Shell
+        out['material_shell'] = self.CoreMaterial.simulation_requested()
+        out['shell_thickness'] = self.shell_width                
+        
+        # Mie
+        out['mie_composite'] = self.CompositeMie.simulation_requested()
+        
+        # Mix
+        out['mix'] = self.TotalMix.simulation_requested()
+        
+        return out
 
 
 if __name__ == '__main__':
