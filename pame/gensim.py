@@ -27,24 +27,27 @@ from interfaces import IMaterial, ISim
 from layer_editor import LayerEditor
 import config
 
+# ADD SAVE/LOAD UBTTONS
 class SimConfigure(HasTraits):
     """ Configuration what is stored/output in simulation."""
     
     save = Button
     outpath = File
 
-    # Summary storage
-#    optical_params = 
-    averaging = Enum('Average', 'Not Averaged', 'Both')
-    
+    # Used to store most common simulation names in a user-readable fashion, Enum for dropdown list.
+    translator=Dict()
+    translist=Property(List, depends_on='translator')
+    traitscommon=Enum(values='translist')
 
-    style = Enum('light','medium', 'heavy', 'custom')
-    
+    # Summary storage
+    averaging = Enum('Average', 'Not Averaged', 'Both')
+        
     #https://github.com/enthought/traitsui/blob/master/examples/demo/Standard_Editors/CheckListEditor_simple_demo.py
-    choose_optics = List(editor=CheckListEditor(values = globalparms.header.keys(), cols=2))
+    choose_optics = List(editor=CheckListEditor(values = globalparms.header.keys(), cols=3))
 
     choose_layers = Enum('Selected Layer', 'All Layers', 'None')
     additional = Str()
+    additional_list = Property(List, depends_on = 'additional, traitscommon')
     
     # Simulation object to be stored
     optics_summary = Bool(False)  # Most useful traits like average reflectance
@@ -52,52 +55,42 @@ class SimConfigure(HasTraits):
     
     
     traits_view = View(
-        Item('choose_optics', style='custom'),
+        HGroup(
+            Item('choose_optics', style='custom', label='Optical Parameters'),
+            Item('averaging', style='custom', label='Optical Averaging'),
+        ),
+
         Item('choose_layers', style='custom'),
-        Item('averaging', style='custom'),
-        Item('additional', style='custom'),
-        buttons = [ 'Undo', 'OK', 'Cancel', 'Help' ]  #<-- Help?
+        Item('traitscommon', label='Add Common Trait'),
+        Item('additional', style='custom', label='Top-level Traits'),
+        
+        
+        buttons = [ 'Undo', 'OK', 'Cancel' ]  
                    )       
     
+    def _get_additional_list(self):
+        """ User adds custom traits to additional box, deliminted by newline.
+        This removes unicode and returns as a list like:
+         [material1.trait1, material2.foo.trait5] etc...
+         """
+        return [str(s) for s in self.additional.strip().split('\n')]
     
-    @on_trait_change('optics_summary, optics_full')
-    def update_style(self):
-        self.style == 'custom'
-        #Will this lead to infinite loop
-        
-    def _style_changed(self):
-        if style == 'custom':
-            return 
-        
-        self.all_false() #<--- Set all to false
-
-        if self.style == 'light':
-            print 'style is light'
-            
-        elif self.style == 'medium':
-            print 'style is medium'
-            
-        elif self.style == 'heavy':
-            print 'style is heavy'
-            
-        # If custom, just pass
     
-    def set_style_light(self):
-        """ """    
-        self.optics_summary = True
-        
-    def set_style_medium(self):
-        """ """    
-        self.optics_full = True
-        
-    def set_style_heavy(self):
-        """ """    
+    # Eventually replace with tree editor
+    def _translator_default(self):	
+        return{'Layer Fill Fraction':'selected_material.Vfrac',
+               'Layer Thickness':'selected_layer.d',
+               'NP Core radius':'selected_material.r_core',
+               'NP Shell Fill Fraction':'selected_material.CoreShellComposite.Vfrac' }
+    
+    def _traitscommon_changed(self): 
+        """ Set current layer from the name translator for more clear use. """	
+        self.additional += self.translator[self.traitscommon]+'\n' #String
 
-    def all_false(self):
-        """ Resets all to False """
-        
-    def _style_default(self):
-        return 'medium'
+    # Need to make a class tot
+    def _get_translist(self): 
+        return self.translator.keys()      
+    
     
 
 class SimAdapter(HasTraits):
@@ -142,11 +135,6 @@ class ABCSim(HasTraits):
 
     # Restore all traits to original values after simulation is over
     restore_status=Bool(True) 
-
-    # Used to store most common simulation names in a user-readable fashion, Enum for dropdown list.
-    translator=Dict()
-    translist=Property(List, depends_on='translator')
-    tvals=Enum(values='translist')
 
     # Output Storage Objects
     summary_panel=Instance(Panel)  #<-- Turn into summary panel
@@ -210,14 +198,6 @@ class ABCSim(HasTraits):
 #	dic.update(self.base_app.layer_editor.simulation_requested())
         return dic
 
-
-    def _tvals_changed(self): 
-        """ Set current layer from the name translator for more clear use. """	
-        self.selected_traits.trait_name=self.translator[self.tvals]
-
-    # Need to make a class tot
-    def _get_translist(self): 
-        return self.translator.keys()  
 
     def _get__completed(self):
         if self.summary_panel == None:
@@ -309,13 +289,9 @@ class ABCSim(HasTraits):
             if ui.result==False:
                 return
 
-        # Translator is actually reversed in scope of use in simparser
-        trans_rev=dict((v,k) for k,v in self.translator.items())
-
         # !!!!XXX!!!
         # Assign proper traits (avoid delegation because that class needs to stand alone)  
-        self.sparser=SimParser(translator=trans_rev,
-                               results=self.summary_panel,
+        self.sparser=SimParser(results=self.summary_panel,
                                simparms=self.simulation_traits, 
                                parms=self.state_parameters())
 
@@ -323,7 +299,7 @@ class ABCSim(HasTraits):
         self.sparser.save(outfile)
 
         if confirmwindow==True:
-            message('Simulation data saved to file %s'%outdata, title='Success')
+            message('Simulation data saved to file %s' % outdata, title='Success')
 
 
     def _start_fired(self): 
@@ -333,16 +309,14 @@ class ABCSim(HasTraits):
         self.time=time.asctime( time.localtime(time.time()))
 
     basic_group=VGroup(
-        Item('sim_configuration', label='Configure Simulation Storage'),
-        HGroup(Item('restore_status', label='Restore state after simulation' ),
-               Item('inc',label='Steps'), 
-               Item('start', enabled_when='warning=="Simulation ready: all traits found"', show_label=False), 
-               Item('time', label='Sim Start Time', style='readonly'), 
-               Item('tvals', label='Common traits'),
-               ),
+        Item('warning', style='readonly', label='Warning(s):'),
         HGroup(
+            Item('sim_configuration', label='Configure Simulation Storage'),            
+            Item('restore_status', label='Restore state after simulation' ),
+            Item('inc',label='Steps'), 
+            Item('start', enabled_when='warning=="Simulation ready: all traits found"', show_label=False), 
+            Item('time', label='Sim Start Time', style='readonly'), 
             Item('outname',label='Run Name'), 
-            Item('warning', style='readonly', label='Warning(s):'),
             ),
         Item('sim_obs', editor=simeditor, show_label=False),
         Item('notes', style='custom'),
@@ -357,12 +331,6 @@ class LayerVfrac(ABCSim):
     def _outname_default(self): 
         return 'Layersim'
 
-    def _translator_default(self):	
-        return{'Layer Fill Fraction':'selected_material.Vfrac',
-               'Layer Thickness':'selected_layer.d',
-               'NP Core radius':'selected_material.r_core',
-               'NP Shell Fill Fraction':'selected_material.CoreShellComposite.Vfrac' }
-
     def _selected_material_changed(self): 
         """ Selected material required before simulation can start """
         self.check_sim_ready()
@@ -374,6 +342,7 @@ class LayerVfrac(ABCSim):
         obs.append(SimAdapter(trait_name='selected_layer.d', start=50., end=100., inc=self.inc)),
         obs.append(SimAdapter(trait_name='selected_material.r_core', start=25., end=50., inc=self.inc)),
         return obs 
+           
 
     def runsim(self): 
         """ Increments, updates all results."""
@@ -381,7 +350,6 @@ class LayerVfrac(ABCSim):
         summarydict = OrderedDict()  #<-- Keyed by increment
         sorted_keys = []
 
-        sys.setrecursionlimit(10000)
         for i in range(self.inc):
             for trait in self.simulation_traits.keys():
                 xsetattr(self.base_app, trait, self.simulation_traits[trait][i]) #Object, traitname, traitvalue

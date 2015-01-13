@@ -23,8 +23,8 @@ from collections import OrderedDict
 '''
 
 _header = (
-    ('r','Reflection Amplitude'), 
-    ('t','Transmission Amplitude'),
+    ('r_amp','Reflection Amplitude'), 
+    ('t_amp','Transmission Amplitude'),
     ('R', 'Reflectance'),
     ('T', 'Transmittance'),
     ('A', 'Absorbance'),

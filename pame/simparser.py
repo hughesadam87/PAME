@@ -43,13 +43,10 @@ class SimParser(HasTraits):
     # it will attempt to load the file for convienences
     _rootfile=File()
 
-    # Varying and static parameters of the simulation.
+    # LEAVE AS IS
     simparms=Dict()         
     parms=Dict(Str, Dict)  #Dictionary of dictionaries for parameters not involved in simulation 
     sim_parms=Property(depends_on='simparms')
-
-    # This is used to replace ugly trait variable with nice ones and vice versa for looking at results.
-    translator=Dict()       
 
     # Convienence method to construct with a file
     def __init__(self, infile=None, *args, **kwds):
@@ -60,18 +57,6 @@ class SimParser(HasTraits):
                 self.load(infile)
             except IOError as e:
                 print '\n Could not initialize parameters from file %s, received the following error:\n %s'%(infile,e)
-
-    def translate(self, df):
-        """ Replace index of dataframe with ugly trait indicies by those with nicer ones in the translator dict."""
-        newnames=[]   
-        for name in df.index:
-            try:
-                newnames.append(self.translator[name])
-            except KeyError:
-                newnames.append(name)
-        df.index=newnames
-        return df
-
 
     def _get_sim_parms(self):
         """ Make dataframe from dictionary of simulation parameters."""
