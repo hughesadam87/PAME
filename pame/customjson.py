@@ -4,6 +4,7 @@ http://stackoverflow.com/questions/27909658/json-encoder-and-decoder-for-complex
 import base64
 import json
 import numpy as np
+from collections import OrderedDict
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -16,6 +17,10 @@ class NumpyEncoder(json.JSONEncoder):
                         dtype=str(obj.dtype),
                         shape=obj.shape)
         # Let the base class default method raise the TypeError
+        
+#        elif isinstance(obj ,OrderedDict.OrderedDict):
+#                return "{" + ",".join( [ self.encode(k)+":"+self.encode(v) for \
+#                                         (k,v) in obj.iteritems() ] ) + "}"        
         return json.JSONEncoder(self, obj)
 
 
@@ -43,10 +48,21 @@ def loads(*args, **kwargs):
 
 def dump(*args, **kwargs):
     kwargs.setdefault('cls', NumpyEncoder)
+    # Got tired of forgetting have to pass file object as first arg
+    # so let it pass path as first argument
+    args = list(args)
+    if isinstance(args[1], basestring): #<--- In dump, args[1] is fp
+        args[1] = open(args[1], 'w')
     return json.dump(*args, **kwargs)
 
 def load(*args, **kwargs):
     kwargs.setdefault('object_hook', json_numpy_obj_hook)
+
+    # Got tired of forgetting have to pass file object as first arg
+    # so let it pass path as first argument
+    args = list(args) 
+    if isinstance(args[0], basestring): #<--- In load, args[0] is fp
+        args[0] = open(args[0], 'r')
     return json.load(*args, **kwargs)
 
 if __name__ == '__main__':

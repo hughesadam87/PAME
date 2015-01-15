@@ -38,7 +38,7 @@ class SpecParms(HasTraits):
              )
         )
 
-    def state_requested(self):
+    def simulation_requested(self):
         ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
         ### trait_get is shortcut to return dic if the keys are adequate descriptors for output
         return self.trait_get('x_start',

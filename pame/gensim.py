@@ -1,7 +1,8 @@
 """ Simulation program. """
 
 # Python imports
-import sys, os
+import sys
+import os.path as op
 import time
 import copy
 from collections import OrderedDict
@@ -26,6 +27,10 @@ from main_parms import SpecParms
 from interfaces import IMaterial, ISim
 from layer_editor import LayerEditor
 import config
+import customjson
+
+class SimError(Exception):
+    """ """
 
 # ADD SAVE/LOAD UBTTONS
 class SimConfigure(HasTraits):
@@ -92,7 +97,7 @@ class SimConfigure(HasTraits):
 
 class SimAdapter(HasTraits):
     """Shows selected simulation in table on main view """
-    trait_name=Str('add trait name')
+    trait_name = Str('add trait name')
     # THESE VALUES ARE SET WHEN BY CLASSES THAT CONTROL THE SIMS
     inc=Int() 
     start=Float()
@@ -117,10 +122,10 @@ class ABCSim(HasTraits):
 
     sim_configuration = DelegatesTo('base_app') #Instance SimConfiguration
 
-    start=Button
-    time=Str('Sim not started')   #Stores time that simulation ended
-    outname=Str('Testsim') #Output name, can be overwritten when output called
-    outdir=DelegatesTo('base_app')
+    start = Button
+    time = Str('Sim not started')   #Stores time that simulation ended
+    outname = Str('Testsim') #Output name, can be overwritten when output called
+    outdir = DelegatesTo('base_app')
 
     implements(ISim)
     inc=Range(low=1,high=100,value=1) # Need as range for now I think
@@ -130,29 +135,29 @@ class ABCSim(HasTraits):
     key_title=Str('Trial')  #This is used to give each increment a name rather than 1,2,3
     ## Also set to % in composite plots but that doesn't seem to be a problem
 
-    # Restore all traits to original values after simulation is over
-    restore_status=Bool(True) 
-
-    translator=Dict()
-    translist=Property(List, depends_on='translator')
-    tvals=Enum(values='translist')
-
+    # Select input variables/traits from human-readable dropdown list
+    translator = Dict()
+    translist = Property(List, depends_on='translator')
+    tvals = Enum(values='translist')
 
     # Output Storage Objects
-    summary_panel=Instance(Panel)  #<-- Turn into summary panel
-    results_dict = Dict            #
-    _completed=Property(Bool, depends_on='summary_panel') #Used to track if simulation is run
-    csvout=Bool(True)  
-    sparser=Instance(SimParser)
+    summary = Dict
+    results = Dict            
+    static = Dict
+    allstorage = Property(Dict) # Stores all three dicts plus metadata bout self
+    _completed = Property(Bool)  # Set to true when results is populated (better criteria?) 
 
     # Table for selecting objects
     selected_traits=Instance(SimAdapter) 
-
-    sim_obs=List(SimAdapter) #Actual table of trait sto simulate over
-    simulation_traits=Dict  #Dictionary of required trait names, with start, end values in tuple form for iteration.  For example "Volume": (13.2, 120.0)"
-    original_values=Dict
-    missing_taits=List
-    status_message = Str#HTML
+    
+    # Status/meta traits 
+    sim_variables = List(SimAdapter) #Actual table of trait sto simulate over
+    simulation_traits = Dict  #Dictionary of required trait names, with start, end values in tuple form for iteration.  For example "Volume": (13.2, 120.0)"
+    original_values = Dict
+    missing_taits = List
+    # Restore all traits to original values after simulation is over
+    restore_status=Bool(True)     
+    status_message = Str #HTML
     ready = Bool(False)
 
     simeditor =\
@@ -200,20 +205,26 @@ class ABCSim(HasTraits):
 
     def _tvals_changed(self): 
         """ Set current layer from the name translator for more clear use. """	
-        print 'hi', self.selected_traits
         self.selected_traits.trait_name = self.translator[self.tvals]
+        self.check_sim_ready() #<-- When user changes simulation traits table
 
-    ### Need to make a class tot
+    # a class tot
     def _get_translist(self): 
         return self.translator.keys()  
 
     def _get__completed(self):
-        if self.summary_panel == None:
+        """ Inspect storage objects and infer if simulation ran successfully.  Basically
+        tests if self.results, summary and self.static are all empty.  After successfully 
+        completed run_sim(), at least one of these should be populated.  Actually they all 
+        should, but in some instances, users can select settings that make these empty.  Like
+        if user doesn't want to store anything in the top-level summary.
+        """
+        if self.results == {} and self.summary == {} and self.static == {}:
             return False
-        else:
-            return True
+        return True
+        
 
-    def _sim_obs_default(self): 
+    def _sim_variables_default(self): 
         return []
 
     def check_sim_ready(self):
@@ -222,17 +233,15 @@ class ABCSim(HasTraits):
         traits can be set and things automatically.  Decided to use this over a system
         properties because the properties were conflicting with delegation and other stuff.
         """
-        print 'chekcing sim'
+        sim_traits = {}
+        originals = {}
+        missing = []
+        status_message = ''
 
-        sim_traits={}
-        originals={}
-        missing=[]
-        status_message=''
-
-        for obj in self.sim_obs:
+        for obj in self.sim_variables:
             obj.inc=self.inc  #Ensures proper increments whether adding new objects to the table or just changing global inc
 
-        for obj in self.sim_obs:
+        for obj in self.sim_variables:
             sim_traits[obj.trait_name]=obj.trait_array        #Simulation traits
 
         for key in sim_traits.keys():
@@ -245,25 +254,27 @@ class ABCSim(HasTraits):
 
         # Are traits missing?
         if len(missing) > 0:
-            status_message='<font color="red">Could not find required traits:</font>'
+            status_message='<font color="red"> Could not find required traits: </font>'
             for trait in missing:
                 status_message += trait + ',  '
             ready = False
             
         # Did user select duplicates of trait names
-        duplicates = set([obj.trait_name for obj in self.sim_obs if self.sim_obs.count(obj.trait_name) > 1])
+        trait_names = [obj.trait_name for obj in self.sim_variables]
+        duplicates = set([name for name in trait_names if trait_names.count(name) > 1])
         if duplicates:
-            status_message='<font color="red">Trying to simulate the same trait(s) twice:</font>'
-            for trait in missing:
+            status_message='<font color="red"> Duplicate simulation trait(s) found: </font>'
+            for trait in duplicates:
                 status_message += trait + ',  '
             ready = False                        
         
 
         if ready:
-            status_message='<font color="green">Simulation ready: all traits found</font>'
-            self.ready = True
-            
-        self.status_message = status_message
+            status_message='<font color="green"> Simulation ready: all traits found</font>'
+            ready = True
+
+        self.ready = ready
+        self.status_message = status_message.rstrip(',') #<-- trialling commas for list of one element string
         self.simulation_traits = sim_traits
         self.missing_traits = missing
         self.original_values = originals
@@ -276,55 +287,47 @@ class ABCSim(HasTraits):
         """ ABC METHOD """
         pass
 
-    def output_simulation(self, outpath=None, outname=None, confirmwindow=True):
+    def save_json(self, outpath=None, confirmwindow=True):
         """ Output simulation into a SimParser object and save.  Simparser object is then suited
         for integration with pylab/pyuvvis, or also can be read internally by fibersim plotting tools.
+        If outpath is None, will default to join(base_app.outdir, self.outname)
 
             outpath: must be passed in by calling class.
             outname: if not passed, self.outname will be used.
             confirmwindow:  Popup message on successful save"""
-
-        # Make sure simulation has taken place
-        if self.summary_panel is None:
-            message('Cannot save simulation, %s, summary_panel trait is None. \
-	    Perhaps simulation was not run yet?'%self.outname, title='Warning')
-            return
-
-        # If no explicitly passed, outname and outpath delegate to stored defaults
-        if outname is None:
-            outname=self.outname
-        else:
-            self.outname=outname  #Not sure if I'll ever use, but useful for overwriting
-
+                
         if outpath is None:
-            outpath=self.outdir #delegate from base_app
+            outpath = op.join(self.outdir, self.outname)
+            
+        # Make sure .json 
+        ext = op.splitext(outpath)[-1]
+        if ext:
+            if ext != '.json':
+                raise SimError('Simulation save path must be .json file, got ' % outpath)
+        # No file path
+        else:
+            outpath = outpath + '.json'
+        
 
-        # If outname has file extension, and its not pickle, convert it
-        sout, ext = os.path.splitext(outname)
-        if ext !='' and ext != config.SIMEXT:
-            message('Dropping file extension %s, please enter a root filename.'%ext, title='Warning')
-        outdata=sout+config.SIMEXT
-
-        # Ceck for file overwriting    
-        outfile=os.path.join(outpath, outdata)
-        if os.path.exists(outfile):
-            test=FileOverwriteDialog(filename=outfile)
-            ui=test.edit_traits(kind='modal')
+        # Check for file overwriting    
+        if op.exists(outpath):
+            test = FileOverwriteDialog(filename=outpath)
+            ui = test.edit_traits(kind='modal')
             # break out and don't save#
             if ui.result==False:
                 return
 
-        # !!!!XXX!!!
-        # Assign proper traits (avoid delegation because that class needs to stand alone)  
-        self.sparser=SimParser(results=self.summary_panel,
-                               simparms=self.simulation_traits, 
-                               parms=self.state_parameters())
-
-        #Save entire object
-        self.sparser.save(outfile)
+        # Save
+        if not self._completed:
+            message('Simulation is incomplete or stored incorrectly.'
+                    ' See self._completed to debug', 
+                    title='Warning')
+            return 
+        
+        customjson.dump(self.allstorage, outpath)
 
         if confirmwindow == True:
-            message('Simulation data saved to file %s' % outdata, title='Success')
+            message('Simulation data saved to file %s' % outpath, title='Success')
 
 
     def _start_fired(self): 
@@ -342,7 +345,7 @@ class ABCSim(HasTraits):
 
 
     basic_group=VGroup(
-        Item('status_message', style='readonly', label='Warning(s):'),
+        Item('status_message', style='readonly', label='Status Message'),
         HGroup(
             Item('sim_configuration', label='Configure Simulation Output'),            
             Item('restore_status', label='Restore state after simulation' ),
@@ -353,7 +356,7 @@ class ABCSim(HasTraits):
             Item('tvals', label='Selected Layer Common Traits') #, visible_when='self.selected_layer is not None'),
             # By default, always a selected layer, so visible_when not needed ^^^
             ),
-        Item('sim_obs', editor=simeditor, show_label=False),
+        Item('sim_variables', editor=simeditor, show_label=False),
         Item('notes', style='custom'),
         label='Parameters')
 
@@ -386,7 +389,7 @@ class LayerSimulation(ABCSim):
             }
     
     
-    def _sim_obs_default(self):
+    def _sim_variables_default(self):
         """ Initial traits to start with """
         obs=[]
         obs.append(SimAdapter(trait_name='selected_material.Vfrac', start=0.0, end=0.1, inc=self.inc)),  
@@ -395,8 +398,24 @@ class LayerSimulation(ABCSim):
         return obs 
            
 
+    def _get_allstorage(self):
+        """ Returns Ordered dict of dicts, where each dictionary is a primary storage dictionary:
+        IE self.summary, self.results, self.static and self.simulation_requested(), where
+        simuliation requested gives metadata like num steps, simulation etc.. about this 
+        particular run.
+        """ 
+        allout = OrderedDict()
+        allout['summary'] = self.summary
+        allout['results'] = self.results
+        allout['static'] = self.static
+        allout['about'] = self.simulation_requested()
+
+        return allout
+        
+        
+
     def runsim(self): 
-        """ Increments, updates all results.  Three primary storage objects:
+        """ Increments, updates all results.  Thre primary storage objects:
         
         staticdict --> Traits that are no altered in simulation.  
            Includes simulation inputs, spectral parameters and fiber/strata
@@ -413,9 +432,10 @@ class LayerSimulation(ABCSim):
                  resultsdict['step5']['selectedlayer']['material1']['fullmie']
             etc...
             Simparser should have methods to make these data more accessible.
+            
         """
 
-        print 'running sim with traits', self.simulation_traits
+        print 'running sim with traits', self.simulation_traits.keys()
         
         # for name brevity
         sconfig = self.sim_configuration 
@@ -429,13 +449,14 @@ class LayerSimulation(ABCSim):
         # at simulation inputs.  Later sims may want to simulate over fiber traits (ie fiber diameter changes)
         # so would migrate these into resultsdict instead
         staticdict = OrderedDict()
-        staticdict[spectral_parameters] = b_app.specparms.simulation_requested()         
+        staticdict['spectral_parameters'] = b_app.specparms.simulation_requested()         
         staticdict[globalparms.strataname] = b_app.fiberparms.simulation_requested()
                 
         # Begin iterations
         sorted_keys = []
         for i in range(self.inc):
             for trait in self.simulation_traits.keys():
+                trait = str(trait) # <--- get rid of damn unicode if user entered it
                 xsetattr(b_app, trait, self.simulation_traits[trait][i]) #Object, traitname, traitvalue
                 
             stepname = 'step_%s' % i
@@ -476,56 +497,20 @@ class LayerSimulation(ABCSim):
                                   
             # resultsdict >>  {step1 : {results_of_increment}, ...}
             resultsdict[stepname] = results_increment               
-            
-            
-            # XXX            
-            # Incremental_dict to DF ---> Maybe make simparser do this? Then can store JSON without bothering panel...            
-            # XXX                
-                     
+            summarydict[stepname] = summary_increment
 
             print "Iteration\t", i+1, "\t of \t", self.inc, "\t completed"
 
-
-        # Save fiber params and spec params ONLY ONCE <-- Change later if simulating over?
-        print summarydict[key]
-            
-        #from custom import dump, load
-        
-        #path = '/home/glue/Desktop/test.json'
-        #f = open(path, 'w')
-        #dump(summarydict, f)
-        #f.close()
-        #print x, 'DONE DUMPING\n'
-        #o = open(path, 'r')
-        #y = load(o)
-        #o.close()
-
-        #import pprint
-        #pp = pprint.PrettyPrinter(indent=4)
-        #pp.pprint(y)
-        
-        #print 'SUCCESS\n'
-        #sys.exit()
-        
-
-        # Make a full panel out of paneldic with trials as the items
-        
-        #print 'HI SAVING PANELDIC'
-        #self.summary_panel = Panel.from_dict(paneldic, orient='minor')
-        #print sorted_keys
-        #self.summary_panel = self.summary_panel.reindex_axis(sorted_keys, 
-                                                   #axis=2, #minor axis 
-                                                   #copy=False) #save memory
-        #print sorted_keys
-        #print self.summary_panel
-        #print 'SAVING PANELDIC FINISHED'
-
+        # SET STORAGE TRAITS
+        self.summary = summarydict
+        self.results = resultsdict
+        self.static = staticdict
 
         # Prompt user to save?
-        popup=BasicDialog(message='Simulation complete.  Would you like to save now?')
-        ui=popup.edit_traits(kind='modal')
+        popup = BasicDialog(message='Simulation complete.  Would you like to save now?')
+        ui = popup.edit_traits(kind='modal')
         if ui.result == True:
-            self.output_simulation()
+            self.save_json()
 
     ############
     # This view is for interactive plotting simulations
