@@ -12,7 +12,7 @@ from main_parms import FiberParms, SpecParms
 from interfaces import IOptic, ILayer, IMaterial, IStorage, ISim
 from fiberview import FiberView
 from modeltree_v2 import Model
-from gensim import LayerVfrac, ABCSim, SimConfigure
+from gensim import LayerSimulation, ABCSim, SimConfigure
 from handlers import WarningDialog
 
 
@@ -93,7 +93,7 @@ class GlobalScene(HasTraits):
 
     simulations=List(ISim)  
     selected_sim=Instance(ISim)
-    sim_configuration = Instance(SimConfigure)
+    sim_configuration = Instance(SimConfigure,())   #<--- Want all sims to share this, right?
 
     ###Editors####
     layereditor=Instance(LayerEditor)
@@ -181,7 +181,8 @@ class GlobalScene(HasTraits):
             ),
            )
 
-    Mainview = View(Include('fullgroup'), 
+    Mainview = View(Item('stack', editor=ValueEditor()), 
+                    Include('fullgroup'), 
              #       Item('save'), Item('load'),  #FOR SAVING ENTIRE STATE OF SIMULATION
                     menubar=mainmenu,
                     resizable=True, 
@@ -200,13 +201,14 @@ class GlobalScene(HasTraits):
         self.sync_trait('fiberparms', self.opticstate, 'fiberparms')
         self.sync_trait('layereditor', self.opticstate, 'layereditor')
 
-      #self.simulations.append(LayerVfracEpsilon(base_app=self))   #Pass self to a simulation environment
-        self.simulations.append(LayerVfrac(base_app=self,
-                                           outname='Layersim0'))   #Pass self to a simulation environment
+      #self.simulations.append(LayerSimulationEpsilon(base_app=self))   #Pass self to a simulation environment
+        self.simulations.append(LayerSimulation(base_app=self,
+                                                outname='Layersim0')
+                                )   #Pass self to a simulation environment
         
     ### Store copy of current simulation 
     def new_sim(self): 
-        self.simulations.append(LayerVfrac(base_app=self,  #<--- LayerVFrac.  Base_app = self.copy?
+        self.simulations.append(LayerSimulation(base_app=self,  #<--- LayerSimulation.  Base_app = self.copy?
                                            outname='Layersim'+str(len(self.simulations))))
     def save_sim(self): 
         self.selected_sim.output_simulation(self.outdir)
@@ -239,9 +241,6 @@ class GlobalScene(HasTraits):
             s.output_simulation(self.outdir, confirmwindow=False)
         message('%s simulation(s) saved to directory: "%s"'%(len(outsims),
                   os.path.split(self.outdir)[1]), title='Success')
-
-    def _sim_configuration_default(self):
-        return SimConfigure()
 
     # Show Reflectance --------
     def compute_optics(self):

@@ -41,9 +41,6 @@ class Mie(HasTraits):
     Cabs=Array()
     Cscatt=Array()
     Cext=Array()
-#	Qabs=Property(Array, depends_on='Cabs')                NOT QUITE SURE ABOUT HOW TO TREAT THESE FOR VARIOUS PARTICLES SO COULD ADD LATER 
-#	Qscatt=Property(Array, depends_on='Cscatt')            ONCE OTHER MORPHOLOGIES ARE INCORPORATE
-#	Qext=Property(Array, depends_on='Cext')
 
     #Cross section series convergence parameters.  Loops will iterate til cutoff is reached or until reaching bessmax (safety net)
     cutoff=Bool(False)

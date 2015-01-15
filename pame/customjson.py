@@ -51,13 +51,13 @@ def load(*args, **kwargs):
 
 if __name__ == '__main__':
     
-    data = np.arange(10, dtype=np.complex)
+    data = np.arange(3, dtype=np.complex)
     
     one_level = {'level1': data, 'foo':'bar'}
     two_level = {'level2': one_level}
     
-    dumped = json.dumps(two_level, cls=NumpyEncoder)
-    result = json.loads(dumped, object_hook=json_numpy_obj_hook)
+    dumped = dumps(two_level)
+    result = loads(dumped)
     
     print '\noriginal data', data
     print '\nnested dict of dict complex array', two_level

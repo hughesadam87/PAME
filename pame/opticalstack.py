@@ -171,10 +171,10 @@ class DielectricSlab(HasTraits):
         # DOES IT MATTER THAT AVERAGE IS COMPLEX
         matrix = self.as_stack(attr)
 
-        if self.angle_avg=='Gupta': 
+        if self.angle_avg == 'Gupta': 
             return self.gupta_averaging(attr)
 
-        elif self.angle_avg=='Equal': 
+        elif self.angle_avg == 'Equal': 
             return np.average(matrix, axis=0)            
         
         else:
@@ -206,11 +206,13 @@ class DielectricSlab(HasTraits):
         tempden =simps(P_den, axis=0, even='last')
         return tempnum/tempden
     
-    def simulation_requested(self):
+    def simulation_requested(self, update=False):
         """ Returns optical stack and any other useful traits of dielectric slab for 
-        simulation. """
-        self.update_optical_stack()
-        return {'optical_stack':self.optical_stack}
+        simulation. Update used to skip updating, since simulations often call this twice.
+        """
+        if update:
+            self.update_optical_stack()
+        return {'optical_stack':self.optical_stack.copy(deep=True)}
 
 
 if __name__ == '__main__':

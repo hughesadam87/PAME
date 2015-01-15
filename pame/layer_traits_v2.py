@@ -37,7 +37,6 @@ class BasicLayer(HasTraits):
         self.sync_trait('specparms', self.material, 'specparms')
         self.sync_trait('mat_name', self.material, 'mat_name', mutual=True)
         self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)
-        
 
     def _material_default(self): 
         return Dispwater() 
@@ -49,6 +48,7 @@ class BasicLayer(HasTraits):
 
     def simulation_requested(self):
         return {
+                'layer_name':self.name,
                 'layer_thickness':self.d,
                 'layer_deisgnator':self.designator,
                 'material':self.material.simulation_requested()

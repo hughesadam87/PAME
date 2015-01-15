@@ -5,7 +5,8 @@ getters and setter model components.'''
 from enable.api import Component, ComponentEditor
 from traits.api import HasTraits, Instance, Array, Property, CArray, Str, Float, Tuple, Any, Dict, List, \
      Enum, Bool, cached_property, implements, DelegatesTo, on_trait_change
-from traitsui.api import Item, Group, View, Tabbed, Action, HGroup, InstanceEditor, VGroup, ListStrEditor
+from traitsui.api import Item, Group, View, Tabbed, Action, HGroup, InstanceEditor, \
+     VGroup, ListStrEditor
 
 # Chaco imports
 from chaco.api import ArrayPlotData, Plot, AbstractPlotData, PlotAxis, HPlotContainer, ToolbarPlot, Legend
@@ -129,6 +130,7 @@ class OpticalView(HasTraits):
 
         self.data.arrays={} #Clear DATA!!!
         self.data.set_data('x', self.lambdas)
+        linenames = [] #<-- To put into legend in sorted order
         
         # FROM HERE DOWN, ASSUMES SINGLE LAYER LIKE R
         if self.average:
@@ -144,7 +146,7 @@ class OpticalView(HasTraits):
         # Plot angle dependence, bruteforce colromap
         else:
             # http://stackoverflow.com/questions/15140072/how-to-map-number-to-color-using-matplotlibs-colormap
-            
+            # http://stackoverflow.com/questions/27908032/custom-labels-in-chaco-legend/27950555#27950555            
             amin = self.angles[0]
             amax = self.angles[-1]
             if amin > amax:  #If counting backwards angles like in transmission
@@ -155,7 +157,8 @@ class OpticalView(HasTraits):
     
             for idx, angle in enumerate(self.angles):
                 linecolor = cmapper(angle)    
-                linename = str(round(angle,2))
+                linename = '%.2f' % angle
+                linenames.append(linename)
 
                 array = self.optic_model.optical_stack[angle][self.choose].astype(complex)
                 yout = self.infer_complex(array)
@@ -198,7 +201,7 @@ class OpticalView(HasTraits):
         # http://docs.enthought.com/chaco/user_manual/basic_elements/overlays.html
         if self.show_legend:
                         
-#            self.plot.legend.labels = list([i for i in self.angles]) #Sort numerically, not alphabetically
+            self.plot.legend.labels = linenames
             self.plot.legend.visible = True
             self.plot.legend.bgcolor = (.8,.8,.8) #lightgray
             self.plot.legend.border_visible = True
@@ -239,7 +242,7 @@ class MaterialView(HasTraits):
     nplot = Instance(Plot)             #Traits are populated on update usually
 
     data = Instance(AbstractPlotData)
-
+    
     xarray=Array()
     earray=CArray()
     narray=CArray()
