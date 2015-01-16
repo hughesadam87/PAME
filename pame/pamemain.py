@@ -1,10 +1,13 @@
 import copy, pickle, os
 import logging
 
-### Enthought imports
+# Enthought imports
 from traits.api import *
 from traitsui.api import *
 from enable.component_editor import ComponentEditor
+
+# Local imports
+import globalparms
 from opticalstack import DielectricSlab
 from basicplots import OpticalView
 from layer_editor import LayerEditor
@@ -16,8 +19,8 @@ from gensim import LayerSimulation, ABCSim, SimConfigure
 from handlers import WarningDialog
 
 
-### Used to present a summary of the state of the program.   ###
-###This may be deprecated or unuseful and is not all that important I think ###
+# Used to present a summary of the state of the program.   #
+#This may be deprecated or unuseful and is not all that important I think #
 
 # Reflectance/Mode summary (don't think its used; think its deprecated)
 state_editor =\
@@ -89,13 +92,13 @@ class GlobalScene(HasTraits):
     def _outdir_default(self):
         return os.path.join( os.path.abspath('.'),'Simulations')
 
-    ####Simulation Stuff ####
+    ##Simulation Stuff ##
 
     simulations=List(ISim)  
     selected_sim=Instance(ISim)
     sim_configuration = Instance(SimConfigure,())   #<--- Want all sims to share this, right?
 
-    ###Editors####
+    #Editors##
     layereditor=Instance(LayerEditor)
     stack= DelegatesTo('layereditor')               #Variables are stored here just because they can be useful for future implementations
     selected_layer = DelegatesTo('layereditor')
@@ -103,14 +106,14 @@ class GlobalScene(HasTraits):
     selected_d=DelegatesTo('layereditor')
 #    angle_avg=DelegatesTo('current_state')
 
-    ####Stack Actions####
+    ##Stack Actions##
     showreflectance=Action(name="Interface View", action="compute_optics")  #PHASE THIS OUT LATER WITH UNIFIED VIEW FRAMEWORK
     appendsim=Action(name="Add Simulation", action="new_sim")
     savesim=Action(name="Save Selected Simulation", action="save_sim")  #action gets underscore
     savesim_all=Action(name="Save All Simulations", action="save_allsims")  #action gets underscore
     
 
-    ### Make Menubar
+    # Make Menubar
     mainmenu=MenuBar(
         Menu(showreflectance, name='Layer Options'), 	
         Menu(appendsim, savesim, savesim_all, name='Simulation Options'), 	       
@@ -121,7 +124,7 @@ class GlobalScene(HasTraits):
 #        Item('angle_avg', label='Angle Averaging Method',show_label=False),
         Item('fiberparms', editor=InstanceEditor(), style='custom', show_label=False),
         Item('fview', style='custom', show_label=False),
-        label='Fiber'
+        label=globalparms.strataname
     )
 
     layergroup=Group(
@@ -142,7 +145,7 @@ class GlobalScene(HasTraits):
     summarygroup=Group(
         Item('simulations', editor=sims_editor, show_label=False),
 
-        ### Can't remove this or program trips, so I just hide it permanently
+        # Can't remove this or program trips, so I just hide it permanently
         Item('opticstate', 
              editor=state_editor, 
              show_label=False, 
@@ -195,7 +198,7 @@ class GlobalScene(HasTraits):
         self.sync_trait('specparms', self.layereditor, 'specparms')
         self.sync_trait('modeltree', self.layereditor, 'modeltree')
 
-        ### NEED TO RENAME AND REWRITE THIS... ITS NOT "opticstate"
+        # NEED TO RENAME AND REWRITE THIS... ITS NOT "opticstate"
         self.opticstate=DielectricSlab()
         self.sync_trait('specparms', self.opticstate, 'specparms')
         self.sync_trait('fiberparms', self.opticstate, 'fiberparms')
@@ -206,7 +209,7 @@ class GlobalScene(HasTraits):
                                                 outname='Layersim0')
                                 )   #Pass self to a simulation environment
         
-    ### Store copy of current simulation 
+    # Store copy of current simulation 
     def new_sim(self): 
         self.simulations.append(LayerSimulation(base_app=self,  #<--- LayerSimulation.  Base_app = self.copy?
                                            outname='Layersim'+str(len(self.simulations))))
@@ -217,15 +220,15 @@ class GlobalScene(HasTraits):
         ''' Saves all stored simulations in the sims_editor.  Checks for duplicate names and non-run/incomplete
         simulations and prompts user accordingly.'''
 
-        ### Check to make sure all simulations have completed data
+        # Check to make sure all simulations have completed data
         unrun=[s.outname for s in self.simulations if s._completed == False]   
         nrunstring=' '.join(unrun)
         if len(unrun) > 0:
             message('Cannot save simulations:  %s. Results not found.'%nrunstring, title='Warning')
-            ### Can't save either way, so force exit instead of user being able to continue
+            # Can't save either way, so force exit instead of user being able to continue
             return               
         
-        ### Check for duplicate runnames        
+        # Check for duplicate runnames        
         rnames=[s.outname for s in self.simulations]        
         non_uniq=[r for r in rnames if rnames.count(r) > 1]
         if len(non_uniq) > 0:
@@ -235,7 +238,7 @@ class GlobalScene(HasTraits):
             message('Duplicate simulation outfile names found: %s.'%nustring, title='Warning')
             return        
         
-        ### Output completed simulations
+        # Output completed simulations
         outsims=[s for s in self.simulations if s not in unrun]
         for s in outsims:
             s.output_simulation(self.outdir, confirmwindow=False)

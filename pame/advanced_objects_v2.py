@@ -11,7 +11,6 @@ from composite_materials_v2 import SphericalInclusions_Disk #For inheritance
 from pame import XNK_dir
 from material_files import XNKFile
 
-
 def free_path_correction():
     ''' Size correction for the reduced mean free path.  Cited in many papers, in fact I'm writing this from,
     "Determination of Size and concentratino of Gold Nanopariticles from UV-Vis Spectra; Haiss et al;however, 
@@ -91,8 +90,8 @@ class NanoSphere(SphericalInclusions_Disk):
         return out
 
 
-#### DRUDE MODELS BELOW MAY BE DEPRECATES	
-
+# DRUDE MODELS BELOW MAY BE DEPRECATES	
+# ------------------------------------
 class DrudeNew(ABCMetalModel, NanoSphere):
     '''Drude model with interband contributions(From paper "Advanced Drude Model")'''
     mat_name=Str('Drude Gold Nanoparticle')
