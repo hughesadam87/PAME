@@ -214,7 +214,7 @@ class GlobalScene(HasTraits):
         self.simulations.append(LayerSimulation(base_app=self,  #<--- LayerSimulation.  Base_app = self.copy?
                                            outname='Layersim'+str(len(self.simulations))))
     def save_sim(self): 
-        self.selected_sim.output_simulation(self.outdir)
+        self.selected_sim.output_simulation(self.outdir) #<--- NEED TO CALL TO_JSON NOT OUTPUT_SIMULATION
     
     def save_allsims(self):
         ''' Saves all stored simulations in the sims_editor.  Checks for duplicate names and non-run/incomplete

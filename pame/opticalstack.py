@@ -164,6 +164,7 @@ class DielectricSlab(HasTraits):
     def _angle_avg_default(self):
         return 'Equal'
     
+    # Should this return Series instead??  For simulation, have to reconstruct it...
     def compute_average(self, attr):
         """ Returns the angle average of an optical parameter of self.optical_stack,
         eg "R" or "A".  Averaging style delegates to FiberParms (angle_avg)

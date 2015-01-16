@@ -21,7 +21,6 @@ import matplotlib.pyplot as plt
 
 # Local imports
 from handlers import FileOverwriteDialog, BasicDialog
-from simparser import SimParser
 from simulationplots import ReflectanceStorage, ScattStorage, MaterialStorage
 from main_parms import SpecParms
 from interfaces import IMaterial, ISim
@@ -316,6 +315,19 @@ class ABCSim(HasTraits):
             message('Simulation data saved to file %s' % outpath, title='Success')
 
 
+    # SHOULD HAVE SAME CONFIRMWINDOW AND STUFF AS SAVE_JSON
+    def save_pickle(self, outfilename):
+        """ Saves data directly to a pickled instance of SimParser. """
+        from simparser import LayerSimParser
+        allstorage = self.allstorage
+        obj = LayerSimParser(_about = allstorage[globalparms.about],
+                             _static = allstorage[globalparms.static],
+                             _summary = allstorage[globalparms.summary],
+                             _results = allstorage[globalparms.results]
+                             )
+        obj.save(outfilename)
+        print 'saved', outfilename
+
     def _start_fired(self): 
 
         # Check sim traits one more time in case overlooked some trait that should call 
@@ -435,7 +447,7 @@ class LayerSimulation(ABCSim):
         # at simulation inputs.  Later sims may want to simulate over fiber traits (ie fiber diameter changes)
         # so would migrate these into resultsdict instead
         staticdict = OrderedDict()
-        staticdict['spectral_parameters'] = b_app.specparms.simulation_requested()         
+        staticdict[globalparms.spectralparameters] = b_app.specparms.simulation_requested()         
         staticdict[globalparms.strataname] = b_app.fiberparms.simulation_requested()
                 
         # Begin iterations
@@ -460,14 +472,14 @@ class LayerSimulation(ABCSim):
             if sconfig.averaging in ['Average','Both']:
                 for optical_attr in sconfig.choose_optics:
                     summary_increment['%s_%s' % (optical_attr, 'avg')] = \
-                        b_app.optical_stack.compute_average(optical_attr)  
+                        b_app.opticstate.compute_average(optical_attr) #<-- IS NUMPY ARRAY
                 
             if sconfig.averaging in ['Not Averaged', 'Both']:
                 for optical_attr in sconfig.choose_optics:
                     # ITERATE OVER ANGLES! SAVE EACH ANGLE
                     for angle in sconfig.angles:
                         summary_increment['%s_%s' % (optical_attr, angle)] = \
-                                    b_app.optical_stack(optical_attr)  #<-- Save as what?!        
+                                    b_app.opticstate(optical_attr).values  #<-- Save as what, numpy/pandas?        
 
             # Store full Optical Stack
             if sconfig.store_optical_stack:
@@ -496,7 +508,8 @@ class LayerSimulation(ABCSim):
         popup = BasicDialog(message='Simulation complete.  Would you like to save now?')
         ui = popup.edit_traits(kind='modal')
         if ui.result == True:
-            self.save_json()
+#            self.save_json()
+            self.save_pickle('/home/glue/Desktop/fibersim/Simulations/Layersim0.mpickle')
 
     ############
     # This view is for interactive plotting simulations

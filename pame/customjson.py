@@ -6,6 +6,9 @@ import json
 import numpy as np
 from collections import OrderedDict
 
+class CustomJsonError(Exception):
+    """ """
+
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
         """
@@ -13,6 +16,8 @@ class NumpyEncoder(json.JSONEncoder):
         """
         if isinstance(obj, np.ndarray):
             data_b64 = base64.b64encode(obj.data)
+            if obj.dtype == np.object:
+                raise CustomJsonError('Cannot encode json object types!')
             return dict(__ndarray__=data_b64,
                         dtype=str(obj.dtype),
                         shape=obj.shape)
@@ -32,6 +37,7 @@ def json_numpy_obj_hook(dct):
     :return: (ndarray) if input was an encoded ndarray
     """
     if isinstance(dct, dict) and '__ndarray__' in dct:
+        print 'hi in here woo', dct
         data = base64.b64decode(dct['__ndarray__'])
         return np.frombuffer(data, dct['dtype']).reshape(dct['shape'])
     return dct

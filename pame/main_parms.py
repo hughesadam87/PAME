@@ -41,10 +41,13 @@ class SpecParms(HasTraits):
     def simulation_requested(self):
         ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
         ### trait_get is shortcut to return dic if the keys are adequate descriptors for output
-        return self.trait_get('x_start',
-                              'x_end', 
-                              'x_increment', 
-                              'x_samples')
+        return {'lambdas':self.lambdas, 
+                'xstart':self.xstart,
+                'xend':self.xend,
+                'x_increment':self.x_increment,
+                'x_samples':self.x_samples
+                }
+
 
     def _conv_default(self): 
         return SpectralConverter(input_array=self.lambdas, input_units='Nanometers')

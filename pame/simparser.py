@@ -3,7 +3,7 @@ for piping data to special chacoplots, OR, for standalone use.
 save() and load() methods will serialize properly for use outside of the simulation program.
 
 Can call the initialization with a pickled filename for faster use (eg):
-   s=SimParser('sim.pickle')
+   s=LayerSimParser('sim.pickle')
    print s.results
      ...  
 
@@ -29,15 +29,19 @@ from handlers import FileOverwriteDialog
 import globalparms
 import customjson
 import custompp #<--- Custom pretty-print
+import logging
 
-class SimParser(HasTraits):
+class LayerSimParser(HasTraits):
     """ Used to mediate storage and IO of the intermediate datastructures of simulations (dictionaries and such)
     into nice output (CSV) and pandas objects.  Just too bulky to stuff into gensim program.  Downstread analysis
     programs will use this to get info about the simulation parameters in compliment to the panel object
     saved in conjunction.
 
     Decideded to leave complete control over outfilenames/saving to objects that call this, and so have no
-    file-related traits.  Also has load method and stuff for interfacing to scikit-spectra.  """
+    file-related traits.  Also has load method and stuff for interfacing to scikit-spectra.  
+    
+    ** Will look in self._static for wavelenghts!
+    """
 
     # Entire simulation results, panel of increments, storing many arrays
     _about = Dict()   #<--- Private because change output of real representation
@@ -64,10 +68,54 @@ class SimParser(HasTraits):
                     _results = stream[globalparms.results]
                     )
         
+    @classmethod
+    def load_pickle(cls, path_or_fileobj):
+        """ Initialize from a pre-serialized instance of  """
+        return cls().load(path_or_fileobj) #
+        
     # Properties
     # ----------
     def _get_results(self):
         return self._results
+    
+    def _get_summary(self):
+        """ Return summary panel.  On error, returns self._summary dict. """
+        try:
+            return self._summary_panel()
+        except Exception as exc:
+            logging.warn('Could not return summary as Panel object, so returning'
+                         ' as dictionary.  Got exception: %s' % exc.message)
+            return self._summary
+            
+    def _summary_panel(self):
+        """ Returns summary as a Panel if possible, if fails, raises warning
+        and returns as dict.
+        """
+        
+        summary_of_df = {} #Create a summary of dataframes, so has to convert all values to DF's
+        ignoring = [] # If can't convert a value to df, let user know
+
+        try:
+            wavelengths = self._static[globalparms.spectralparameters].lambdas
+        except Exception:
+            logging.warning('Could not find lambdas in self._static, summary panel will'
+                            ' not be indexed by wavelength...')
+            wavelengths = None
+
+        # Try to convert to dataframes.   If fails on one step, should fail on all the steps
+        for step, data in self._summary.items():
+            summary_of_df[step] = DataFrame(data, index=wavelengths)
+        
+        outpanel = Panel.from_dict(summary_of_df)
+        return outpanel
+            
+                
+    def _get_about(self):
+        """ """
+        
+        
+    def _get_static(self):
+        """ """
 
     # This can be used to promote metadata to main namespace if desirable.  Strictly for convienence.
     def promote_parms(self, verbose=True):
@@ -151,9 +199,6 @@ class SimParser(HasTraits):
             o.close()
             message('Parameters copied to file %s'%outfile, title='Success')
 
-
-
-
     # Quick interface to save/load this entire object.  This entire object can itself pickle normally,
     # so downstream processing can open it up and then output data as necessary.
     def save(self, outfilename):
@@ -162,7 +207,9 @@ class SimParser(HasTraits):
         with open(outfilename, 'wb') as o:
             cPickle.dump(self, o)
 
-    def load(self, infilename):
-        with open(infilename, 'r') as f:
-            sp=cPickle.load(f)
-            self.copy_traits(sp, traits=['results', 'parms', 'simparms', 'translator'], copy='deep')
+    def load(self, path_or_fileobj):
+        """ Load and set self._about, _static, _summary, _results """
+        if isinstance(path_or_fileobj, basestring):
+            path_or_fileobj = open(path_or_fileobj, 'r')        
+        sp = cPickle.load(path_or_fileobj)
+        self.copy_traits(sp, traits=['_about', '_static', '_summary', '_results'], copy='deep')
