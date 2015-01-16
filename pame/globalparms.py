@@ -39,3 +39,9 @@ header = OrderedDict((k, v) for k, v in _header)
 # Names of Categories used in View and in Simulation output
 strataname = 'Fiber'
 optresponse = 'Optical Response'
+
+# Categories for simulation storage
+static = 'static'
+about = 'about'
+summary = 'summary'
+results = 'results'

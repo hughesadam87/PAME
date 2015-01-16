@@ -39,11 +39,7 @@ saferepr()
 
 import sys as _sys
 import warnings
-try:
-    from numpy import ndarray
-    np_arrays = True
-except ImportError:
-    np_arrays = False
+import numpy as np 
 
 try:
     from cStringIO import StringIO as _StringIO
@@ -155,9 +151,29 @@ class PrettyPrinter:
             return
 
         # Format numpy.ndarray object representations
-        if np_arrays and issubclass(typ, ndarray):
-            write('ndarray(type=%s, shape=%s, start=%s, end=%s)' %
-                  (object.dtype, object.shape, object[0], object[-1]) )
+        if issubclass(typ, np.ndarray):
+            
+            if object.ndim == 1:
+                shapestring = 'length=%s' % object.shape[0]
+            else:
+                shapestring = 'shape=%s' % object.shape
+            
+            # If array is complex, use special formatting function
+            if np.sum(np.iscomplex(object)):
+                write('ndarray(%s, %s, start=%s, end=%s)' % \
+                       (object.dtype, 
+                        shapestring, 
+                        '({0.real:.2f} {0.imag:+.2f}j)'.format(object[0]), 
+                        '({0.real:.2f} {0.imag:+.2f}j)'.format(object[-1])
+                        )
+                    )
+            # Basic float formatting
+            else:            
+                write('ndarray(type=%s, shape=%s, start=%.2f, end=%.2f)' %
+                  (object.dtype, 
+                   shapestring, 
+                   object[0], 
+                   object[-1]) )
             return
 
         r = getattr(typ, "__repr__", None)

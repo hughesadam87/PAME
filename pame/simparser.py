@@ -26,6 +26,9 @@ from pandas import DataFrame, Panel
 
 #Local imports
 from handlers import FileOverwriteDialog
+import globalparms
+import customjson
+import custompp #<--- Custom pretty-print
 
 class SimParser(HasTraits):
     """ Used to mediate storage and IO of the intermediate datastructures of simulations (dictionaries and such)
@@ -37,35 +40,34 @@ class SimParser(HasTraits):
     file-related traits.  Also has load method and stuff for interfacing to scikit-spectra.  """
 
     # Entire simulation results, panel of increments, storing many arrays
-    results=Instance(Panel)
+    _about = Dict()   #<--- Private because change output of real representation
+    _static = Dict()
+    _summary = Dict()
+    _results = Dict()
+    
+    # Public traits available to user, formatter to various forms of output
+    about = Property()
+    static = Property()
+    summary = Property()
+    results = Property()
 
-    # This is the name used to track where file is.  If SimParser is instantiated with just this trait
-    # it will attempt to load the file for convienences
-    _rootfile=File()
-
-    # LEAVE AS IS
-    simparms=Dict()         
-    parms=Dict(Str, Dict)  #Dictionary of dictionaries for parameters not involved in simulation 
-    sim_parms=Property(depends_on='simparms')
-
-    # Convienence method to construct with a file
-    def __init__(self, infile=None, *args, **kwds):
-        super(SimParser, self).__init__(*args, **kwds)    
-
-        if infile:
-            try:
-                self.load(infile)
-            except IOError as e:
-                print '\n Could not initialize parameters from file %s, received the following error:\n %s'%(infile,e)
-
-    def _get_sim_parms(self):
-        """ Make dataframe from dictionary of simulation parameters."""
-        # Replace commented line after bug fix
-#        df=DataFrame.from_dict(self.simparms, orient='index')
-
-        df=DataFrame.from_dict(self.simparms) 
-        df=df.transpose()
-        return df
+    summarypanel = Instance(Panel)
+    
+    @classmethod
+    def load_json(cls, path_or_fileobj):
+        """ Initialize from json file, output of simulation.save_json. """
+        stream = customjson.load(path_or_fileobj)
+        
+        return cls(_about = stream[globalparms.about],
+                    _static = stream[globalparms.static],
+                    _summary = stream[globalparms.summary],
+                    _results = stream[globalparms.results]
+                    )
+        
+    # Properties
+    # ----------
+    def _get_results(self):
+        return self._results
 
     # This can be used to promote metadata to main namespace if desirable.  Strictly for convienence.
     def promote_parms(self, verbose=True):
@@ -164,33 +166,3 @@ class SimParser(HasTraits):
         with open(infilename, 'r') as f:
             sp=cPickle.load(f)
             self.copy_traits(sp, traits=['results', 'parms', 'simparms', 'translator'], copy='deep')
-            self._rootfile=infilename
-
-    # Methods for saving data structures individiually (not useful)
-    def save_separate(self, paneloutname, activeoutname, passiveoutname, **csvargs):
-        """ Quick method to output 3 primary storage objects of this class into files.
-        If None is passed for any of the arguments, then it will skip outputting that one.
-        **csvargs are passed to _parms_to_csv; however, delim is currently the only one used.
-
-        This is useful only if one wants to store these object individually.  Otherwise, just use save
-        and read in and out from this class itself."""
-        if paneloutname:
-            self.results.save(paneloutname)
-        if activeoutname:
-            self.sim_parms.save(activeoutname)
-        if passiveoutname:
-            self.parms_to_csv(passiveoutname, **csvargs)    
-
-    def load_separate(self, panelinname, activeinname, passiveinname, **csvargs):
-        raise NotImplemented('First need an equivalent load for parms_to_csv, but why bother since \
-        user can pickle this entire object anyway, so why try to load form the csv file itself?.')
-
-    # Methods to save passive parms in csv format.    
-    # UNUSED
-    def parms_to_csv(self, outfilename, delim='\t'):
-        """Untested writeout to csv format.  Not super useful since this entire object pickles."""
-        with open(outfilename, 'w') as o:
-            for key in sorted(self.parms):
-                o.write(key + '\n')
-                o.write( delim.join(str(key) for key in self.parms) + '\n' )
-                o.write( delim.join(str(val) for val in self.parms[key]) + '\n' )

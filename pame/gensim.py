@@ -132,8 +132,7 @@ class ABCSim(HasTraits):
 
     notes=Str('<NOTES GO HERE>')
 
-    key_title=Str('Trial')  #This is used to give each increment a name rather than 1,2,3
-    ## Also set to % in composite plots but that doesn't seem to be a problem
+    key_title=Str('step')  #This is used to give each increment a name rather than 1,2,3
 
     # Select input variables/traits from human-readable dropdown list
     translator = Dict()
@@ -182,26 +181,10 @@ class ABCSim(HasTraits):
         """Method for returning parameters/metadata about the simulation"""
         return {'Simulation Name':self.outname, 
                 'Steps':self.inc, 
-                'Run Time':self.time, 
-                'Run Notes':self.notes,
+                'Time/Date':self.time, 
+                'Notes':self.notes,
                 'Simulated Traits':sorted(self.simulation_traits.keys())
                 }
-
-    def state_parameters(self):
-        """ Aggregates simulation-wide state parameters for output.
-        These are primarly to visualizing simulation, not storing results.  Results
-        are stored via run_sim() """
-        dic={}
-        # Keys must be single string for correct attribute promotion if desirable #
-        dic['Simulation_Parameters'] = self.state_requested()
-        dic['Selected_Material_Parameters'] = (self.base_app.selected_material.simulation_requested())
-        dic['Spectral_Parameters'] = (self.base_app.specparms.state_requested())
-        dic['Fiber_Parameters'] = (self.base_app.fiberparms.state_requested())
-
-        # Layer editor is already KEY:List, so already has proper heirarchy
-#	dic.update(self.base_app.layer_editor.simulation_requested())
-        return dic
-
 
     def _tvals_changed(self): 
         """ Set current layer from the name translator for more clear use. """	
@@ -223,7 +206,6 @@ class ABCSim(HasTraits):
             return False
         return True
         
-
     def _sim_variables_default(self): 
         return []
 
@@ -288,13 +270,17 @@ class ABCSim(HasTraits):
         pass
 
     def save_json(self, outpath=None, confirmwindow=True):
-        """ Output simulation into a SimParser object and save.  Simparser object is then suited
-        for integration with pylab/pyuvvis, or also can be read internally by fibersim plotting tools.
-        If outpath is None, will default to join(base_app.outdir, self.outname)
+        """ Output simulation into json dictionary, where four primary
+        storage dictionaries (self.allstorage) are written to 
+        numpy-aware json.  Errors and confirmation messages in form of
+        popups are triggered.
 
-            outpath: must be passed in by calling class.
-            outname: if not passed, self.outname will be used.
-            confirmwindow:  Popup message on successful save"""
+        outpath: 
+            Full path to save json object.
+            
+        confirmwindow:
+            Confirms simulation saved with popup window.
+        """
                 
         if outpath is None:
             outpath = op.join(self.outdir, self.outname)
@@ -331,7 +317,7 @@ class ABCSim(HasTraits):
 
 
     def _start_fired(self): 
-        
+
         # Check sim traits one more time in case overlooked some trait that should call 
         # check_sim_ready()
         self.check_sim_ready()
@@ -405,10 +391,10 @@ class LayerSimulation(ABCSim):
         particular run.
         """ 
         allout = OrderedDict()
-        allout['summary'] = self.summary
-        allout['results'] = self.results
-        allout['static'] = self.static
-        allout['about'] = self.simulation_requested()
+        allout[globalparms.static] = self.static
+        allout[globalparms.about] = self.simulation_requested()
+        allout[globalparms.summary] = self.summary
+        allout[globalparms.results] = self.results      
 
         return allout
         
