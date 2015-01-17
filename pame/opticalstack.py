@@ -145,14 +145,7 @@ class DielectricSlab(HasTraits):
 
         # UPDATE optical_stack!
         self.optical_stack = Panel(paneldict)
-        #print self.optical_stack, self.optical_stack.shape, self.optical_stack.items, self.optical_stack.minor_axis,\
-              #self.optical_stack.major_axis, self.optical_stack[self.angles[2]]['r'], 'FOO\n\n'
-        
-        #x = self.optical_stack[self.angles[2]]['r']
-        #print x, 'BAM'
 
-
-    #@cached_property
     def as_stack(self, attr):
         """ Return attribute from optical stack in a 2darray.  IE if have 5 angles and 
         for each angle have 100 reflectance coefficients, returns a 5x100 matrix.  Used

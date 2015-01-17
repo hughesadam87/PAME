@@ -62,7 +62,7 @@ class LayerSimParser(HasTraits):
         """ Initialize from json file, output of simulation.save_json. """
         stream = customjson.load(path_or_fileobj)
         
-        return cls(about = stream['about'],
+        return cls(about = stream['about'],      #<-- use **stream?
                     static = stream['static'],
                     primary = stream['primary'],
                     results = stream['results'],
@@ -77,31 +77,12 @@ class LayerSimParser(HasTraits):
         newobj.load(path_or_fileobj) 
         return newobj
         
-    # Properties
-    # ----------    
-    #def as_panel(self): #<-- args
-        #""" Return primary panel.  On error, returns self.primary dict. """
-        #try:
-            #return self.primary_panel()
-        #except Exception as exc:
-            #logging.warn('Could not return primary as Panel object, so returning'
-                         #' as dictionary.  Got exception: %s' % exc.message)
-            #return self.primary
-    
             
-    def primary_panel(self, minor_axis=None):
+    def primary_panel(self, minor_axis=None, prefix=None):
         """ Returns primary as a Panel if possible, if fails, raises warning
         and returns as dict.
         """
         
-        if minor_axis:
-            if isinstance(minor_axis, basestring):
-                pass
-            elif isinstance(minor_axis, int):
-                pass
-            else:
-                raise SimParserError('Can only map strings or integers to primary_panel, get type %s.'
-                   ' These should correspond to the keys in %s' % (type(minor_axis, globalparms.siminputs)))
         
         primary_of_df = {} #Create a primary of dataframes, so has to convert all values to DF's
         ignoring = [] # If can't convert a value to df, let user know
@@ -127,6 +108,23 @@ class LayerSimParser(HasTraits):
 
         if self.backend == 'skespec':
             raise NotImplementedError('scikit spec nto builtin')
+
+        # REORIENTATION OF MINOR AXIS LABELS
+        if minor_axis:
+            if isinstance(minor_axis, basestring):
+                inputarray = self.inputs[minor_axis] # values like 50, 60, 70, so want prefix/?
+                newaxis = dict(zip(outpanel.minor_axis, inputarray)) 
+                # end of day, want basically {'step_1':'vfrac_0.5, 'step_2', 'vfrac_0.10' ...
+                if prefix:
+                    # No delimiter (ie %s_%s) because prefix can set that eg prefix = layerd_ or layerd=
+                    newaxis = dict((k,'%s%s' % (prefix, v)) for k, v in newaxis.items())
+            elif isinstance(minor_axis, int):
+                pass
+            else:
+                raise SimParserError('Can only map strings or integers to primary_panel, get type %s.'
+                   ' These should correspond to the keys in %s' % (type(minor_axis, self.inputs)))
+
+            outpanel = outpanel.rename(minor_axis = newaxis)
 
         return outpanel
             

@@ -323,8 +323,8 @@ class ABCSim(HasTraits):
         obj.save(outfilename)
         print 'saved', outfilename
 
-    def _start_fired(self): 
 
+    def _start_fired(self): 
         # Check sim traits one more time in case overlooked some trait that should call 
         # check_sim_ready()
         self.check_sim_ready()
