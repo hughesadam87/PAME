@@ -153,14 +153,20 @@ class PrettyPrinter:
         # Format numpy.ndarray object representations
         if issubclass(typ, np.ndarray):
             
+            # Trips up stuff downstrea, try to intercept
+            if object.dtype == np.object:
+                raise Exception('Got object type in pretty print, '
+                                ' but all sim arrays should be float/complex.')
+            
             if object.ndim == 1:
                 shapestring = 'length=%s' % object.shape[0]
             else:
                 shapestring = 'shape=%s' % object.shape
+
             
             # If array is complex, use special formatting function
-            if np.sum(np.iscomplex(object)):
-                write('ndarray(%s, %s, start=%s, end=%s)' % \
+            if object.dtype == np.complex:  #<-- Better than np.sum(np.iscomplex()) 
+                write('ndarray(%s, %s, start=%s, end=%s)' %  #cuz if all 0j, still is complex
                        (object.dtype, 
                         shapestring, 
                         '({0.real:.2f} {0.imag:+.2f}j)'.format(object[0]), 
@@ -169,7 +175,7 @@ class PrettyPrinter:
                     )
             # Basic float formatting
             else:            
-                write('ndarray(type=%s, shape=%s, start=%.2f, end=%.2f)' %
+                write('ndarray(type=%s, %s, start=%.2f, end=%.2f)' %
                   (object.dtype, 
                    shapestring, 
                    object[0], 
@@ -177,7 +183,7 @@ class PrettyPrinter:
             return
 
         r = getattr(typ, "__repr__", None)
-        if issubclass(typ, dict) and r is dict.__repr__:
+        if issubclass(typ, dict):# and r is dict.__repr__:
             write('{')
             if self._indent_per_level > 1:
                 write((self._indent_per_level - 1) * ' ')
@@ -292,7 +298,7 @@ def _safe_repr(object, context, maxlevels, level):
         return ("%s%s%s" % (closure, sio.getvalue(), closure)), True, False
 
     r = getattr(typ, "__repr__", None)
-    if issubclass(typ, dict) and r is dict.__repr__:
+    if issubclass(typ, dict):# and r is dict.__repr__:
         if not object:
             return "{}", True, False
         objid = _id(object)

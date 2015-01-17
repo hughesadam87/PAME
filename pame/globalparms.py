@@ -40,9 +40,3 @@ header = OrderedDict((k, v) for k, v in _header)
 strataname = 'Fiber'
 optresponse = 'Optical Response'
 spectralparameters = 'Spectral Parms.'
-
-# Categories for simulation storage
-static = 'static'
-about = 'about'
-summary = 'summary'
-results = 'results'

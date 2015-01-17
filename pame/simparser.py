@@ -31,6 +31,9 @@ import customjson
 import custompp #<--- Custom pretty-print
 import logging
 
+class SimParserError(Exception):
+    """ """
+
 class LayerSimParser(HasTraits):
     """ Used to mediate storage and IO of the intermediate datastructures of simulations (dictionaries and such)
     into nice output (CSV) and pandas objects.  Just too bulky to stuff into gensim program.  Downstread analysis
@@ -40,83 +43,93 @@ class LayerSimParser(HasTraits):
     Decideded to leave complete control over outfilenames/saving to objects that call this, and so have no
     file-related traits.  Also has load method and stuff for interfacing to scikit-spectra.  
     
-    ** Will look in self._static for wavelenghts!
+    ** Will look in self.static for wavelenghts!
     """
 
-    # Entire simulation results, panel of increments, storing many arrays
-    _about = Dict()   #<--- Private because change output of real representation
-    _static = Dict()
-    _summary = Dict()
-    _results = Dict()
-    
-    # Public traits available to user, formatter to various forms of output
-    about = Property()
-    static = Property()
-    summary = Property()
-    results = Property()
 
-    summarypanel = Instance(Panel)
+    # Public traits available to user, formatter to various forms of output
+    about = Dict()
+    static = Dict()
+    primary = Dict()
+    results = Dict()
+    inputs = Dict()
+
+    primarypanel = Instance(Panel)
+    backend = Str
     
     @classmethod
     def load_json(cls, path_or_fileobj):
         """ Initialize from json file, output of simulation.save_json. """
         stream = customjson.load(path_or_fileobj)
         
-        return cls(_about = stream[globalparms.about],
-                    _static = stream[globalparms.static],
-                    _summary = stream[globalparms.summary],
-                    _results = stream[globalparms.results]
+        return cls(about = stream['about'],
+                    static = stream['static'],
+                    primary = stream['primary'],
+                    results = stream['results'],
+                    inputs = stream['inputs']
                     )
         
     @classmethod
     def load_pickle(cls, path_or_fileobj):
         """ Initialize from a pre-serialized instance of  """
-        return cls().load(path_or_fileobj) #
+        # Creates instance, calls .load(), returns
+        newobj = cls()
+        newobj.load(path_or_fileobj) 
+        return newobj
         
     # Properties
-    # ----------
-    def _get_results(self):
-        return self._results
+    # ----------    
+    #def as_panel(self): #<-- args
+        #""" Return primary panel.  On error, returns self.primary dict. """
+        #try:
+            #return self.primary_panel()
+        #except Exception as exc:
+            #logging.warn('Could not return primary as Panel object, so returning'
+                         #' as dictionary.  Got exception: %s' % exc.message)
+            #return self.primary
     
-    def _get_summary(self):
-        """ Return summary panel.  On error, returns self._summary dict. """
-        try:
-            return self._summary_panel()
-        except Exception as exc:
-            logging.warn('Could not return summary as Panel object, so returning'
-                         ' as dictionary.  Got exception: %s' % exc.message)
-            return self._summary
             
-    def _summary_panel(self):
-        """ Returns summary as a Panel if possible, if fails, raises warning
+    def primary_panel(self, minor_axis=None):
+        """ Returns primary as a Panel if possible, if fails, raises warning
         and returns as dict.
         """
         
-        summary_of_df = {} #Create a summary of dataframes, so has to convert all values to DF's
+        if minor_axis:
+            if isinstance(minor_axis, basestring):
+                pass
+            elif isinstance(minor_axis, int):
+                pass
+            else:
+                raise SimParserError('Can only map strings or integers to primary_panel, get type %s.'
+                   ' These should correspond to the keys in %s' % (type(minor_axis, globalparms.siminputs)))
+        
+        primary_of_df = {} #Create a primary of dataframes, so has to convert all values to DF's
         ignoring = [] # If can't convert a value to df, let user know
 
         try:
-            wavelengths = self._static[globalparms.spectralparameters].lambdas
+            wavelengths = self.static[globalparms.spectralparameters]['lambdas']
         except Exception:
-            logging.warning('Could not find lambdas in self._static, summary panel will'
+            logging.warning('Could not find lambdas in self.static, primary panel will'
                             ' not be indexed by wavelength...')
             wavelengths = None
 
         # Try to convert to dataframes.   If fails on one step, should fail on all the steps
-        for step, data in self._summary.items():
-            summary_of_df[step] = DataFrame(data, index=wavelengths)
+        for step, data in self.primary.items():
+            primary_of_df[step] = DataFrame(data, index=wavelengths)
         
-        outpanel = Panel.from_dict(summary_of_df)
+        # Panel with as simulation variabless as major axis (ie A_avg, R_0)
+        outpanel = Panel.from_dict(primary_of_df, orient='minor')
+        
+        # Sort Items alphabetically (R_avg, R_0, R_1, T_avg, ...)
+        outpanel = outpanel.reindex_axis(sorted(outpanel.items),
+                                     axis=0, #items axis
+                                     copy=False) #Save memory
+
+        if self.backend == 'skespec':
+            raise NotImplementedError('scikit spec nto builtin')
+
         return outpanel
             
-                
-    def _get_about(self):
-        """ """
-        
-        
-    def _get_static(self):
-        """ """
-
     # This can be used to promote metadata to main namespace if desirable.  Strictly for convienence.
     def promote_parms(self, verbose=True):
         """ Takes all keys in passive parms dictionary and makes the class attributes (that are not 
@@ -208,8 +221,13 @@ class LayerSimParser(HasTraits):
             cPickle.dump(self, o)
 
     def load(self, path_or_fileobj):
-        """ Load and set self._about, _static, _summary, _results """
+        """ Load and set self.about, static, primary, results """
         if isinstance(path_or_fileobj, basestring):
             path_or_fileobj = open(path_or_fileobj, 'r')        
         sp = cPickle.load(path_or_fileobj)
-        self.copy_traits(sp, traits=['_about', '_static', '_summary', '_results'], copy='deep')
+        self.copy_traits(sp, traits=['about',
+                                     'static',
+                                     'primary',
+                                     'results',
+                                     'inputs'
+                                     ], copy='deep')

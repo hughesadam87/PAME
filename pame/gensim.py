@@ -139,7 +139,7 @@ class ABCSim(HasTraits):
     tvals = Enum(values='translist')
 
     # Output Storage Objects
-    summary = Dict
+    primary = Dict
     results = Dict            
     static = Dict
     allstorage = Property(Dict) # Stores all three dicts plus metadata bout self
@@ -196,12 +196,12 @@ class ABCSim(HasTraits):
 
     def _get__completed(self):
         """ Inspect storage objects and infer if simulation ran successfully.  Basically
-        tests if self.results, summary and self.static are all empty.  After successfully 
+        tests if self.results, primary and self.static are all empty.  After successfully 
         completed run_sim(), at least one of these should be populated.  Actually they all 
         should, but in some instances, users can select settings that make these empty.  Like
-        if user doesn't want to store anything in the top-level summary.
+        if user doesn't want to store anything in the top-level primary.
         """
-        if self.results == {} and self.summary == {} and self.static == {}:
+        if self.results == {} and self.primary == {} and self.static == {}:
             return False
         return True
         
@@ -319,12 +319,7 @@ class ABCSim(HasTraits):
     def save_pickle(self, outfilename):
         """ Saves data directly to a pickled instance of SimParser. """
         from simparser import LayerSimParser
-        allstorage = self.allstorage
-        obj = LayerSimParser(_about = allstorage[globalparms.about],
-                             _static = allstorage[globalparms.static],
-                             _summary = allstorage[globalparms.summary],
-                             _results = allstorage[globalparms.results]
-                             )
+        obj = LayerSimParser(**self.allstorage)
         obj.save(outfilename)
         print 'saved', outfilename
 
@@ -398,16 +393,16 @@ class LayerSimulation(ABCSim):
 
     def _get_allstorage(self):
         """ Returns Ordered dict of dicts, where each dictionary is a primary storage dictionary:
-        IE self.summary, self.results, self.static and self.simulation_requested(), where
+        IE self.primary, self.results, self.static and self.simulation_requested(), where
         simuliation requested gives metadata like num steps, simulation etc.. about this 
         particular run.
         """ 
         allout = OrderedDict()
-        allout[globalparms.static] = self.static
-        allout[globalparms.about] = self.simulation_requested()
-        allout[globalparms.summary] = self.summary
-        allout[globalparms.results] = self.results      
-
+        allout['static'] = self.static
+        allout['about'] = self.simulation_requested()
+        allout['primary'] = self.primary
+        allout['results'] = self.results      
+        allout['inputs'] = self.simulation_traits
         return allout
         
         
@@ -420,7 +415,7 @@ class LayerSimulation(ABCSim):
            parameters.  In future version, could relax these if needed
            to simulation over a fiber parameter like core size.
            
-        summarydict --> Results that are to be promoted to top level.  
+        primarydict --> Results that are to be promoted to top level.  
             Simparaser will try to show these as a panel.
             
         resultsdict ---> Deep, nested results of layer and optical stack.  For 
@@ -440,7 +435,7 @@ class LayerSimulation(ABCSim):
         b_app = self.base_app
 
         # Storage
-        summarydict = OrderedDict()   #<-- Keyed by increment, becomes summary panel!
+        primarydict = OrderedDict()   #<-- Keyed by increment, becomes primary panel!
         resultsdict = OrderedDict()   #<-- Keyed by increment, stores deep results, stays as dict
                        
         # Traits not involved in simulation.  For this sim, includes spectral parameters, fiber/strata params
@@ -459,7 +454,7 @@ class LayerSimulation(ABCSim):
                 
             stepname = 'step_%s' % i
                 
-            summary_increment = OrderedDict()  #<--- Toplevel/Summary of just this increment (becomes dataframe)
+            primary_increment = OrderedDict()  #<--- Toplevel/Summary of just this increment (becomes dataframe)
             results_increment = OrderedDict()  #<--- Deep results of just thsi increment (ie selected_material/layer etc..)
 
             key = '%s_%s' % (str(i), self.key_title)
@@ -471,14 +466,14 @@ class LayerSimulation(ABCSim):
             # Take parameters from optical stack, put in toplevel via sconfig.choose_optics
             if sconfig.averaging in ['Average','Both']:
                 for optical_attr in sconfig.choose_optics:
-                    summary_increment['%s_%s' % (optical_attr, 'avg')] = \
+                    primary_increment['%s_%s' % (optical_attr, 'avg')] = \
                         b_app.opticstate.compute_average(optical_attr) #<-- IS NUMPY ARRAY
                 
             if sconfig.averaging in ['Not Averaged', 'Both']:
                 for optical_attr in sconfig.choose_optics:
                     # ITERATE OVER ANGLES! SAVE EACH ANGLE
                     for angle in sconfig.angles:
-                        summary_increment['%s_%s' % (optical_attr, angle)] = \
+                        primary_increment['%s_%s' % (optical_attr, angle)] = \
                                     b_app.opticstate(optical_attr).values  #<-- Save as what, numpy/pandas?        
 
             # Store full Optical Stack
@@ -495,12 +490,12 @@ class LayerSimulation(ABCSim):
                                   
             # resultsdict >>  {step1 : {results_of_increment}, ...}
             resultsdict[stepname] = results_increment               
-            summarydict[stepname] = summary_increment
+            primarydict[stepname] = primary_increment
 
             print "Iteration\t", i+1, "\t of \t", self.inc, "\t completed"
 
         # SET STORAGE TRAITS
-        self.summary = summarydict
+        self.primary = primarydict
         self.results = resultsdict
         self.static = staticdict
 

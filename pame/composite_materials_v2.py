@@ -238,7 +238,6 @@ class SphericalInclusions(CompositeMaterial):
         """ Updates r_particle to 1/2 shell_width"""
         self.r_particle = 0.5 * width
 
-
     def _get_vbox(self): 
         return 8.0*(self.r_particle**3)           #Square boxes of volumes
 
@@ -253,7 +252,10 @@ class SphericalInclusions(CompositeMaterial):
         return round(value, 2)
 
     def _get_N_tot(self): 
-        return int(self.VT/self.vbox)   #Total number of available boxes is Vbox/VT
+        try:
+            return int(self.VT/self.vbox)   #Total number of available boxes is Vbox/VT
+        except ZeroDivisionError:
+            return 0.0
 
     def _get_N_occ(self): 
         try:

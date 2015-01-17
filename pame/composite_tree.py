@@ -51,7 +51,7 @@ tree_editor = TreeEditor(
                   view      = View( [ 'name', 'source', 'notes', 'preview', 'matobject', 'thefile' ] )     #TRAITS FROM IADAPTER OBJECT
                   )
         ],
-    selection_mode='extended',
+    selection_mode='single',
     selected='current_selection',
 )
 
