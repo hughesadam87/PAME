@@ -23,14 +23,19 @@ from collections import OrderedDict
 '''
 
 _header = (
+    # Dimension F(wavelength) for a given angle
     ('r_amp','Reflection Amplitude'), 
     ('t_amp','Transmission Amplitude'),
     ('R', 'Reflectance'),
     ('T', 'Transmittance'),
     ('A', 'Absorbance'),
-    ('pe', '1st Layer Power'),
+    ('pe', '1st Layer Power'),  # Basically 1-R
+    
+    # All below have dimension F(wavelength, layers) for a given angle
+#    ('vn', 'Forward Traveling Amp.'),  
+#    ('wn', 'Backward Traveling Amp.'),
     ('vw','vw_list'),
-    ('kz','kz_list'),
+    ('kz','Wavenumber Normal Comp.'),
     ('ang_prop','Propagation angle')
     )
 

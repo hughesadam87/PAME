@@ -196,20 +196,32 @@ def vector_com_tmm(pol, n_matrix, d_list, angle, vacuum_wavelengths):
     outvals = []
     for (lamindex, lam) in enumerate(vacuum_wavelengths):
         n_of_lam = n_matrix[:, lamindex]
-        outvals.append( coh_tmm(pol, 
-                                n_of_lam, 
-                                d_list,
-                                angle, 
-                                lam,
-                                dict_output=False)  #<<< IMPORTANT FOR MAKING PANEL
+        result = coh_tmm(pol, 
+                        n_of_lam, 
+                        d_list,
+                        angle, 
+                        lam,
+                        pame_output=True  #<<< IMPORTANT FOR MAKING PANEL
                         )
+        outvals.append(result)
 
+#    print (len(d_list), n_matrix.shape, result[6].dtype, result[6].shape, 'BREAKBERRAKD\n', result[7], 'BBBBAAAMMM\n\n\n')
+        
     return DataFrame(outvals, columns=header, index=vacuum_wavelengths)    
     
 
 # Changed option for dict_output (other modules herein use dict output, so only vector_com_tmm needs)
-def coh_tmm(pol, n_list, d_list, th_0, lam_vac, dict_output=True):
+def coh_tmm(pol, n_list, d_list, th_0, lam_vac, pame_output=False):
     """
+
+    ------- IMPORTANT -----
+    pame_output IS FOR USE WITH vector_coh_tmm() AND PLASMONIC ASSAY 
+    MODELING ENVIRONMENT.  If left as False, will return data unmolested
+    from original implementation of tmm module.  There are several calls to
+    coh_tmm from other utilitles herein, such as getting aborbed power in 
+    each layer, so this keyword maintains compatibility with both applications.
+    ----------------------------------------------
+
     Main "coherent transfer matrix method" calc. Given parameters of a stack,
     calculates everything you could ever want to know about how light
     propagates in it. (If performance is an issue, you can delete some of the
@@ -341,6 +353,10 @@ def coh_tmm(pol, n_list, d_list, th_0, lam_vac, dict_output=True):
     for i in range(num_layers-2,0,-1):
         vw = np.dot(M_list[i], vw)
         vw_list[i,:] = np.transpose(vw)
+        
+    #vn, wn ADDED MYSEFL
+    vn = vw_list[:,0]
+    wn = vw_list[:,1]
 
     #Net transmitted and reflected power, as a proportion of the incoming light
     #power.
@@ -350,17 +366,26 @@ def coh_tmm(pol, n_list, d_list, th_0, lam_vac, dict_output=True):
 
     power_entering = power_entering_from_r(pol, r, n_list[0], th_0)
 
-    # CHANGED THE RETURN!!
-    return (r, t, R, T, A, power_entering, vw_list, kz_list, th_list)
+    # pame /vector_coh_tmm return
+    if pame_output:
+        return (r, t, R, T, A, power_entering, vw_list, kz_list, th_list)
 
-    #return {'r': r, 
-            #'t': t, 
-            #'R': R, 
-            #'T': T, 
-            #'power_entering': power_entering,
-            #'vw_list': vw_list, 'kz_list': kz_list, 'th_list': th_list,
-            #'pol': pol, 'n_list': n_list, 'd_list': d_list, 'th_0': th_0,
-            #'lam_vac':lam_vac}
+    # Unchanged return from original source
+    # https://github.com/sbyrnes321/tmm/blob/master/tmm_core.py#L304
+    else:
+        return {'r': r, 
+            't': t, 
+            'R': R, 
+            'T': T, 
+            'power_entering': power_entering,
+            'vw_list': vw_list, 
+            'kz_list': kz_list,
+            'th_list': th_list,
+            'pol': pol,
+            'n_list': n_list, 
+            'd_list': d_list, 
+            'th_0': th_0,
+            'lam_vac':lam_vac}
 
 def coh_tmm_reverse(pol, n_list, d_list, th_0, lam_vac):
     """

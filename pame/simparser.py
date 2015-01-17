@@ -81,9 +81,7 @@ class LayerSimParser(HasTraits):
     def primary_panel(self, minor_axis=None, prefix=None):
         """ Returns primary as a Panel if possible, if fails, raises warning
         and returns as dict.
-        """
-        
-        
+        """        
         primary_of_df = {} #Create a primary of dataframes, so has to convert all values to DF's
         ignoring = [] # If can't convert a value to df, let user know
 

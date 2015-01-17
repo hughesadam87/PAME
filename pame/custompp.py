@@ -153,10 +153,10 @@ class PrettyPrinter:
         # Format numpy.ndarray object representations
         if issubclass(typ, np.ndarray):
             
-            # Trips up stuff downstrea, try to intercept
-            if object.dtype == np.object:
-                raise Exception('Got object type in pretty print, '
-                                ' but all sim arrays should be float/complex.')
+            ## Trips up stuff downstrea, try to intercept
+            #if object.dtype == np.object:
+                #raise Exception('Got object type in pretty print, '
+                                #' but all sim arrays should be float/complex.')
             
             if object.ndim == 1:
                 shapestring = 'length=%s' % object.shape[0]

@@ -467,14 +467,14 @@ class LayerSimulation(ABCSim):
             if sconfig.averaging in ['Average','Both']:
                 for optical_attr in sconfig.choose_optics:
                     primary_increment['%s_%s' % (optical_attr, 'avg')] = \
-                        b_app.opticstate.compute_average(optical_attr) #<-- IS NUMPY ARRAY
+                        b_app.opticstate.compute_average(optical_attr) #<-- IS NUMPY ARRAY, object type
                 
             if sconfig.averaging in ['Not Averaged', 'Both']:
                 for optical_attr in sconfig.choose_optics:
                     # ITERATE OVER ANGLES! SAVE EACH ANGLE
-                    for angle in sconfig.angles:
+                    for angle in b_app.opticstate.angles:
                         primary_increment['%s_%s' % (optical_attr, angle)] = \
-                                    b_app.opticstate(optical_attr).values  #<-- Save as what, numpy/pandas?        
+                                    b_app.opticstate.optical_stack[optical_attr]  #<-- Save as what, numpy/pandas?        
 
             # Store full Optical Stack
             if sconfig.store_optical_stack:

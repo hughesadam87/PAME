@@ -8,10 +8,11 @@ from main_parms import SpecParms, FiberParms
 from interfaces import IOptic, ILayer
 from layer_editor import LayerEditor
 from scipy.integrate import simps
-from pandas import Panel
 import logging
 from tmm_mod import vector_com_tmm
 import numpy as np
+from pandas import Panel
+
 
 class OpticalModelError(Exception):
     """ """
@@ -151,7 +152,9 @@ class DielectricSlab(HasTraits):
         for each angle have 100 reflectance coefficients, returns a 5x100 matrix.  Used
         for arrayplotdata compatibility with .
         """
+        # Potentially going to mix complex and floats, so these will be objects.
         out_2d = np.vstack([self.optical_stack[item][attr] for item in self.optical_stack])
+        #print out_2d, '\nattr', out_2d.dtype
         return out_2d
     
     def _angle_avg_default(self):

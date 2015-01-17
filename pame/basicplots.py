@@ -134,6 +134,8 @@ class OpticalView(HasTraits):
         
         # FROM HERE DOWN, ASSUMES SINGLE LAYER LIKE R
         if self.average:
+            print self.optic_model.compute_average(self.choose), 'AFSLLAFLA',\
+                  self.optic_model.optical_stack.items, self.optic_model.optical_stack[self.choose].shape
             avg_array = self.optic_model.compute_average(self.choose).astype(complex)
             yout = self.infer_complex(avg_array)
           
