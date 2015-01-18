@@ -22,6 +22,8 @@ from collections import OrderedDict
     * pol, n_list, d_list, th_0, lam_vac--same as input
 '''
 
+_flat_suffix = 'L'  # For layer-dependent optical props like kz_1, kz_2 --> kz_L1, kz_L2
+
 _header = (
     # Dimension F(wavelength) for a given angle
     ('r_amp','Reflection Amplitude'), 
@@ -32,9 +34,9 @@ _header = (
     ('pe', '1st Layer Power'),  # Basically 1-R
     
     # All below have dimension F(wavelength, layers) for a given angle
-#    ('vn', 'Forward Traveling Amp.'),  
-#    ('wn', 'Backward Traveling Amp.'),
-    ('vw','vw_list'),
+    ('vn', 'Forward Traveling Amp.'),  
+    ('wn', 'Backward Traveling Amp.'),
+#    ('vw','vw_list'),
     ('kz','Wavenumber Normal Comp.'),
     ('ang_prop','Propagation angle')
     )
