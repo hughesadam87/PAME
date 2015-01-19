@@ -231,7 +231,6 @@ def vector_com_tmm(pol, n_matrix, d_list, angle, vacuum_wavelengths):
 
     # FROM DICT
     dfout = DataFrame(optical_dict, index=vacuum_wavelengths)#(outvals, columns=header, index=vacuum_wavelengths)    
-    print (dfout.index, dfout.columns, dfout.shape)
     return dfout
 
 # Changed option for dict_output (other modules herein use dict output, so only vector_com_tmm needs)
@@ -396,7 +395,8 @@ def coh_tmm(pol, n_list, d_list, th_0, lam_vac, pame_output=False):
              't_amp': t, 
              'R': R, 
              'T': T, 
-             'power_entering': power_entering,
+             'A': A,
+             'pe': power_entering,
              }
         out.update( _flatten('vn', vn) )
         out.update( _flatten('wn', wn) )

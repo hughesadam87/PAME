@@ -151,14 +151,17 @@ class FiberParms(HasTraits):
 
     SharedGroup =Group(
         HGroup(
-            Item('Config'), Item('Mode')
-            ),
-        HGroup(
+            Item('Config'), 
+            Item('Mode'), 
+            Item('angle_avg', label='Angle Averaging'),            
             Item(name='NA', label='Numerical Aperature'), 
-            Item('critical_angle', label='Critical Angle')
+            Item('critical_angle', label='Critical Angle')            
             ),
+#        HGroup(
+#            Item(name='NA', label='Numerical Aperature'), 
+#            Item('critical_angle', label='Critical Angle')
+#            ),
         HGroup(
-            Item('angle_avg', label='Averaging'),
             Item('angle_start', label='Angle Start'), 
             Item('angle_stop', label='Angle End'), 
             Item('angle_inc', label='Angle Increment'),

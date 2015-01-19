@@ -65,13 +65,20 @@ def plot_line_points(*args, **kwargs):
 
 class OpticalView(HasTraits):
     optic_model = Any # DielectricSlab object, must be initialized with this by calling fcn    
-    optic_stack = DelegatesTo('optic_model')
+    optical_stack = DelegatesTo('optic_model')
     lambdas = DelegatesTo('optic_model')  #Xarray everywhere will need replaced
     angles = DelegatesTo('optic_model')
     x_unit = DelegatesTo('optic_model')
 
+    # Metatraits to change plot selection depending on data type (eg R vs. kz's)
     real_or_imag = Enum('real', 'imaginary')
     _is_complex = Bool(False)
+    layer_list = List() #<-- layer0, layer1, layer 2, depends on optic_stack.ns or .ds
+    chosen_layer = Enum(values='layer_list')
+    _model_attr = Str  #<-- Retains actual model attribute corresponding to self.choose and chosen_layer
+    _chosen_layer = Str #<-- necessary private variable to hook up logic to prevent double draws
+    _is_ndlayer = Bool(False) #Current attribute has a value in each layer of material...
+
     show_legend=Bool(False)
     average = Bool(False)  #Averaging style
     plot = Instance(Plot)
@@ -93,6 +100,10 @@ class OpticalView(HasTraits):
                                   visible_when='_is_complex==True', 
                                   label='Component'
                                   ),          
+                             Item('chosen_layer',
+                                  visible_when='_is_ndlayer==True',
+                                  label='Layer'
+                                  ),
                              Item('show_legend', label='Legend'),
                              #Item('chosen_name', 
                                   #style='readonly',
@@ -118,11 +129,29 @@ class OpticalView(HasTraits):
         full redraw."""
         self.update()
         
-    def update(self):
+        
+    def _chosen_layer_changed(self, old, new):
+        """ Since update() actually setls self.chosen_layer, these together can 
+        trigger double redraws.  Therefore, when user changes layer, want update
+        to not go and change it again.  Thus, pass the explicit attribute corresponding
+        to that layer.
+        """
+        if new != self._chosen_layer:
+            layer_index = new.split()[-1] #<-- hack depends on how these are set in self.layer_list (ie _ delimited?) 
+            # Reconstruct attr like kz_L1 that would be in optical stack
+            chosen_attr = '%s_%s%s' % (self.choose, globalparms._flat_suffix, layer_index)
+            self.update(chosen_attr)
+            self._chosen_layer = new            
+        
+    def update(self, chosen_attr=None):
         """Deviates from other plots in that these plots aren't meant to update in realtime
         via set-data, so it's easier to just wipe plotdata and redraws lines, basically as a
         static plot would work.  Therefore, I don't separate update_data() and create_plots()
         and so forth.  This method literally creates the plot from scratch.
+        
+        chosen_attr special hack for working with multi-layer attributes.  Some of these
+        attributes aren't shown in self.choose(), so some methods may force a special
+        attr in.  Leave as None for self.choose.
         """
         # At this point, assumes that arrays have been redraw so overwrite data or just
     
@@ -131,17 +160,20 @@ class OpticalView(HasTraits):
         self.data.arrays={} #Clear DATA!!!
         self.data.set_data('x', self.lambdas)
         linenames = [] #<-- To put into legend in sorted order
-        
+
+        # chosen_attr defaults to self.choose
+        if not chosen_attr:
+            chosen_attr = self.infer_ndlayer(self.choose)
+            
+                    
         # FROM HERE DOWN, ASSUMES SINGLE LAYER LIKE R
         if self.average:
-            print self.optic_model.compute_average(self.choose), 'AFSLLAFLA',\
-                  self.optic_model.optical_stack.items, self.optic_model.optical_stack[self.choose].shape
-            avg_array = self.optic_model.compute_average(self.choose).astype(complex)
+            avg_array = self.optic_model.compute_average(chosen_attr).astype(complex)
             yout = self.infer_complex(avg_array)
           
             self.data.set_data('y', yout) 
             plot_line_points(self.plot, ("x", "y"), 
-                             name='%s Avg.' % (self.choose),
+                             name='%s Avg.' % (chosen_attr),
                              style='both',
                              line_width=4)  #<--- Thick line
 
@@ -162,7 +194,7 @@ class OpticalView(HasTraits):
                 linename = '%.2f' % angle
                 linenames.append(linename)
 
-                array = self.optic_model.optical_stack[angle][self.choose].astype(complex)
+                array = self.optical_stack[angle][chosen_attr].astype(complex)
                 yout = self.infer_complex(array)
                                 
                 self.data.set_data(linename, yout)                    
@@ -213,7 +245,43 @@ class OpticalView(HasTraits):
         self.plot.tools.append(PanTool(self.plot))
         zoom = BetterSelectingZoom(component=self.plot, tool_mode="box", always_on=False)
         self.plot.overlays.append(zoom)
-    
+        
+    def infer_ndlayer(self, attr_name):
+        """ Given selected attribute like kz, looks at opticalstack and
+        if it finds kz_L1, kz_L2, kz_L3 etc.., it means that kz has a value
+        in every layer of the dielectric so plot must display as such.  An
+        attribute like "R" denotes the reflectance at the first interface, so
+        this would be disabled.  
+        
+        If ndlayer, returns kz_L1 (ie first layer) modified attribute name.
+        If not, returns attr_name unchanged!
+        """
+        
+        # If attribute is flat/does not have value in each layer of slab
+        if attr_name in self.optical_stack.minor_axis:
+            self._is_ndlayer = False
+            return attr_name
+
+        #http://stackoverflow.com/questions/28031354/match-the-pattern-at-the-end-of-a-string#28031451
+        # Split on _globalparms._flat_suffix        
+        delim = '_%s' % globalparms._flat_suffix
+        layered_keys = set(i.split(delim)[0] for i in self.optical_stack.minor_axis if delim in i)
+        # layered keys are keys in minor axis that correspond to quantites
+        # that exists for each layer.  So like kv_L1, vn_L1, ... this returns
+        # [kv, vn].  Then I can see if selected attr in this list
+
+        if attr_name in layered_keys:              
+            self._is_ndlayer = True
+            self.layer_list = ['Layer %s' % i for i in range(len(self.optic_model.ns))] #Use layer names instead?
+            self._chosen_layer = self.layer_list[0]
+            return attr_name + delim + '0' #Return 0th entry
+
+        else:
+            raise PlotError('Selected plot attribute "%s" is not in optical_stack,'
+                ' nor can it be inferred as a multi-layer attribute based on splitting'
+                ' of delimiter "%s", which results in %s.' %
+                (attr_name, globalparms._flat_suffix, layered_keys))              
+
     
     def infer_complex(self, carray):
         """ From an array to be plotted, inspects if it has a real AND imaginary component.

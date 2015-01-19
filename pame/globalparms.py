@@ -38,7 +38,7 @@ _header = (
     ('wn', 'Backward Traveling Amp.'),
 #    ('vw','vw_list'),
     ('kz','Wavenumber Normal Comp.'),
-    ('ang_prop','Propagation angle')
+    ('ang_prop','Propagation angle (rad)')
     )
 
 header = OrderedDict((k, v) for k, v in _header)
