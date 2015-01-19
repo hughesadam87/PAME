@@ -1,6 +1,8 @@
 """ Configuration file for various user-controlled parameters in pame application."""
 
 import matplotlib.cm as cm
+from pame import image_dir
+import os.path as op
 
 LINEWIDTH = 2
 MARKERSIZE = 3
@@ -31,3 +33,12 @@ xunit = 'Nanometers'
 SIMEXT = '.mdat'
 
 SAVEDEPTH = ['light', 'medium', 'heavy']
+
+# Complex numbers
+# ---------------
+ABOUTZERO = 0.00000001 # Error values, below which values are 0s
+
+# Image displayed when complex plot not found
+IMG_NOCOMPLEX_PATH = op.join(image_dir, 'bereal.jpg')
+
+

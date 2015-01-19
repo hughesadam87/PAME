@@ -41,6 +41,11 @@ FILETYPE = '.nk'
 XNK =  [ (d, [os.path.join(d, f) for f in files if f.endswith(FILETYPE)]) 
              for d,folders,files in os.walk(RIDIR)]
 
+# Images
+RIDIR = 'pame/images'
+IMAGES =  [ (d, [os.path.join(d, f) for f in files]) 
+             for d,folders,files in os.walk(RIDIR)]
+
 setup(
     name = NAME,
     version = '0.1',
@@ -50,8 +55,8 @@ setup(
     author_email = 'hughesadam87@gmail.com',
     packages = find_packages(), #What's this do?
     
-    data_files = RIFILES + SOPRA + XNK,
-       
+    data_files = RIFILES + SOPRA + XNK + IMAGES,
+    
     entry_points = {'console_scripts': 
                     [
                     'pame = pame.pamemain:main',

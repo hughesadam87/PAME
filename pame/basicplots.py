@@ -31,6 +31,35 @@ import globalparms
 class PlotError(Exception):
     """ """
 
+def empty_image():
+    """ Returns empty image plot """
+    from chaco.api import ImageData, GridDataSource, GridMapper, DataRange2D, ImagePlot
+    image_source = ImageData.fromfile(config.IMG_NOCOMPLEX_PATH)
+    
+    w, h = image_source.get_width(), image_source.get_height()
+    index = GridDataSource(np.arange(w), np.arange(h))
+    index_mapper = GridMapper(range=DataRange2D(low=(0, 0),
+    high=(w-1, h-1)))
+
+    image_plot = ImagePlot(
+    index=index,
+    value=image_source,
+    index_mapper=index_mapper,
+    origin='top left'
+    )
+    
+    return image_plot
+
+def _plotdata_empty(data):
+    """ Checks plotdata.arrays to see if 'x' is the only key where values are populated."""
+    is_empty = True
+    for k, v in data.arrays.items():
+        if k != 'x':
+            if len(v) > 0:
+                is_empty = False
+                break
+    return is_empty
+
 def plot_line_points(*args, **kwargs):
     """ plots a line and/or markers.  Colors/styles default to config.  
     First positional arg must be a Plot object, remaining args,kwargs passing
@@ -70,41 +99,39 @@ class OpticalView(HasTraits):
     angles = DelegatesTo('optic_model')
     x_unit = DelegatesTo('optic_model')
 
+    # Plot category (R, kz, A etc...)
+    choose = Enum(globalparms.header.keys())  # SHOULD DELEGATE OR HAVE ADAPTER     
+    chosen_name = Property(Str, depends_on='choose')
+
     # Metatraits to change plot selection depending on data type (eg R vs. kz's)
     real_or_imag = Enum('real', 'imaginary')
-    _is_complex = Bool(False)
+    
     layer_list = List() #<-- layer0, layer1, layer 2, depends on optic_stack.ns or .ds
     chosen_layer = Enum(values='layer_list')
     _model_attr = Str  #<-- Retains actual model attribute corresponding to self.choose and chosen_layer
-    _chosen_layer = Str #<-- necessary private variable to hook up logic to prevent double draws
     _is_ndlayer = Bool(False) #Current attribute has a value in each layer of material...
 
     show_legend=Bool(False)
     average = Bool(False)  #Averaging style
-    plot = Instance(Plot)
-    
-    # CHANGE TO HEADER
-    choose = Enum(globalparms.header.keys())  # SHOULD DELEGATE OR HAVE ADAPTER     
-    chosen_name = Property(Str, depends_on='choose')
-    
+    plot = Any #Plot, ToolbarPlot, ImagePlot
     data = Instance(ArrayPlotData,())
 
     traits_view = View( HGroup(
                              Item('average'),
+                             Item('show_legend', label='Legend'),                             
                              Item('choose', 
                                   label='Choose selected plot', 
                                   show_label=False, 
                                   style='simple'
-                                  ),
-                             Item('real_or_imag', 
-                                  visible_when='_is_complex==True', 
-                                  label='Component'
-                                  ),          
+                                  ),     
                              Item('chosen_layer',
                                   visible_when='_is_ndlayer==True',
                                   label='Layer'
                                   ),
-                             Item('show_legend', label='Legend'),
+                             Item('real_or_imag', 
+                              #    visible_when='_nonzero_complex==True', 
+                                  label='Component'
+                                  ),                                  
                              #Item('chosen_name', 
                                   #style='readonly',
                                   #label='Displaying'
@@ -119,39 +146,31 @@ class OpticalView(HasTraits):
                   resizable=True
                   )
 
+    def __model_attr_default(self):
+        return self.choose
+
     def _get_chosen_name(self):
         """ Long name corresponding to selected plot attribute"""
         return globalparms.header[self.choose]
     
-    @on_trait_change('choose, average, real_or_imag, show_legend')
-    def _update_shiz(self):
+    @on_trait_change('average, show_legend, real_or_imag')
+    def _update_plot(self):
         """ Change which data (R, T, A...) to view.  These all trigger
         full redraw."""
         self.update()
+                    
+    @on_trait_change('choose, chosen_layer')
+    def _update_modelattr_plot(self):
+        """ User selects choose and layer, and this will update self._model_attr"""
+        self._model_attr = self.infer_ndlayer(self.choose)              
+        self.update()
         
         
-    def _chosen_layer_changed(self, old, new):
-        """ Since update() actually setls self.chosen_layer, these together can 
-        trigger double redraws.  Therefore, when user changes layer, want update
-        to not go and change it again.  Thus, pass the explicit attribute corresponding
-        to that layer.
-        """
-        if new != self._chosen_layer:
-            layer_index = new.split()[-1] #<-- hack depends on how these are set in self.layer_list (ie _ delimited?) 
-            # Reconstruct attr like kz_L1 that would be in optical stack
-            chosen_attr = '%s_%s%s' % (self.choose, globalparms._flat_suffix, layer_index)
-            self.update(chosen_attr)
-            self._chosen_layer = new            
-        
-    def update(self, chosen_attr=None):
+    def update(self):
         """Deviates from other plots in that these plots aren't meant to update in realtime
         via set-data, so it's easier to just wipe plotdata and redraws lines, basically as a
         static plot would work.  Therefore, I don't separate update_data() and create_plots()
         and so forth.  This method literally creates the plot from scratch.
-        
-        chosen_attr special hack for working with multi-layer attributes.  Some of these
-        attributes aren't shown in self.choose(), so some methods may force a special
-        attr in.  Leave as None for self.choose.
         """
         # At this point, assumes that arrays have been redraw so overwrite data or just
     
@@ -159,21 +178,16 @@ class OpticalView(HasTraits):
 
         self.data.arrays={} #Clear DATA!!!
         self.data.set_data('x', self.lambdas)
-        linenames = [] #<-- To put into legend in sorted order
-
-        # chosen_attr defaults to self.choose
-        if not chosen_attr:
-            chosen_attr = self.infer_ndlayer(self.choose)
-            
+        linenames = [] #<-- To put into legend in sorted order         
                     
         # FROM HERE DOWN, ASSUMES SINGLE LAYER LIKE R
         if self.average:
-            avg_array = self.optic_model.compute_average(chosen_attr).astype(complex)
+            avg_array = self.optic_model.compute_average(self._model_attr).astype(complex)
             yout = self.infer_complex(avg_array)
           
             self.data.set_data('y', yout) 
             plot_line_points(self.plot, ("x", "y"), 
-                             name='%s Avg.' % (chosen_attr),
+                             name='%s Avg.' % (self._model_attr),
                              style='both',
                              line_width=4)  #<--- Thick line
 
@@ -194,7 +208,7 @@ class OpticalView(HasTraits):
                 linename = '%.2f' % angle
                 linenames.append(linename)
 
-                array = self.optical_stack[angle][chosen_attr].astype(complex)
+                array = self.optical_stack[angle][self._model_attr].astype(complex)
                 yout = self.infer_complex(array)
                                 
                 self.data.set_data(linename, yout)                    
@@ -205,11 +219,19 @@ class OpticalView(HasTraits):
                                  style = 'line'   #<-- Don't plot marker
                                  )
   
+        # XXX --- At this point intercept self.data.arrays, and if 'x' is
+        # only one with any data, then all lines are missing and could break out and set
+        # to an image plot that says NO DATA or soemthing
+        # https://media.readthedocs.org/pdf/chaco/latest/chaco.pdf
+        if _plotdata_empty(self.data):
+            self.plot = empty_image()
+            return
+
         # Update plot title, legend, tools, labels
         # ----------------------------------------
         #self.plot.title = '%s' % self.chosen_name
         self.plot.padding = 50
-        
+                
         x_axis = PlotAxis(orientation='bottom', #top, bottom, left, righ
                   title=self.x_unit,
                   mapper=self.plot.x_mapper,
@@ -273,8 +295,7 @@ class OpticalView(HasTraits):
         if attr_name in layered_keys:              
             self._is_ndlayer = True
             self.layer_list = ['Layer %s' % i for i in range(len(self.optic_model.ns))] #Use layer names instead?
-            self._chosen_layer = self.layer_list[0]
-            return attr_name + delim + '0' #Return 0th entry
+            return attr_name + delim + str(self.layer_list.index(self.chosen_layer)) #kz_L1 etc...
 
         else:
             raise PlotError('Selected plot attribute "%s" is not in optical_stack,'
@@ -285,22 +306,24 @@ class OpticalView(HasTraits):
     
     def infer_complex(self, carray):
         """ From an array to be plotted, inspects if it has a real AND imaginary component.
-        Set _is_complex variable and handles logic of self.real_or_imag.  If imaginary
+        Set _nonzero_complex variable and handles logic of self.real_or_imag.  If imaginary
         component is 0, we don't want the plot to let users select the imaginary channel.
-        """
+        """            
         #http://docs.scipy.org/doc/numpy/reference/generated/numpy.iscomplex.html        
-        if np.sum(np.iscomplex(carray)):  #<--- if all imaginary components are 0
-            self._is_complex = True
+        if np.sum(carray.imag > config.ABOUTZERO):  #<--- if all imaginary components are 0
+            _nonzero_complex = True
             
         else:
-            self._is_complex = False
-            self.real_or_imag = 'real'  #Necessary for view logic completion
-            
-        # Choose real or complex channel
+            _nonzero_complex = False                
+        # Return real or imaginary component of array
         if self.real_or_imag == 'real':
             return carray.real
         else:
-            return carray.imag
+            # User selects imaginary, but its equal to 0, don't return lines
+            if _nonzero_complex == False:
+                return []
+            else:
+                return carray.imag
         
 
 
