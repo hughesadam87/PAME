@@ -289,13 +289,13 @@ class ABCSim(HasTraits):
 
 
     basic_group=VGroup(
+        Item('inc',label='Steps'), #<-- make me nicer after wx works        
         HGroup(Item('save_as'),
                Item('status_message', style='readonly', label='Status Message'),
                ),
         HGroup(
             Item('sim_configuration', label='Configure Simulation Output'),            
             Item('restore_status', label='Restore state after simulation' ),
-            Item('inc',label='Steps'), 
             Item('start', show_label=False), 
             Item('time', label='Sim Start Time', style='readonly'), 
             Item('outname',label='Run Name'), 
