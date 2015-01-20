@@ -62,11 +62,15 @@ class CompositeMaterial(BasicMaterial):
         self.sync_trait('Material2', self.Mix, 'solventmaterial') 
         self.update_allplots()
 
-    def get_usefultraits(self):
-        return {'Material':self.mat_name,
-                'Solute':self.Material1,
-                'Solvent':self.Material2, 
-                'Vfrac':self.Vfrac}
+    def simulation_requested(self):
+        out = super(CompositeMaterial, self).simulation_requested()
+        
+        out.update({
+            'material1':self.Material1.simulation_requested(),
+            'material2':self.Material2.simulation_requested(), 
+            'mixing_style':self.MixingStyle,
+            'Vfrac':self.Vfrac})
+        return out
 
 #	def update_allplots(self): 
 #			self.allplots={'Dielectric '+str(self.Material1.mat_name):self.Material1.eplot,  'Dielectric '+str(self.Material2.mat_name):self.Material2.eplot, 
@@ -234,7 +238,6 @@ class SphericalInclusions(CompositeMaterial):
         """ Updates r_particle to 1/2 shell_width"""
         self.r_particle = 0.5 * width
 
-
     def _get_vbox(self): 
         return 8.0*(self.r_particle**3)           #Square boxes of volumes
 
@@ -249,7 +252,10 @@ class SphericalInclusions(CompositeMaterial):
         return round(value, 2)
 
     def _get_N_tot(self): 
-        return int(self.VT/self.vbox)   #Total number of available boxes is Vbox/VT
+        try:
+            return int(self.VT/self.vbox)   #Total number of available boxes is Vbox/VT
+        except ZeroDivisionError:
+            return 0.0
 
     def _get_N_occ(self): 
         try:
@@ -268,6 +274,19 @@ class SphericalInclusions(CompositeMaterial):
    
     def _set_coverage(self, coverage):
         self.N_occ=int( (coverage * self.N_tot) / 100.0	)
+
+
+    def simulation_requested(self):
+        out = super(SphericalInclusions, self).simulation_requested()
+        
+        # Probably want more, but lazy
+        out['coverage'] = self.coverage
+        out['platform'] = self.platform_type
+        out['r_particle'] = self.r_particle
+        out['r_plastform'] = self.r_platform
+
+        return out
+        
 
 class SphericalInclusions_Shell(SphericalInclusions):
     '''Used for sphere/shell nanoparticles; shell thickness is automatically determined by r_particle (aka biotin radius)'''
@@ -294,7 +313,10 @@ class SphericalInclusions_Shell(SphericalInclusions):
         super(SphericalInclusions_Shell, self).__init__(*args, **kwargs)
 
 
-    def _get_VT(self): return round ( (4.0*math.pi/3.0) * (  (self.r_platform+2.0*self.r_particle)**3 - self.r_platform**3 ) , 2)
+    def _get_VT(self): 
+        return round ( 
+            ((4.0*math.pi/3.0) * (  (self.r_platform+2.0*self.r_particle)**3 - self.r_platform**3 )) 
+                    ,2)
 
 
 class SphericalInclusions_Disk(SphericalInclusions):

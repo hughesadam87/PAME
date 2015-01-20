@@ -11,7 +11,6 @@ from composite_materials_v2 import SphericalInclusions_Disk #For inheritance
 from pame import XNK_dir
 from material_files import XNKFile
 
-
 def free_path_correction():
     ''' Size correction for the reduced mean free path.  Cited in many papers, in fact I'm writing this from,
     "Determination of Size and concentratino of Gold Nanopariticles from UV-Vis Spectra; Haiss et al;however, 
@@ -28,7 +27,6 @@ class NanoSphere(SphericalInclusions_Disk):
     CoreMaterial = Instance(IMaterial)
 
     r_core = Float(12)
-
     d_core = Property(Float,
                       depends_on='r_core')
 
@@ -74,15 +72,26 @@ class NanoSphere(SphericalInclusions_Disk):
     def _FullMie_default(self): 
         return bare_sphere()			
 
-    def _CoreMaterial_default(self):  ### Overwrite as package data eventually
+    def _CoreMaterial_default(self):  # Overwrite as package data eventually
         return XNKFile(file_path = op.join(XNK_dir, 'JC_Gold.nk'))
 
     def _MediumMaterial_default(self): 
         return self.Dispwater()#specparms=self.specparms)
+    
+    def simulation_requested(self):
+        out = super(NanoSphere, self).simulation_requested()
+        
+        # Core/medium materials and Mie scattering
+        out['material_core'] = self.CoreMaterial.simulation_requested()
+        out['material_medium'] = self.CoreMaterial.simulation_requested()       
+        out['mie_full'] = self.FullMie.simulation_requested()
+        out['r_core'] = self.r_core
+            
+        return out
 
 
-######## DRUDE MODELS BELOW MAY BE DEPRECATES	
-
+# DRUDE MODELS BELOW MAY BE DEPRECATES	
+# ------------------------------------
 class DrudeNew(ABCMetalModel, NanoSphere):
     '''Drude model with interband contributions(From paper "Advanced Drude Model")'''
     mat_name=Str('Drude Gold Nanoparticle')
@@ -142,6 +151,7 @@ class DrudeNew(ABCMetalModel, NanoSphere):
         self.earray=eeff
         self.CoreMaterial=self
 
+
 class DrudeNP_corrected(DrudeBulk, NanoSphere):
     '''Corrects plasma frequency for free electron term; from Gupta 2'''
 
@@ -151,12 +161,16 @@ class DrudeNP_corrected(DrudeBulk, NanoSphere):
     def __init__(self, *args, **kwargs):
         super(DrudeNP_corrected, self).__init__(*args, **kwargs)
 
-    ###USES VF IN NM/S SO THAT L CAN BE IN NM AS WELL SO THIS OBJECT IS DEPENDENT ON UNITS###
+    #USES VF IN NM/S SO THAT L CAN BE IN NM AS WELL SO THIS OBJECT IS DEPENDENT ON UNITS#
 
-    def _valid_metals_changed(self): self.update_data()
-    def _r_core_changed(self): self.update_data()
-    def _apply_correction_changed(self): self.update_data()	
+    def _valid_metals_changed(self): 
+        self.update_data()
+    
+    def _r_core_changed(self):
+        self.update_data()
 
+    def _apply_correction_changed(self): 
+        self.update_data()	
 
     def update_data(self):   #THIS DOES FIRE AT INSTANTIATION
         if self.valid_metals == 'gold':               #These effects may be size dependent, need to look into it.  
@@ -180,9 +194,13 @@ class DrudeNP_corrected(DrudeBulk, NanoSphere):
         self.CoreMaterial=self
 
     traits_view=View(Item('r_core'), Item('valid_metals'),
-                     Item('lam_plasma', style='readonly'), Item('lam_collis', style='readonly'),Item('mviewbutton'), Item('apply_correction', label='Free Path Correction'),
+                     Item('lam_plasma', style='readonly'),
+                     Item('lam_collis', style='readonly'),
+                     Item('mviewbutton'),
+                     Item('apply_correction', label='Free Path Correction'),
                      Item('FullMie')
                      )
+
 
 class NanoSphereShell(NanoSphere):
     '''This is a single object, but it inherits from composite material to allow for trait changes and stuff to be understood'''		
@@ -191,7 +209,7 @@ class NanoSphereShell(NanoSphere):
     from composite_plots import DoubleSview
     from material_models import Constant
 
-    ###Note: CoreMaterial refers to the core/shell composite object that is the "NanoSphere" for this instance ###
+    #Note: CoreMaterial refers to the core/shell composite object that is the "NanoSphere" for this instance #
 
 
     ShellMaterial=Instance(IMaterial)    #Composite Shell	
@@ -292,7 +310,6 @@ class NanoSphereShell(NanoSphere):
         self.sync_trait('specparms', self.CompositeMie, 'specparms')
         self.sync_trait('specparms', self.FullMie, 'specparms')      
         
-        
         # Sync materials to composite mie, including shell!
         self.sync_trait('CoreShellComposite', self.CompositeMie, 'CoreMaterial') #<-- IMPORTANT
         self.sync_trait('MediumMaterial', self.CompositeMie, 'MediumMaterial')
@@ -307,11 +324,6 @@ class NanoSphereShell(NanoSphere):
 
     def _ShellMaterial_default(self): 
         return self.SphericalInclusions_Shell()
-
-    
-
-#    def _ShellMaterial_default(self): 
-#        return self.Constant(constant_index=1.4330)  #NOTE THIS DOESN'T AUTOMATICALLY TRIGGER UDPATES!!
     
     def _CoreShellComposite_default(self): 
         """ This is the complex core/shell represented as a single particle.  This does
@@ -345,14 +357,24 @@ class NanoSphereShell(NanoSphere):
 #		''' I replaced this with doublescattview anyway'''
 #		self.allplots={'full':self.FullMie.sview, 'comp':self.CompositeMie.sview}
 
-    def get_usefultraits(self):
-        ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
-        ### Eventually, make complex materials liked mixed shell call down levels of this.  aka self.shellmaterial.get_usefultraits()
-        return {'Core Material':self.CoreMaterial.mat_name, 
-                'Shell Inclusion':self.ShellMaterial.mat_name,
-                'Medium Material':self.MediumMaterial.mat_name, 
-                'Core Diameter':self.d_core,
-                'Shell Thickness':self.shell_width}
+    def simulation_requested(self):
+        """ Method to return dictionary of traits that may be useful as output for paramters and or this and that"""
+        # Eventually, make complex materials liked mixed shell call down levels of this.  aka self.shellmaterial.simulation_requested()
+
+        # Updates earray, narray, matname
+        out = super(NanoSphereShell, self).simulation_requested()
+
+        # Shell
+        out['material_shell'] = self.ShellMaterial.simulation_requested()
+        out['shell_thickness'] = self.shell_width                
+        
+        # Mie
+        out['mie_composite'] = self.CompositeMie.simulation_requested()
+        
+        # Mix
+        out['mix'] = self.TotalMix.simulation_requested()
+        
+        return out
 
 
 if __name__ == '__main__':

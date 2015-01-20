@@ -31,6 +31,11 @@ class ICompositeView(Interface):
     '''Used mainly when simple plots are ported into more composite objects for better comparisons '''
 
 
+class IOptic(Interface):
+    """ Used for Optical stack modeling.  This is is what would distinguish reflectance from Fiber with averaging
+    from just a glass slide that has no Angle dependence.
+    """
+
 class IMixer(Interface):
     """ Interface to distinguish mixer objects """
 

@@ -5,61 +5,56 @@ import math
 from numpy import empty, array, conj, inf
 from basicplots import OpticalView
 from main_parms import SpecParms, FiberParms
-from interfaces import ISim, ILayer
+from interfaces import IOptic, ILayer
 from layer_editor import LayerEditor
 from scipy.integrate import simps
-from pandas import Panel
 import logging
 from tmm_mod import vector_com_tmm
 import numpy as np
+from pandas import Panel
 
-class ReflectanceError(Exception):
+
+class OpticalModelError(Exception):
     """ """
 
-class BasicReflectance(HasTraits):
+class DielectricSlab(HasTraits):
     '''Class used to store data in an interactive tabular environment'''
 
-    specparms=Instance(SpecParms,())
-    fiberparms=Instance(FiberParms,())
+    specparms = Instance(SpecParms,())
+    fiberparms = Instance(FiberParms,())
 
-    lambdas=DelegatesTo('specparms')	
-    Mode=DelegatesTo('fiberparms')
-    angles=DelegatesTo('fiberparms')
+    x_unit = DelegatesTo('specparms') #<-- Required by optic_view for xaxis, wish easier to acess these globally
+    lambdas = DelegatesTo('specparms')	
+    Mode = DelegatesTo('fiberparms')
+    angles = DelegatesTo('fiberparms')
     angles_radians=DelegatesTo('fiberparms')
 #   betas=DelegatesTo('fiberparms')
 
     angle_avg = DelegatesTo('fiberparms')
-    N=DelegatesTo('fiberparms')
+    N = DelegatesTo('fiberparms')
     
     layereditor=Instance(LayerEditor,())            #Need to initialize this because properties depend on this instance
     stack= DelegatesTo('layereditor')               #Variables are stored here just because they can be useful for future implementations
 
     # PRIMARY STORAGE OBJECT FROM TRANSFER MATRIX FORMALISM
     optical_stack = Instance(Panel)
-
-    Reflectance=Property(Array, depends_on='optical_stack')
-    Transmittance=Property(Array, depends_on='optical_stack')
-    Reflectance_AVG=Property(Array, depends_on='Reflectance, angle_avg')
-    Absorbance=Property(Array, depends_on='optical_stack')
-
-    opticview=Instance(OpticalView,())
-    ui=Any
+    opticview = Instance(OpticalView)
 
     nsubstrate=Property(Array, depends_on='stack')
     ns=Property(Array, depends_on='stack')    #This is a list of arrays [n1, n2, n3] one for each layer
     ds=Property(Array, depends_on='stack')    #This is a lis
 
-    sim_designator=Str('New Simulation')
+    #sim_designator=Str('New Simulation') #<--- WHY
+    implements(IOptic)
 
-    implements(ISim)
-
-    traits_view=View(
-        Item('Mode'),
-        Item('sim_designator'),
-        Item('ds', style='simple'), 
-        Item('Reflectance'),
-        resizable=True
-    )
+     # !!! Necessary?
+    #traits_view=View(
+        #Item('Mode'),
+        #Item('sim_designator'),
+        #Item('ds', style='simple'), 
+        #Item('Reflectance'),
+        #resizable=True
+    #)
 
 
      # AUTO UPDATE PLOT WITH VARIOUS TRAITS
@@ -68,18 +63,15 @@ class BasicReflectance(HasTraits):
 #    def sync_stack(self):
 #        self.update_opticview()
 
-    def update_opticview(self): #pass
-        """ Updates the plot.  Recompitcs optical parameter"""
-        # Updates reflectance
-        self.update_optical_stack()
+    def _opticview_default(self):
+        return OpticalView(optic_model = self)
 
+    def update_opticview(self): #pass
+        """ Recomputes optical parameter. Updates the plot.  """
+        # Updates Stack parameters (R, T, A, rt...)
+        self.update_optical_stack()
         # Updates plot (opticview)
-        self.opticview.update(self.lambdas, 
-                            self.angles,
-                            self.Reflectance,
-                            self.Transmittance,
-                            self.Absorbance,
-                            self.Reflectance_AVG)
+        self.opticview.update()
 
     #@cached_property
     def _get_ns(self): 
@@ -131,22 +123,23 @@ class BasicReflectance(HasTraits):
         elif self.Mode == 'Unpolarized':
             pol = 'both'
         else:
-            raise ReflectanceError('Mode must be "S-polarized", "P-polarized" or Unpolarized; crashing intentionally.')
+            raise OpticalModelError('Mode must be "S-polarized", "P-polarized" or Unpolarized; crashing intentionally.')
             sys.exit()
 
         paneldict = {}        
         for ang in self.angles:
-            ang = math.radians(ang)
+            # CALCULATION IN RADIAN MODE
+            ang_rad = math.radians(ang)
             
             if pol == 'both':
                 result_dataframe = \
-                    vector_com_tmm('s', self.ns, self.ds, ang, self.lambdas) + \
-                    vector_com_tmm('p', self.ns, self.ds, ang, self.lambdas)                  
+                    vector_com_tmm('s', self.ns, self.ds, ang_rad, self.lambdas) + \
+                    vector_com_tmm('p', self.ns, self.ds, ang_rad, self.lambdas)                  
                 result_dataframe = result_dataframe / 2.0
                 
             else:
                 result_dataframe = vector_com_tmm(
-                    pol, self.ns, self.ds, ang,self.lambdas
+                    pol, self.ns, self.ds, ang_rad, self.lambdas
                                             )
 
             paneldict[ang] = result_dataframe
@@ -154,47 +147,42 @@ class BasicReflectance(HasTraits):
         # UPDATE optical_stack!
         self.optical_stack = Panel(paneldict)
 
-
-    #@cached_property
-    def as_stack(self, attr, as_float=True):
+    def as_stack(self, attr):
         """ Return attribute from optical stack in a 2darray.  IE if have 5 angles and 
         for each angle have 100 reflectance coefficients, returns a 5x100 matrix.  Used
         for arrayplotdata compatibility with .
-
-        as_float required for compatibility with chaco nan-checker
         """
+        # Potentially going to mix complex and floats, so these will be objects.
         out_2d = np.vstack([self.optical_stack[item][attr] for item in self.optical_stack])
-        if as_float:
-            out_2d = out_2d.astype(float)
+        #print out_2d, '\nattr', out_2d.dtype
         return out_2d
     
-    def _get_Reflectance(self):  
-        return self.as_stack('R')
-    
-    #@cached_property
-    def _get_Transmittance(self): 
-        return self.as_stack('T')
-    
-    def _get_Absorbance(self): 
-        return self.as_stack('A')    
-
     def _angle_avg_default(self):
         return 'Equal'
+    
+    # Should this return Series instead??  For simulation, have to reconstruct it...
+    def compute_average(self, attr):
+        """ Returns the angle average of an optical parameter of self.optical_stack,
+        eg "R" or "A".  Averaging style delegates to FiberParms (angle_avg)
+        """
+        # DOES IT MATTER THAT AVERAGE IS COMPLEX
+        matrix = self.as_stack(attr)
 
-    #@c
-    def _get_Reflectance_AVG(self):
-        if self.angle_avg=='Gupta': 
-            return self.gupta_averaging()
-        elif self.angle_avg=='Equal': 
-            return np.average(self.Reflectance, axis=0)
+        if self.angle_avg == 'Gupta': 
+            return self.gupta_averaging(attr)
 
-    # THESE BOTH USE REFLECTANCES INNATELY NOT TRANSMITTANCE!!!!!
-    def equal_averaging(self): 
-        return average(self.Reflectance, axis=0)
+        elif self.angle_avg == 'Equal': 
+            return np.average(matrix, axis=0)            
+        
+        else:
+            raise OpticalModelError('Unknown averaging style: %s' % self.angle_avg)
+            
 
-    def gupta_averaging(self):
-        """ CITE ME!!"""
-        P_num=empty((self.angles.shape[0], self.nsubstrate.shape[0]), dtype=float)
+    def gupta_averaging(self, matrix):
+        """ CITE ME!!
+        matrix is the return of as_stack(attr) where attr can be Reflectance, Transmittance 
+        etc..."""
+        P_num=empty((self.angles.shape[0], self.nsubstrate.shape[0]), dtype=float)  #<-- COMPLEX!? RN IS NOW COMPLEX
         P_den=empty((self.angles.shape[0], self.nsubstrate.shape[0]), dtype=float)
         
         sa = np.sin(self.angles_radians)
@@ -202,19 +190,27 @@ class BasicReflectance(HasTraits):
         
         for i in range(len(self.angles)):
             f1=self.nsubstrate**2 * sa[i] * ca[i]       #Technically nsubstrate is complex so this is complaining
-            Rn=self.Reflectance[i,:]**self.N[i]
+            Rn=self.matrix[i,:]**self.N[i]
             logging.info('N, rn', self.N[i], Rn)
 
 #			f2=1.0 - (self.nsubstrate**2 * self.ca[i]**2)     
 #			f3=f1/(f2**2) 	
 
-            P_num[i,:]=(self.Reflectance[i,:]**Rn) * f1  #NOTATION FROM GUPTA LED  I THINK ITS NUMERICALLY UNSTABLE BECAUSE R<1 and N is huge so equals 0
+            P_num[i,:]=(self.matrix[i,:]**Rn) * f1  #NOTATION FROM GUPTA LED  I THINK ITS NUMERICALLY UNSTABLE BECAUSE R<1 and N is huge so equals 0
             P_den[i,:]=f1	
 
         tempnum =simps(P_num, axis=0, even='last')
         tempden =simps(P_den, axis=0, even='last')
         return tempnum/tempden
+    
+    def simulation_requested(self, update=False):
+        """ Returns optical stack and any other useful traits of dielectric slab for 
+        simulation. Update used to skip updating, since simulations often call this twice.
+        """
+        if update:
+            self.update_optical_stack()
+        return {'optical_stack':self.optical_stack.copy(deep=True)}
 
 
 if __name__ == '__main__':
-    BasicReflectance().configure_traits()
+    DielectricSlab().configure_traits()

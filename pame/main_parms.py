@@ -18,8 +18,6 @@ class SpecParms(HasTraits):
 
     lambdas=Array
 
-    ######THESE PROPERTY DEFINITIONS ARE CAUSING AN UPDATE ISSUE, MIXING PROPERTY AND LISTENERS...NEED AN "UPDATE" METHOD TO JUST SYNC THESE...###
-
     x_samples=Property(Int, depends_on=['lambdas'])
     xstart=Property(Float, depends_on=['lambdas'])
     xend=Property(Float, depends_on=['lambdas'])
@@ -30,7 +28,7 @@ class SpecParms(HasTraits):
         VGroup(
             HGroup(  Item(name = 'xstart'),  
                      Item(name = 'xend'),
-                     Item(name='x_samples'),
+                     Item(name ='x_samples'),
                      Item(name = 'x_increment', style='readonly')
                      ),
             
@@ -40,10 +38,16 @@ class SpecParms(HasTraits):
              )
         )
 
-    def get_usefultraits(self):
+    def simulation_requested(self):
         ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
         ### trait_get is shortcut to return dic if the keys are adequate descriptors for output
-        return self.trait_get('x_start', 'x_end', 'x_increment', 'x_samples')
+        return {'lambdas':self.lambdas, 
+                'xstart':self.xstart,
+                'xend':self.xend,
+                'x_increment':self.x_increment,
+                'x_samples':self.x_samples
+                }
+
 
     def _conv_default(self): 
         return SpectralConverter(input_array=self.lambdas, input_units='Nanometers')
@@ -98,7 +102,7 @@ class SpecParms(HasTraits):
 
 
 class FiberParms(HasTraits):
-    Config=Enum('Reflection', 'Transmission')
+    Config=Enum('Axial', 'Transversal')
 
     # Don't change these or BasicReflectance.update_R will get mad
     Mode=Enum('S-polarized', 'P-polarized', 'Unpolarized')
@@ -123,7 +127,7 @@ class FiberParms(HasTraits):
     N=Property(Array, depends_on=['Config', 'angles', 'Lregion', 'Dcore'])  #NUMBER OF REFLECTIONS
 
     
-    def get_usefultraits(self):
+    def simulation_requested(self):
         ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
         traitdic={'Optical Configuration':self.Config, 
                   'Mode':self.Mode, 
@@ -134,7 +138,7 @@ class FiberParms(HasTraits):
                   'Angle Max':self.angle_stop,
                   'Angle Inc.':self.angle_inc}
 
-        if self.Config=='Transmission':
+        if self.Config=='Transversal':
             l=self.Lregion
         else:
             l='N/A'
@@ -147,14 +151,17 @@ class FiberParms(HasTraits):
 
     SharedGroup =Group(
         HGroup(
-            Item('Config'), Item('Mode')
-            ),
-        HGroup(
+            Item('Config'), 
+            Item('Mode'), 
+            Item('angle_avg', label='Angle Averaging'),            
             Item(name='NA', label='Numerical Aperature'), 
-            Item('critical_angle', label='Critical Angle')
+            Item('critical_angle', label='Critical Angle')            
             ),
+#        HGroup(
+#            Item(name='NA', label='Numerical Aperature'), 
+#            Item('critical_angle', label='Critical Angle')
+#            ),
         HGroup(
-            Item('angle_avg', label='Averaging'),
             Item('angle_start', label='Angle Start'), 
             Item('angle_stop', label='Angle End'), 
             Item('angle_inc', label='Angle Increment'),
@@ -169,7 +176,7 @@ class FiberParms(HasTraits):
 
     TransGroup=Group(
         Item(name='Lregion', label='Length of Exposed Region (um)',
-             enabled_when='Config==Transmission'), 
+             enabled_when='Config==Transversal'), 
         Item('N', style='readonly'), 
         Item('angles', style='readonly'),
     )
@@ -185,7 +192,7 @@ class FiberParms(HasTraits):
         return 'S-polarized'
 
     def _Config_default(self): 
-        return 'Reflection'
+        return 'Axial'
 
     #@cached_property
     def _get_Rcore(self): return (1000.0 * self.Dcore)/2.0
@@ -195,10 +202,10 @@ class FiberParms(HasTraits):
         """ Number of reflectations for each mode in the fiber if the ray can bounce indefinitely """
         N=empty( (len(self.angles)) )
 
-        if self.Config == 'Reflection':
+        if self.Config == 'Axial':
             return N.fill(1) #One reflection per mode
         
-        elif self.Config == 'Transmission':
+        elif self.Config == 'Transversal':
             return np.tan(self.angles_radians * (self.Lregion / self.Dcore))
 
 
@@ -217,11 +224,11 @@ class FiberParms(HasTraits):
     def _get_angles(self):
         angles=linspace(self.angle_start, self.angle_stop, num=self.angle_samples)
 
-        if self.Config=='Reflection': 
+        if self.Config=='Axial': 
             return angles
         
         # betas?
-        elif self.Config == 'Transmission':
+        elif self.Config == 'Transversal':
             betas=abs(90.0-angles)
             return betas
 

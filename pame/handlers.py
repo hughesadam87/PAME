@@ -1,3 +1,7 @@
+""" Custom popup menus for prompting user on selection/saving eg 
+Messages like 'Are you sure you want to overwrite file?'
+"""
+
 import os
 from traits.api import HasTraits, File, Str, Property
 from traitsui.api import View, Item, OKCancelButtons
@@ -31,14 +35,16 @@ class FileOverwriteDialog(BasicDialog):
 
      traits_view = View(
           Item('message', style='readonly', label='Warning', show_label=True),
-          buttons=OKCancelButtons, kind='popup', title='File already exists.',
+          buttons=OKCancelButtons,
+          kind='popup',
+          title='File already exists.',
      )
      
      def _get__shortname(self):
           return os.path.split(self.filename)[1]
 
      def _message_default(self):
-          return '"%s" file will be overwritten, are you sure you want to continue?'%self._shortname
+          return '"%s" will be overwritten, are you sure you want to continue?' % self._shortname
 
 
 

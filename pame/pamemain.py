@@ -1,36 +1,41 @@
 import copy, pickle, os
 import logging
+import os.path as op
 
-### Enthought imports
+
+# Enthought imports
 from traits.api import *
 from traitsui.api import *
 from enable.component_editor import ComponentEditor
-from sim_traits import BasicReflectance
+
+# Local imports
+import globalparms
+from opticalstack import DielectricSlab
 from basicplots import OpticalView
 from layer_editor import LayerEditor
 from main_parms import FiberParms, SpecParms
-from interfaces import ISim, ILayer, IMaterial, IStorage
+from interfaces import IOptic, ILayer, IMaterial, IStorage, ISim
 from fiberview import FiberView
 from modeltree_v2 import Model
-from gensim import LayerVfrac, GeneralSim
+from gensim import LayerSimulation, ABCSim, SimConfigure
 from handlers import WarningDialog
+import config
 
-
-### Used to present a summary of the state of the program.   ###
-###This may be deprecated or unuseful and is not all that important I think ###
+# Used to present a summary of the state of the program.   #
+#This may be deprecated or unuseful and is not all that important I think #
 
 # Reflectance/Mode summary (don't think its used; think its deprecated)
 state_editor =\
     TableEditor(
         auto_size=False,  #Set in View
         columns=[
-            # These are all sim_traits.BasicReflectance traits
+            # These are all sim_traits.DielectricSlab traits
             ExpressionColumn(expression='object.Mode', label='Fiber Mode'),
             ExpressionColumn(expression='object.angles', label='Angle'),
             ExpressionColumn(expression='object.stack', label='Stack'),
             ExpressionColumn(expression='object.ds', label='DS'),
             ExpressionColumn(expression='object.angle_avg', label='Averaging Style'),            
-            ObjectColumn(name='sim_designator', label='State Designator'), #What ist his?
+#            ObjectColumn(name='sim_designator', label='State Designator'), #What ist his?
             ],
         deletable=False,
         selected='current_state',
@@ -65,8 +70,8 @@ class GlobalScene(HasTraits):
 
     fview=Instance(FiberView,())     #May want to pass specparms and fiberparms to this later if it requries them
 
-    current_state = Instance(ISim)
-    opticstate = Instance(ISim)
+    current_state = Instance(IOptic)
+    opticstate = Instance(IOptic)
     opticview = DelegatesTo('opticstate')
 
     save=Button
@@ -84,18 +89,21 @@ class GlobalScene(HasTraits):
         pickle.dump(self.simulations , open( "test.p", "wb" ) )
         
     def _refresh_fired(self):
-        print 'refresh fired'
         self.opticstate.update_opticview()
         
+    # Where should this point?  WHAT IF DOESN"T EXIST
     def _outdir_default(self):
-        return os.path.join( os.path.abspath('.'),'Simulations')
+        if op.exists(config.SIMFOLDER):
+            return config.SIMFOLDER
+        else:
+            return op.abspath('.')
 
-    ####Simulation Stuff ####
-
+    ##Simulation Stuff ##
     simulations=List(ISim)  
     selected_sim=Instance(ISim)
+    sim_configuration = Instance(SimConfigure,())   #<--- Want all sims to share this, right?
 
-    ###Editors####
+    #Editors##
     layereditor=Instance(LayerEditor)
     stack= DelegatesTo('layereditor')               #Variables are stored here just because they can be useful for future implementations
     selected_layer = DelegatesTo('layereditor')
@@ -103,25 +111,25 @@ class GlobalScene(HasTraits):
     selected_d=DelegatesTo('layereditor')
 #    angle_avg=DelegatesTo('current_state')
 
-    ####Stack Actions####
+    ##Stack Actions##
     showreflectance=Action(name="Interface View", action="compute_optics")  #PHASE THIS OUT LATER WITH UNIFIED VIEW FRAMEWORK
     appendsim=Action(name="Add Simulation", action="new_sim")
     savesim=Action(name="Save Selected Simulation", action="save_sim")  #action gets underscore
     savesim_all=Action(name="Save All Simulations", action="save_allsims")  #action gets underscore
     
 
-    ### Make Menubar
+    # Make Menubar
     mainmenu=MenuBar(
         Menu(showreflectance, name='Layer Options'), 	
         Menu(appendsim, savesim, savesim_all, name='Simulation Options'), 	       
     )                      
 
     fibergroup=Group(
-        # Angle_avg depends on the BasicReflectance
+        # Angle_avg depends on the DielectricSlab
 #        Item('angle_avg', label='Angle Averaging Method',show_label=False),
         Item('fiberparms', editor=InstanceEditor(), style='custom', show_label=False),
         Item('fview', style='custom', show_label=False),
-        label='Fiber'
+        label=globalparms.strataname
     )
 
     layergroup=Group(
@@ -142,7 +150,7 @@ class GlobalScene(HasTraits):
     summarygroup=Group(
         Item('simulations', editor=sims_editor, show_label=False),
 
-        ### Can't remove this or program trips, so I just hide it permanently
+        # Can't remove this or program trips, so I just hide it permanently
         Item('opticstate', 
              editor=state_editor, 
              show_label=False, 
@@ -181,7 +189,8 @@ class GlobalScene(HasTraits):
             ),
            )
 
-    Mainview = View(Include('fullgroup'), 
+    Mainview = View(Item('stack', editor=ValueEditor()), 
+                    Include('fullgroup'), 
              #       Item('save'), Item('load'),  #FOR SAVING ENTIRE STATE OF SIMULATION
                     menubar=mainmenu,
                     resizable=True, 
@@ -194,37 +203,37 @@ class GlobalScene(HasTraits):
         self.sync_trait('specparms', self.layereditor, 'specparms')
         self.sync_trait('modeltree', self.layereditor, 'modeltree')
 
-        ### NEED TO RENAME AND REWRITE THIS... ITS NOT "opticstate"
-        self.opticstate=BasicReflectance()
+        # NEED TO RENAME AND REWRITE THIS... ITS NOT "opticstate"
+        self.opticstate=DielectricSlab()
         self.sync_trait('specparms', self.opticstate, 'specparms')
         self.sync_trait('fiberparms', self.opticstate, 'fiberparms')
         self.sync_trait('layereditor', self.opticstate, 'layereditor')
 
-      #self.simulations.append(LayerVfracEpsilon(base_app=self))   #Pass self to a simulation environment
-        self.simulations.append(LayerVfrac(base_app=self,
-                                           outname='Layersim0'))   #Pass self to a simulation environment
+      #self.simulations.append(LayerSimulationEpsilon(base_app=self))   #Pass self to a simulation environment
+        self.simulations.append(LayerSimulation(base_app=self,
+                                                outname=config.SIMPREFIX+'0')
+                                )   #Pass self to a simulation environment
         
-    ### Store copy of current simulation 
+    # Store copy of current simulation 
     def new_sim(self): 
-        self.simulations.append(LayerVfrac(base_app=self, 
-                                           outname='Layersim'+str(len(self.simulations))))
-    
+        self.simulations.append(LayerSimulation(base_app=self,  #<--- LayerSimulation.  Base_app = self.copy?
+                                           outname=config.SIMPREFIX+str(len(self.simulations))))
     def save_sim(self): 
-        self.selected_sim.output_simulation(self.outdir)
+        self.selected_sim.output_simulation(self.outdir) #<--- NEED TO CALL TO_JSON NOT OUTPUT_SIMULATION
     
     def save_allsims(self):
         ''' Saves all stored simulations in the sims_editor.  Checks for duplicate names and non-run/incomplete
         simulations and prompts user accordingly.'''
 
-        ### Check to make sure all simulations have completed data
+        # Check to make sure all simulations have completed data
         unrun=[s.outname for s in self.simulations if s._completed == False]   
         nrunstring=' '.join(unrun)
         if len(unrun) > 0:
             message('Cannot save simulations:  %s. Results not found.'%nrunstring, title='Warning')
-            ### Can't save either way, so force exit instead of user being able to continue
+            # Can't save either way, so force exit instead of user being able to continue
             return               
         
-        ### Check for duplicate runnames        
+        # Check for duplicate runnames        
         rnames=[s.outname for s in self.simulations]        
         non_uniq=[r for r in rnames if rnames.count(r) > 1]
         if len(non_uniq) > 0:
@@ -234,27 +243,25 @@ class GlobalScene(HasTraits):
             message('Duplicate simulation outfile names found: %s.'%nustring, title='Warning')
             return        
         
-        ### Output completed simulations
+        # Output completed simulations
         outsims=[s for s in self.simulations if s not in unrun]
         for s in outsims:
             s.output_simulation(self.outdir, confirmwindow=False)
         message('%s simulation(s) saved to directory: "%s"'%(len(outsims),
-                  os.path.split(self.outdir)[1]), title='Success')
+                  op.split(self.outdir)[1]), title='Success')
 
     # Show Reflectance --------
     def compute_optics(self):
         """ Refresh and popup optics plot """
-    #	self.opticstate.update_R()   #FOR SOME REASON EVEN THOUGH I UPDATE THE STACK WHEN LAYERS ARE CHANGED, IT ONLY UNDERSTANDS WHEN LAYERS ARE REMOVED ORA DDED
-        print 'updating reflectance'
         self.opticstate.update_opticview()
-        self.opticstate.opticview.edit_traits()#view='radio_view')
-    #	pass
+        self.opticstate.opticview.edit_traits()
 
 def main():
     # HACK FOR DEBUG UNTIL DATA CAN BE IMPORTED CORRECTLY
     # os.chdir('/home/glue/Desktop/fibersim')    
     
     popup=GlobalScene()
+    popup.opticstate.update_opticview()
     popup.configure_traits()    
     
     

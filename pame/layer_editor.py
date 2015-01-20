@@ -67,8 +67,13 @@ class LayerEditor(HasTraits):
         )
 
 
-    def get_usefultraits(self):
-        return {'Stack':[layer.get_usefultraits() for layer in stack]}
+    def simulation_requested(self):
+        """ Nested dictionary keyed by layer number:
+        {layer0 : {layer_name, layer_d, ...}, layer1 : {layer_name, layer_d, ...}}
+        """
+        return dict(('layer_%s' % idx, layer.simulation_requested()) 
+                    for idx, layer in enumerate(self.stack))
+        
 
     ####BUTTONS MOSTLY FOR TESTING, IF YOU COULD HAVE A ROW FACTORY THAT NEW HOW TO ADD AND ASSIGN SPEC PARMS VARIABLE (AKA A ROW FACTOR THAT WAS AN OBJECT FUNCTION, THIS BE BETTER###
 
