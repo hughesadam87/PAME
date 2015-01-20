@@ -1,5 +1,7 @@
 import copy, pickle, os
 import logging
+import os.path as op
+
 
 # Enthought imports
 from traits.api import *
@@ -17,7 +19,7 @@ from fiberview import FiberView
 from modeltree_v2 import Model
 from gensim import LayerSimulation, ABCSim, SimConfigure
 from handlers import WarningDialog
-
+import config
 
 # Used to present a summary of the state of the program.   #
 #This may be deprecated or unuseful and is not all that important I think #
@@ -89,11 +91,14 @@ class GlobalScene(HasTraits):
     def _refresh_fired(self):
         self.opticstate.update_opticview()
         
+    # Where should this point?  WHAT IF DOESN"T EXIST
     def _outdir_default(self):
-        return os.path.join( os.path.abspath('.'),'Simulations')
+        if op.exists(config.SIMFOLDER):
+            return config.SIMFOLDER
+        else:
+            return op.abspath('.')
 
     ##Simulation Stuff ##
-
     simulations=List(ISim)  
     selected_sim=Instance(ISim)
     sim_configuration = Instance(SimConfigure,())   #<--- Want all sims to share this, right?
@@ -206,13 +211,13 @@ class GlobalScene(HasTraits):
 
       #self.simulations.append(LayerSimulationEpsilon(base_app=self))   #Pass self to a simulation environment
         self.simulations.append(LayerSimulation(base_app=self,
-                                                outname='Layersim0')
+                                                outname=config.SIMPREFIX+'0')
                                 )   #Pass self to a simulation environment
         
     # Store copy of current simulation 
     def new_sim(self): 
         self.simulations.append(LayerSimulation(base_app=self,  #<--- LayerSimulation.  Base_app = self.copy?
-                                           outname='Layersim'+str(len(self.simulations))))
+                                           outname=config.SIMPREFIX+str(len(self.simulations))))
     def save_sim(self): 
         self.selected_sim.output_simulation(self.outdir) #<--- NEED TO CALL TO_JSON NOT OUTPUT_SIMULATION
     
@@ -243,7 +248,7 @@ class GlobalScene(HasTraits):
         for s in outsims:
             s.output_simulation(self.outdir, confirmwindow=False)
         message('%s simulation(s) saved to directory: "%s"'%(len(outsims),
-                  os.path.split(self.outdir)[1]), title='Success')
+                  op.split(self.outdir)[1]), title='Success')
 
     # Show Reflectance --------
     def compute_optics(self):

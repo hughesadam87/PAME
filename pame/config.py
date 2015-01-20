@@ -28,15 +28,18 @@ xunit = 'Nanometers'
 
 # Simulation
 # ----------
+SIMFOLDER = op.join( op.abspath('.'),'Simulations') #Default save folder for sims (smart to have this way?)
+SIMPREFIX = 'Layersim'
 
 # File extension
-SIMEXT = '.mdat'
+SIMEXT = '.mpickle'
 
 SAVEDEPTH = ['light', 'medium', 'heavy']
 
 # Complex numbers
 # ---------------
-ABOUTZERO = 0.00000001 # Error values, below which values are 0s
+ABOUTZERO = 1e-12 # Error values, below which values are 0s 
+# what is min floating poitn precision
 
 # Image displayed when complex plot not found
 IMG_NOCOMPLEX_PATH = op.join(image_dir, 'bereal.jpg')

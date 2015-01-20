@@ -60,7 +60,7 @@ class SimConfigure(HasTraits):
         HGroup(
             Item('choose_optics', style='custom', label='Optical Parameters'),
             Item('averaging', style='custom', label='Optical Averaging'),
-            Item('store_optical_stack', label='Save deepcopy of full optical stack')
+            Item('store_optical_stack', label='Save deepcopy of full optical stack'),
         ),
 
           Item('choose_layers', style='custom'),
@@ -126,10 +126,12 @@ class ABCSim(HasTraits):
     outname = Str('Testsim') #Output name, can be overwritten when output called
     outdir = DelegatesTo('base_app')
 
+    save_as = Enum(config.SIMEXT, '.json')
+
     implements(ISim)
     inc=Range(low=1,high=100,value=1) # Need as range for now I think
 
-    notes=Str('<NOTES GO HERE>')
+    notes=Str('<ADD NOTES ON SIMULATION>')
 
     key_title=Str('step')  #This is used to give each increment a name rather than 1,2,3
 
@@ -267,63 +269,12 @@ class ABCSim(HasTraits):
     def runsim(self): 
         """ ABC METHOD """
         pass
+    
+    def save(self):
+        """ ABC METHOD """
+        pass
 
-    def save_json(self, outpath=None, confirmwindow=True):
-        """ Output simulation into json dictionary, where four primary
-        storage dictionaries (self.allstorage) are written to 
-        numpy-aware json.  Errors and confirmation messages in form of
-        popups are triggered.
-
-        outpath: 
-            Full path to save json object.
-            
-        confirmwindow:
-            Confirms simulation saved with popup window.
-        """
-                
-        if outpath is None:
-            outpath = op.join(self.outdir, self.outname)
-            
-        # Make sure .json 
-        ext = op.splitext(outpath)[-1]
-        if ext:
-            if ext != '.json':
-                raise SimError('Simulation save path must be .json file, got ' % outpath)
-        # No file path
-        else:
-            outpath = outpath + '.json'
-        
-
-        # Check for file overwriting    
-        if op.exists(outpath):
-            test = FileOverwriteDialog(filename=outpath)
-            ui = test.edit_traits(kind='modal')
-            # break out and don't save#
-            if ui.result==False:
-                return
-
-        # Save
-        if not self._completed:
-            message('Simulation is incomplete or stored incorrectly.'
-                    ' See self._completed to debug', 
-                    title='Warning')
-            return 
-        
-        customjson.dump(self.allstorage, outpath)
-
-        if confirmwindow == True:
-            message('Simulation data saved to file %s' % outpath, title='Success')
-
-
-    # SHOULD HAVE SAME CONFIRMWINDOW AND STUFF AS SAVE_JSON
-    def save_pickle(self, outfilename):
-        """ Saves data directly to a pickled instance of SimParser. """
-        from simparser import LayerSimParser
-        obj = LayerSimParser(**self.allstorage)
-        obj.save(outfilename)
-        print 'saved', outfilename
-
-
+    
     def _start_fired(self): 
         # Check sim traits one more time in case overlooked some trait that should call 
         # check_sim_ready()
@@ -338,7 +289,9 @@ class ABCSim(HasTraits):
 
 
     basic_group=VGroup(
-        Item('status_message', style='readonly', label='Status Message'),
+        HGroup(Item('save_as'),
+               Item('status_message', style='readonly', label='Status Message'),
+               ),
         HGroup(
             Item('sim_configuration', label='Configure Simulation Output'),            
             Item('restore_status', label='Restore state after simulation' ),
@@ -363,7 +316,7 @@ class LayerSimulation(ABCSim):
     selected_layer=DelegatesTo('base_app')
 
     def _outname_default(self): 
-        return 'Layersim'
+        return config.SIMPREFIX
 
     def _selected_material_changed(self):
         self.check_sim_ready()
@@ -498,13 +451,79 @@ class LayerSimulation(ABCSim):
         self.primary = primarydict
         self.results = resultsdict
         self.static = staticdict
+        
 
         # Prompt user to save?
         popup = BasicDialog(message='Simulation complete.  Would you like to save now?')
         ui = popup.edit_traits(kind='modal')
         if ui.result == True:
-#            self.save_json()
-            self.save_pickle('/home/glue/Desktop/fibersim/Simulations/Layersim0.mpickle')
+            self.save(confirmwindow=True)
+
+
+    def save(self, outpath=None, confirmwindow=True):
+        """ Output simulation into json dictionary, where four primary
+        storage dictionaries (self.allstorage) are written to 
+        numpy-aware json.  Errors and confirmation messages in form of
+        popups are triggered.
+
+        outpath: 
+            Absolute save path.
+            
+        confirmwindow:
+            Confirms simulation saved with popup window.
+        """
+                            
+        outpath = self._validate_extension(outpath, self.save_as)
+
+        # Check for file overwriting    
+        if op.exists(outpath):
+            test = FileOverwriteDialog(filename=outpath)
+            ui = test.edit_traits(kind='modal')
+            # break out and don't save#
+            if ui.result==False:
+                return
+
+        # Save
+        if not self._completed:
+            message('Simulation is incomplete or stored incorrectly.'
+                    ' See self._completed to debug', 
+                    title='Warning')
+            return 
+        
+        # Save json data
+        if self.save_as == '.json':
+            customjson.dump(self.allstorage, outpath)
+
+        # Save .mpickle by opening simparser instance
+        elif self.save_as == config.SIMEXT:
+            from simparser import LayerSimParser
+            obj = LayerSimParser(**self.allstorage)
+            obj.save(outpath)
+            
+        else:
+            raise SimError("Don't know how to save simulation of type %s!" % self.save_as)
+            
+        if confirmwindow == True:
+            message('Simulation data saved to file %s' % outpath, title='Success')      
+
+
+    def _validate_extension(self, outpath=None, extension=None):
+        """ Validate a filepath extension.  If path has no file extension, 
+        will add it.  If has a different one, will raise error.
+        """
+        if outpath is None:
+            outpath = op.join(self.outdir, self.outname)
+            
+        ext = op.splitext(outpath)[-1]
+        if ext:
+            if ext != extension:
+                raise SimError('Simulation save path (%s) must have file extension %s' %
+                               (outpath, extension) )
+        # No file path
+        else:
+            outpath = outpath + extension
+        return outpath
+
 
     ############
     # This view is for interactive plotting simulations

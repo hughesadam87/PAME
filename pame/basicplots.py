@@ -310,6 +310,7 @@ class OpticalView(HasTraits):
         component is 0, we don't want the plot to let users select the imaginary channel.
         """            
         #http://docs.scipy.org/doc/numpy/reference/generated/numpy.iscomplex.html        
+        print 'hi', np.sum(carray.imag > config.ABOUTZERO)
         if np.sum(carray.imag > config.ABOUTZERO):  #<--- if all imaginary components are 0
             _nonzero_complex = True
             
