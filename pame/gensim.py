@@ -416,14 +416,40 @@ class LayerSimulation(ABCSim):
             # Update Optical Stack
             b_app.opticstate.update_optical_stack() 
             
+            # Flatten sim attributes.  For example, if attrs selected for Sim are R, A, kz
+            # kz actually has value in each layer so R, A, kz_1, kz_2, kz_3 is what needs
+            # to be iterated over.
+            flat_attributes = []
+           
+            # How many layers in optical stack
+            layer_indicies = range(len(b_app.opticstate.ns)) #0,1,2,3,4 for 5 layers etc...            
+
+            for attr in sconfig.choose_optics:
+                if attr in b_app.opticstate.optical_stack.minor_axis:
+                    flat_attributes.append(attr)
+                else:
+                    # http://stackoverflow.com/questions/28031354/match-the-pattern-at-the-end-of-a-string
+                    delim = '_%s' % globalparms._flat_suffix
+                    
+                    # ['kz', 'vn', 'ang_prop']
+                    setkeys = set(name.split(delim)[0] for name in 
+                                  b_app.opticstate.optical_stack.minor_axis if delim in name)    
+                    if attr in setkeys:
+                        for idx in layer_indicies:
+                            flat_attributes.append(attr + delim + str(idx)) #kz_L1 etc...)                   
+                    else:
+                        raise SimError('Cannot simulate over optical stack attr "%s" '
+                                       ' not found in optical stack.' % attr)
+            
+            
             # Take parameters from optical stack, put in toplevel via sconfig.choose_optics
             if sconfig.averaging in ['Average','Both']:
-                for optical_attr in sconfig.choose_optics:
+                for optical_attr in flat_attributes:
                     primary_increment['%s_%s' % (optical_attr, 'avg')] = \
                         b_app.opticstate.compute_average(optical_attr) #<-- IS NUMPY ARRAY, object type
                 
             if sconfig.averaging in ['Not Averaged', 'Both']:
-                for optical_attr in sconfig.choose_optics:
+                for optical_attr in flat_attributes:
                     # ITERATE OVER ANGLES! SAVE EACH ANGLE
                     for angle in b_app.opticstate.angles:
                         primary_increment['%s_%s' % (optical_attr, angle)] = \
@@ -431,7 +457,7 @@ class LayerSimulation(ABCSim):
 
             # Store full Optical Stack
             if sconfig.store_optical_stack:
-                results_increment[globalparms.optresponse] = b_app.opticalstack.simulation_requested(update=False)
+                results_increment[globalparms.optresponse] = b_app.opticstate.optical_stack.simulation_requested(update=False)
                 
             # Save layer/material traits.  If None selected, it just skips
             if sconfig.choose_layers == 'Selected Layer':

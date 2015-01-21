@@ -146,6 +146,7 @@ class DielectricSlab(HasTraits):
 
         # UPDATE optical_stack!
         self.optical_stack = Panel(paneldict)
+              
 
     def as_stack(self, attr):
         """ Return attribute from optical stack in a 2darray.  IE if have 5 angles and 

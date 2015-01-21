@@ -163,8 +163,7 @@ class OpticalView(HasTraits):
     def _update_modelattr_plot(self):
         """ User selects choose and layer, and this will update self._model_attr"""
         self._model_attr = self.infer_ndlayer(self.choose)              
-        self.update()
-        
+        self.update()        
         
     def update(self):
         """Deviates from other plots in that these plots aren't meant to update in realtime
