@@ -55,7 +55,7 @@ class LayerSimParser(HasTraits):
     inputs = Dict()
 
     primarypanel = Instance(Panel)
-    backend = Str
+    backend = Enum(['skspec', 'pandas'])
     
     @classmethod
     def load_json(cls, path_or_fileobj):
@@ -77,6 +77,11 @@ class LayerSimParser(HasTraits):
         newobj.load(path_or_fileobj) 
         return newobj
         
+            
+    def summary(self, style='short'):
+        """ """
+        if style not in ['short', 'full']:
+            raise AttributeError('Style must be "short" or "full", got %s' % style)
             
     def primary_panel(self, minor_axis=None, prefix=None):
         """ Returns primary as a Panel if possible, if fails, raises warning
@@ -104,7 +109,7 @@ class LayerSimParser(HasTraits):
                                      axis=0, #items axis
                                      copy=False) #Save memory
 
-        if self.backend == 'skespec':
+        if self.backend == 'skspec':
             raise NotImplementedError('scikit spec nto builtin')
 
         # REORIENTATION OF MINOR AXIS LABELS
@@ -115,7 +120,7 @@ class LayerSimParser(HasTraits):
                 # end of day, want basically {'step_1':'vfrac_0.5, 'step_2', 'vfrac_0.10' ...
                 if prefix:
                     # No delimiter (ie %s_%s) because prefix can set that eg prefix = layerd_ or layerd=
-                    newaxis = dict((k,'%s%s' % (prefix, v)) for k, v in newaxis.items())
+                    newaxis = dict((k,'%s%.4f' % (prefix, v)) for k, v in newaxis.items())
             elif isinstance(minor_axis, int):
                 pass
             else:

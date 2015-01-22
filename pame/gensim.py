@@ -17,7 +17,6 @@ from traits.trait_base import xsetattr, xgetattr
 #3rd party imports
 from pandas import concat, Panel
 from numpy import array, empty
-import matplotlib.pyplot as plt
 
 # Local imports
 from handlers import FileOverwriteDialog, BasicDialog
@@ -47,7 +46,8 @@ class SimConfigure(HasTraits):
     averaging = Enum('Average', 'Not Averaged', 'Both')
         
     #https://github.com/enthought/traitsui/blob/master/examples/demo/Standard_Editors/CheckListEditor_simple_demo.py
-    choose_optics = List(editor=CheckListEditor(values = globalparms.header.keys(), cols=3))
+    choose_optics = List(editor=CheckListEditor(values = globalparms.header.keys(),  
+                                                cols=3), value=globalparms.selected)
 
     choose_layers = Enum('Selected Layer', 'All Layers', 'None')
     additional = Str()
@@ -452,8 +452,8 @@ class LayerSimulation(ABCSim):
                 for optical_attr in flat_attributes:
                     # ITERATE OVER ANGLES! SAVE EACH ANGLE
                     for angle in b_app.opticstate.angles:
-                        primary_increment['%s_%s' % (optical_attr, angle)] = \
-                                    b_app.opticstate.optical_stack[optical_attr]  #<-- Save as what, numpy/pandas?        
+                        primary_increment['%s_%.2f' % (optical_attr, angle)] = \
+                                    b_app.opticstate.optical_stack[angle][optical_attr]  #<-- Save as what, numpy/pandas?        
 
             # Store full Optical Stack
             if sconfig.store_optical_stack:

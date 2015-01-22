@@ -21,6 +21,10 @@ from gensim import LayerSimulation, ABCSim, SimConfigure
 from handlers import WarningDialog
 import config
 
+#import os 
+#os.environ['QT_API'] = 'pyqt'
+
+
 # Used to present a summary of the state of the program.   #
 #This may be deprecated or unuseful and is not all that important I think #
 

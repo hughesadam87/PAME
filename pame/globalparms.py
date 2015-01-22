@@ -42,6 +42,7 @@ _header = (
     )
 
 header = OrderedDict((k, v) for k, v in _header)
+selected = ['R','T','A'] #<--- Default selected traits for primary view
 
 # Names of Categories used in View and in Simulation output
 strataname = 'Fiber'
