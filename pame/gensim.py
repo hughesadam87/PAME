@@ -69,6 +69,15 @@ class SimConfigure(HasTraits):
         buttons = [ 'Undo', 'OK', 'Cancel' ]  
                    )       
     
+    def simulation_requested(self):
+        """ Return config parameters, will end up in the 'About' portion of
+        the simulation dictionary.
+        """
+        return OrderedDict(('Optical Parameters',self.choose_optics),
+                           (),
+                           (),
+                           )
+    
     def _get_additional_list(self):
         """ User adds custom traits to additional box, deliminted by newline.
         This removes unicode and returns as a list like:
@@ -184,7 +193,8 @@ class ABCSim(HasTraits):
                 'Steps':self.inc, 
                 'Time/Date':self.time, 
                 'Notes':self.notes,
-                'Simulated Traits':sorted(self.simulation_traits.keys())
+                # Simulated traits end up in inputs dict
+#                'Simulated Traits':sorted(self.simulation_traits.keys()) 
                 }
 
     def _tvals_changed(self): 

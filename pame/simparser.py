@@ -26,10 +26,11 @@ from pandas import DataFrame, Panel
 
 #Local imports
 from handlers import FileOverwriteDialog
-import globalparms
+from pame import globalparms
 import customjson
 import custompp #<--- Custom pretty-print
 import logging
+import config
 
 class SimParserError(Exception):
     """ """
@@ -55,10 +56,13 @@ class LayerSimParser(HasTraits):
     inputs = Dict()
 
     primarypanel = Instance(Panel)
-    backend = Enum(['skspec', 'pandas'])
+    backend = Str('pandas')#Enum(['skspec', 'pandas'])
+
+    def _backend_default(self):
+        return config.SIMPARSERBACKEND
     
     @classmethod
-    def load_json(cls, path_or_fileobj):
+    def load_json(cls, path_or_fileobj, **traitkwds):
         """ Initialize from json file, output of simulation.save_json. """
         stream = customjson.load(path_or_fileobj)
         
@@ -66,14 +70,16 @@ class LayerSimParser(HasTraits):
                     static = stream['static'],
                     primary = stream['primary'],
                     results = stream['results'],
-                    inputs = stream['inputs']
+                    inputs = stream['inputs'], 
+                    **traitkwds
                     )
-        
+
+    
     @classmethod
-    def load_pickle(cls, path_or_fileobj):
+    def load_pickle(cls, path_or_fileobj, **traitkwds):
         """ Initialize from a pre-serialized instance of  """
         # Creates instance, calls .load(), returns
-        newobj = cls()
+        newobj = cls(**traitkwds)
         newobj.load(path_or_fileobj) 
         return newobj
         
@@ -82,6 +88,44 @@ class LayerSimParser(HasTraits):
         """ """
         if style not in ['short', 'full']:
             raise AttributeError('Style must be "short" or "full", got %s' % style)
+        
+        def _smart_format(array_or_numeric):
+            """ If iterable, returns min and max values as a range string,
+            otherwise just returns value.  Useful for string formatting 
+            objects of mixed arrays and floats"""
+            if isinstance(array_or_numeric, basestring):
+                return array_or_numeric
+            try:
+                return '(%s - %s)' % (array_or_numeric[0], array_or_numeric[-1])
+            except Exception:
+                return str(array_or_numeric)
+        
+        print 'LOLOL'
+        new_indent = '\n\t'  #Newline and indent line below
+        
+#        if style == 'short':  
+        panel_printout = 'Primary:'
+        panel_printout += '\n\t%s' % self.primary_panel().__repr__().replace('\n', '\n\t')
+        #panel_printout += '\n\t  ".primary_panel()" to access full panel'
+        
+        input_printout = 'Inputs:'
+        for k,v in self.inputs.items():
+            input_printout += '\n\t%s : %s' % (k, _smart_format(v) )
+            
+        about_printout = 'About:'
+        for k,v in self.about.items():
+            about_printout += '\n\t%s : %s' % (k, _smart_format(v) )        
+            
+        static_printout = 'Static Parameters:'
+        # Static is a dict of dicts
+        for mainkey in self.static.keys():
+            static_printout += '\n\t%s:' % mainkey
+            for k,v in self.static[mainkey].items():
+                static_printout += '\n\t\t%s : %s' % (k, _smart_format(v) )
+                                         
+
+        return 'dasdddddss'        
+#        return '\n\n'.join([input_printout, panel_printout, about_printout, static_printout])
             
     def primary_panel(self, minor_axis=None, prefix=None):
         """ Returns primary as a Panel if possible, if fails, raises warning
@@ -109,8 +153,9 @@ class LayerSimParser(HasTraits):
                                      axis=0, #items axis
                                      copy=False) #Save memory
 
-        if self.backend == 'skspec':
-            raise NotImplementedError('scikit spec nto builtin')
+#        XXXXX HERE
+#        if self.backend == 'skspec':
+#            raise NotImplementedError('scikit spec nto builtin')
 
         # REORIENTATION OF MINOR AXIS LABELS
         if minor_axis:
