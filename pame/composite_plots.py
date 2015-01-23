@@ -97,16 +97,18 @@ class DoubleSview(HasTraits):
     def update_alldata(self):
         ''' This is how the plots update in real time, by listening to data.arrays.  I extract 'x' from
             the first plot, assuming it is the same between plots '''
-        for name in self.scatt1.data.arrays:
-            if name == 'x':
-                self.alldata.set_data((str(name)), self.scatt1.data.arrays[name] )
-            else:
-                self.alldata.set_data((str(name)+self.delimiter+self.s1_id), 
-                                      self.scatt1.data.arrays[name] )
-        for name in self.scatt2.data.arrays:
-            if name != 'x':
-                self.alldata.set_data((str(name)+self.delimiter+self.s2_id), 
-                                      self.scatt2.data.arrays[name] )
+        if self.scatt1 is not None:
+            for name in self.scatt1.data.arrays:
+                if name == 'x':
+                    self.alldata.set_data((str(name)), self.scatt1.data.arrays[name] )
+                else:
+                    self.alldata.set_data((str(name)+self.delimiter+self.s1_id), 
+                                          self.scatt1.data.arrays[name] )
+        if self.scatt2 is not None:
+            for name in self.scatt2.data.arrays:
+                if name != 'x':
+                    self.alldata.set_data((str(name)+self.delimiter+self.s2_id), 
+                                          self.scatt2.data.arrays[name] )
 
 
     @on_trait_change('hideplots')

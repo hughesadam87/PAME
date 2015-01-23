@@ -430,7 +430,10 @@ class MaterialView(HasTraits):
         self.data.set_data('nr', self.nreal) 
         self.data.set_data('ei', self.eimag)
         self.data.set_data('ni', self.nimag)
-        self.eplot.request_redraw() ; self.nplot.request_redraw()
+        if self.eplot is not None:
+            self.eplot.request_redraw() 
+        if self.nplot is not None:
+            self.nplot.request_redraw()
 
     ####### USED FOR SIMULATION STORAGE MOSTLY #####
 
