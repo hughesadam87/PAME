@@ -73,7 +73,7 @@ class SimConfigure(HasTraits):
                 Item('averaging', style='custom', label='Angle Averaging', show_label=False),
                 Item('choose_optics', style='custom', label='Optical Quantities', show_label=False),
                 Item('_opticalmessage_p2', show_label=False, style='readonly'),
-                Item('store_optical_stack', label='copy'),      
+                Item('store_optical_stack', show_label=False, label='copy'),      
               label='Optics'
               ),
     
@@ -103,15 +103,15 @@ class SimConfigure(HasTraits):
     # Can't put a newline character before a <font> statment (after is ok), so can't 
     # color code any of this text.
     def __opticalmessage_p1_default(self):
-        return self._justwrapit('Select which optical quantities (Reflectance, Transmittance etc...)'
-            'the simulation should store for immediate access when parsing.  Choose to average'
-            'over the angles or to store each quantity at every angle.  For example, for'
+        return self._justwrapit('Select which optical quantities (Reflectance, Transmittance etc...) '
+            'the simulation should store for immediate access when parsing.  Choose to average '
+            'over the angles or to store each quantity at every angle.  For example, for '
             'three angles, should simulation will output R_1, R_2, R_3 or R_Avg or both?')
         
 
     def __opticalmessage_p2_default(self):
-        return self._justwrapit('Check the box below and a deep copy of the full optical stack will store the'
-            'unaltered optical quantites in their original, unparsed form for each step of the'
+        return self._justwrapit('Check the box below and a deep copy of the full optical stack will store the '
+            'unaltered optical quantites in their original, unparsed form for each step of the '
             'iteration.  This will add appreciably to the size of the saved simulation file.')
         
 
@@ -154,9 +154,7 @@ class SimConfigure(HasTraits):
         
     # Eventually replace with tree editor
     def _translator_default(self):	
-        return {
-           'Layer Fill Fraction':'selected_material.Vfrac',
-           'Layer Thickness':'selected_layer.d',            
+        return {          
            'Selected Layer Extinction Cross Section (NanoMaterials Only)':'selected_material.FullMie.Cext',
            'Selected Layer Scattering Cross Section (NanoMaterials Only)':'selected_material.FullMie.Cscatt',
            'Selected Layer Absorbance Cross Section (NanoMaterials Only)':'selected_material.FullMie.Cabs',
@@ -199,7 +197,7 @@ class ABCSim(HasTraits):
     configure_storage = DelegatesTo('base_app') #Instance SimConfiguration
 
     start = Button
-    time = Str('Sim not started')   #Stores time that simulation ended
+    time = Str('(not started)')   #Stores time that simulation ended
     outname = Str('Testsim') #Output name, can be overwritten when output called
     outdir = DelegatesTo('base_app')
 
@@ -253,28 +251,51 @@ class ABCSim(HasTraits):
             selection_bg_color = 0xFBD391,
             row_factory=SimAdapter
         )
-
-    basic_group=VGroup(
-        HGroup(Item('start', show_label=False),                
-               Item('save_as'),
-               Item('status_message', style='readonly', label='Status'),
-               Item('configure_storage', label='Configure Storage', show_label=False),                           
-               ),
+    
+    selection_group = Group(
         HGroup(
             Item('inc',label='Steps'), #<-- make me nicer after wx works                    
-            Item('restore_status', label='Restore after run' ),
-            Item('time', label='Started', style='readonly'), 
-            Item('outname',label='Run Name'), 
+            #CHOOSE INPUT BUTTON            
             Item('tvals',
-                 visible_when='selected_traits is not None',
-                 label='Selected Layer Common Traits') #, visible_when='self.selected_layer is not None'),
-            # By default, always a selected layer, so visible_when not needed ^^^
-            ),
+             visible_when='selected_traits is not None', #<-- Should always be selected, but not in qt
+             label='Selected Layer Common Traits'),
+            ),       
+        # sim_variables is actual table list of traits
         Item('sim_variables', editor=simeditor, show_label=False),
-        Item('notes', style='custom', show_label=False),
-        label='Parameters')
+        HGroup(
+            Item('restore_status', label='Restore program state after run' ),                
+            Item('time', label='Start Time', style='readonly'), 
+              ),
+        
+          label = 'Selection') 
+    
+    notesIO_group = Group(
+        # Outdirectory
+        HGroup(
+        Item('outname',label='Run Name'),   
+        Item('save_as'),        
+        ),
+        Item('notes',
+             style='custom',
+             show_label=False),
+    
+                   label='Notes/IO')
+    
+    storage_group = Group(
+        Item('configure_storage', 
+             style='custom',
+             label='Configure Storage',
+             show_label=False),                          
 
+                    label='Storage')   
+    
 
+    maingroup = Group(
+            Include('selection_group'),
+            Include('notesIO_group'),
+            Include('storage_group'),
+            layout='tabbed'
+            )    
 
     def simulation_requested(self):
         """Method for returning parameters/metadata about the simulation"""
@@ -395,6 +416,18 @@ class LayerSimulation(ABCSim):
     """
     selected_material=DelegatesTo('base_app') #Just for convienence in variable calling
     selected_layer=DelegatesTo('base_app')
+
+    traits_view=View(
+        VGroup(
+            HGroup( 
+                    Item('status_message', style='readonly', label='Status'),           
+                    Item('start', show_label=False),   
+                    ),
+            Include('maingroup'),
+            )
+        )      
+        
+    
 
     def _outname_default(self): 
         return config.SIMPREFIX
@@ -636,28 +669,6 @@ class LayerSimulation(ABCSim):
         else:
             outpath = outpath + extension
         return outpath
-
-
-    ############
-    # This view is for interactive plotting simulations
-    ############
-    layervfrac_group=VGroup(  
-        Item('selected_material', style='readonly'),  #CHANGE HERE TOO
-        Group(Item('R_list', style='custom', show_label=False), 
-              Item('M_list', style='custom', show_label=False),
-              Item('Scatt_list', style='custom', show_label=False), 
-              layout='tabbed'),				
-        label='Results')
-
-
-    traits_view=View(
-        VGroup(	
-            Include('basic_group'),
-            #          Include('layervfrac_group'),
-            #		Item('simulation_traits', show_label=False),
-            layout='split')
-    )
-
 
 
 if __name__ == '__main__':
