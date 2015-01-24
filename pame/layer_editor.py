@@ -188,13 +188,12 @@ class LayerEditor(HasTraits):
             self.sync_trait('specparms', mat, 'specparms')
         return mats
 
-    ###  Important to declare these here instead of on the delcaration of the stack; otherwise tableeditor trips ###
+    #  Important to declare these here instead of on the delcaration of the stack; otherwise tableeditor trips ###
     def _solvent_default(self): 
         return self.stack[-1]
 
     def _substrate_default(self): 
         return self.stack[0]
-    ######################################################################
 
     def _get_tablesize(self): 
         return len(self.stack)  #Resets table-end

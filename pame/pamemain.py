@@ -84,7 +84,7 @@ class GlobalScene(HasTraits):
     
     
     ## For simulations
-    outdir=Directory 
+    sim_outdir=Directory 
 
     def _load_fired(self):
         self.simulations=pickle.load(open("test.p", "rb") )
@@ -96,16 +96,16 @@ class GlobalScene(HasTraits):
         self.opticstate.update_opticview()
         
     # Where should this point?  WHAT IF DOESN"T EXIST
-    def _outdir_default(self):
+    def _sim_outdir_default(self):
         if op.exists(config.SIMFOLDER):
             return config.SIMFOLDER
         else:
             return op.abspath('.')
 
-    ##Simulation Stuff ##
+    #Simulation 
     simulations=List(ISim)  
     selected_sim=Instance(ISim)
-    sim_configuration = Instance(SimConfigure,())   #<--- Want all sims to share this, right?
+    configure_storage = Instance(SimConfigure,())   #<--- Want all sims to share this, right?
 
     #Editors##
     layereditor=Instance(LayerEditor)
@@ -119,7 +119,7 @@ class GlobalScene(HasTraits):
     showreflectance=Action(name="Interface View", action="compute_optics")  #PHASE THIS OUT LATER WITH UNIFIED VIEW FRAMEWORK
     appendsim=Action(name="Add Simulation", action="new_sim")
     savesim=Action(name="Save Selected Simulation", action="save_sim")  #action gets underscore
-    savesim_all=Action(name="Save All Simulations", action="save_allsims")  #action gets underscore
+    savesim_all=Action(name="Save All Simulation", action="save_allsims")  #action gets underscore
     
 
     # Make Menubar
@@ -154,13 +154,13 @@ class GlobalScene(HasTraits):
     summarygroup=Group(
         Item('simulations', editor=sims_editor, show_label=False),
 
-        # Can't remove this or program trips, so I just hide it permanently
+        # Can't remove this or program trips
         Item('opticstate', 
              editor=state_editor, 
              show_label=False, 
-             visible_when='8==8'#always vis
+             visible_when='8==9'#always vis
              ),
-        label='Parameter Summary'
+        label='Choose Simulation'
     )
 
     simgroup=Group( Item('selected_sim', 
@@ -173,7 +173,7 @@ class GlobalScene(HasTraits):
                 HSplit(
                   VGroup(
                     Item('specparms',show_label=False, style='custom'),
-                    Item('outdir', label='Output Directory'),
+                    Item('sim_outdir', label='Output Directory', show_label=False),
                     Include('summarygroup'), #simulation and summary
                       ),
                 # PLOT
@@ -193,7 +193,7 @@ class GlobalScene(HasTraits):
             ),
            )
 
-    Mainview = View(Item('stack', editor=ValueEditor()), 
+    Mainview = View(#Item('stack', editor=ValueEditor()), 
                     Include('fullgroup'), 
              #       Item('save'), Item('load'),  #FOR SAVING ENTIRE STATE OF SIMULATION
                     menubar=mainmenu,
@@ -223,7 +223,7 @@ class GlobalScene(HasTraits):
         self.simulations.append(LayerSimulation(base_app=self,  #<--- LayerSimulation.  Base_app = self.copy?
                                            outname=config.SIMPREFIX+str(len(self.simulations))))
     def save_sim(self): 
-        self.selected_sim.output_simulation(self.outdir) #<--- NEED TO CALL TO_JSON NOT OUTPUT_SIMULATION
+        self.selected_sim.output_simulation(self.sim_outdir) #<--- NEED TO CALL TO_JSON NOT OUTPUT_SIMULATION
     
     def save_allsims(self):
         ''' Saves all stored simulations in the sims_editor.  Checks for duplicate names and non-run/incomplete
@@ -250,9 +250,9 @@ class GlobalScene(HasTraits):
         # Output completed simulations
         outsims=[s for s in self.simulations if s not in unrun]
         for s in outsims:
-            s.output_simulation(self.outdir, confirmwindow=False)
+            s.output_simulation(self.sim_outdir, confirmwindow=False)
         message('%s simulation(s) saved to directory: "%s"'%(len(outsims),
-                  op.split(self.outdir)[1]), title='Success')
+                  op.split(self.sim_outdir)[1]), title='Success')
 
     # Show Reflectance --------
     def compute_optics(self):

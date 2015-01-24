@@ -7,6 +7,7 @@ import time
 import copy
 from collections import OrderedDict
 from pame import globalparms
+import textwrap
 
 # ETS imports
 from traits.api import * 
@@ -30,13 +31,22 @@ import customjson
 class SimError(Exception):
     """ """
 
+
+WRAPWIDTH = 100 # Text characters for wrapping lines
+
 # ADD SAVE/LOAD UBTTONS
 class SimConfigure(HasTraits):
     """ Configuration what is stored/output in simulation."""
     
     save = Button
     outpath = File
-
+    
+    _opticalmessage_p1 = Str
+    _opticalmessage_p2 = Str
+    _layermessage_p1 = Str    
+    _layermessage_p2 = Str
+    _grabbutton = Button
+    
     # Used to store most common simulation names in a user-readable fashion, Enum for dropdown list.
     translator=Dict()
     translist=Property(List, depends_on='translator')
@@ -57,25 +67,81 @@ class SimConfigure(HasTraits):
     store_optical_stack = Bool(False)
     
     traits_view = View(
-        HGroup(
-            Item('choose_optics', style='custom', label='Optical Parameters'),
-            Item('averaging', style='custom', label='Optical Averaging'),
-            Item('store_optical_stack', label='Save deepcopy of full optical stack'),
-        ),
-
-          Item('choose_layers', style='custom'),
-          Item('traitscommon', label='Add Common Trait'),
-          Item('additional', style='custom', label='Top-level Traits'),
-        buttons = [ 'Undo', 'OK', 'Cancel' ]  
-                   )       
+        Group(
+            VGroup(
+                Item('_opticalmessage_p1', show_label=False, style='readonly'),
+                Item('averaging', style='custom', label='Angle Averaging', show_label=False),
+                Item('choose_optics', style='custom', label='Optical Quantities', show_label=False),
+                Item('_opticalmessage_p2', show_label=False, style='readonly'),
+                Item('store_optical_stack', label='copy'),      
+              label='Optics'
+              ),
     
+            VGroup(
+              Item('_layermessage_p1', show_label=False, style='readonly'),
+              HGroup(
+                   Item('traitscommon', label='Common'),
+                   Item('_grabbutton', label='Browse')
+                   ),
+              Item('additional', 
+                   style='custom',
+                   show_label=False,
+                   label='<font color="red">Top-level Traits </font>'),
+              Item('_layermessage_p2', show_label=False, style='readonly'),              
+              Item('choose_layers', style='custom', show_label=False, label='Deep Copy'),
+              label='Dielectric Slab'              
+
+              ),
+            layout='tabbed'),
+        buttons = [ 'OK', 'Cancel' ],#'Undo]
+                 )       
+    
+    def _justwrapit(self, text, width=WRAPWIDTH):
+        """ Wrap long lines of text to WRAPWIDTH"""
+        return '\n'.join(textwrap.wrap(text, width=width))
+    
+    # Can't put a newline character before a <font> statment (after is ok), so can't 
+    # color code any of this text.
+    def __opticalmessage_p1_default(self):
+        return self._justwrapit('Select which optical quantities (Reflectance, Transmittance etc...)'
+            'the simulation should store for immediate access when parsing.  Choose to average'
+            'over the angles or to store each quantity at every angle.  For example, for'
+            'three angles, should simulation will output R_1, R_2, R_3 or R_Avg or both?')
+        
+
+    def __opticalmessage_p2_default(self):
+        return self._justwrapit('Check the box below and a deep copy of the full optical stack will store the'
+            'unaltered optical quantites in their original, unparsed form for each step of the'
+            'iteration.  This will add appreciably to the size of the saved simulation file.')
+        
+
+    def __layermessage_p1_default(self):
+        return self._justwrapit('Choose Material quantites like index of refraction and nanoparticle scattering'
+                ' cross section to be stored for immediate access when parsing.  For example,'
+                '<selected_material.FullMie.Cscatt> stores the scattering cross section of a nanoparticles for a selected material.'
+                ' Some common ones are provided, or browse through the full stack.')
+        
+
+    def __layermessage_p2_default(self):
+        return self._justwrapit('In addition to the material you selected for primary storage, the simulation'
+                ' will store many other material attributes which can be accessed by a'
+                ' parser.  Should the simulation store these for layers of the dielectric slab?'
+                ' For just the selected layer, or None?')
+
+    def _grabbutton_fired(self):
+        """ Launch """
+        #foo = something.configure_traits(kind='modal')
+        #common_traits.append(foo.selected)
+
     def simulation_requested(self):
         """ Return config parameters, will end up in the 'About' portion of
         the simulation dictionary.
         """
-        return OrderedDict(('Optical Parameters',self.choose_optics),
-                           (),
-                           (),
+        return OrderedDict(('Optical Quantities',self.choose_optics),
+                           ('Angle Averaging', self.averaging),
+                           ('Copy Full Optical Stack', self.store_optical_stack),
+                           ('Layer Quantities', self.additional_list),
+                           ('Deep Layer Storage', self.choose_layers)
                            )
     
     def _get_additional_list(self):
@@ -89,6 +155,8 @@ class SimConfigure(HasTraits):
     # Eventually replace with tree editor
     def _translator_default(self):	
         return {
+           'Layer Fill Fraction':'selected_material.Vfrac',
+           'Layer Thickness':'selected_layer.d',            
            'Selected Layer Extinction Cross Section (NanoMaterials Only)':'selected_material.FullMie.Cext',
            'Selected Layer Scattering Cross Section (NanoMaterials Only)':'selected_material.FullMie.Cscatt',
            'Selected Layer Absorbance Cross Section (NanoMaterials Only)':'selected_material.FullMie.Cabs',
@@ -128,7 +196,7 @@ class ABCSim(HasTraits):
 
     base_app=Any  #THIS IS AN INSTANCE OF GLOBAL SCENE, ALL TRAITS WILL DELEGATE TO THIS.  
 
-    sim_configuration = DelegatesTo('base_app') #Instance SimConfiguration
+    configure_storage = DelegatesTo('base_app') #Instance SimConfiguration
 
     start = Button
     time = Str('Sim not started')   #Stores time that simulation ended
@@ -138,7 +206,7 @@ class ABCSim(HasTraits):
     save_as = Enum(config.SIMEXT, '.json')
 
     implements(ISim)
-    inc=Range(low=1,high=100,value=1) # Need as range for now I think
+    inc=Range(low=1,high=50,value=10) # Need as range for now I think
 
     notes=Str('<ADD NOTES ON SIMULATION>')
 
@@ -185,6 +253,27 @@ class ABCSim(HasTraits):
             selection_bg_color = 0xFBD391,
             row_factory=SimAdapter
         )
+
+    basic_group=VGroup(
+        HGroup(Item('start', show_label=False),                
+               Item('save_as'),
+               Item('status_message', style='readonly', label='Status'),
+               Item('configure_storage', label='Configure Storage', show_label=False),                           
+               ),
+        HGroup(
+            Item('inc',label='Steps'), #<-- make me nicer after wx works                    
+            Item('restore_status', label='Restore after run' ),
+            Item('time', label='Started', style='readonly'), 
+            Item('outname',label='Run Name'), 
+            Item('tvals',
+                 visible_when='selected_traits is not None',
+                 label='Selected Layer Common Traits') #, visible_when='self.selected_layer is not None'),
+            # By default, always a selected layer, so visible_when not needed ^^^
+            ),
+        Item('sim_variables', editor=simeditor, show_label=False),
+        Item('notes', style='custom', show_label=False),
+        label='Parameters')
+
 
 
     def simulation_requested(self):
@@ -298,24 +387,6 @@ class ABCSim(HasTraits):
         self.time=time.asctime( time.localtime(time.time()))
 
 
-    basic_group=VGroup(
-        Item('inc',label='Steps'), #<-- make me nicer after wx works        
-        HGroup(Item('save_as'),
-               Item('status_message', style='readonly', label='Status Message'),
-               ),
-        HGroup(
-            Item('sim_configuration', label='Configure Simulation Output'),            
-            Item('restore_status', label='Restore state after simulation' ),
-            Item('start', show_label=False), 
-            Item('time', label='Sim Start Time', style='readonly'), 
-            Item('outname',label='Run Name'), 
-            Item('tvals', label='Selected Layer Common Traits') #, visible_when='self.selected_layer is not None'),
-            # By default, always a selected layer, so visible_when not needed ^^^
-            ),
-        Item('sim_variables', editor=simeditor, show_label=False),
-        Item('notes', style='custom'),
-        label='Parameters')
-
 
 class LayerSimulation(ABCSim): 
     """ Simulate stack layer traits like selected material traits (ie d_core) and thickness
@@ -334,8 +405,8 @@ class LayerSimulation(ABCSim):
     def _selected_layer_changed(self):
         self.check_sim_ready()
 
-    # Replace with TreeEditor
     def _translator_default(self):	
+        """ Common traits for INPUTS TO simulation.  NOT THE SAME AS STORAGE!"""
         return {
            'Layer Fill Fraction':'selected_material.Vfrac',
            'Layer Thickness':'selected_layer.d',
@@ -394,7 +465,7 @@ class LayerSimulation(ABCSim):
         print 'running sim with traits', self.simulation_traits.keys()
         
         # for name brevity
-        sconfig = self.sim_configuration 
+        sconfig = self.configure_storage 
         b_app = self.base_app
 
         # Storage
@@ -451,7 +522,7 @@ class LayerSimulation(ABCSim):
                         raise SimError('Cannot simulate over optical stack attr "%s" '
                                        ' not found in optical stack.' % attr)
             
-            
+            # --- PRIMARY RESULTS           
             # Take parameters from optical stack, put in toplevel via sconfig.choose_optics
             if sconfig.averaging in ['Average','Both']:
                 for optical_attr in flat_attributes:
@@ -465,6 +536,12 @@ class LayerSimulation(ABCSim):
                         primary_increment['%s_%.2f' % (optical_attr, angle)] = \
                                     b_app.opticstate.optical_stack[angle][optical_attr]  #<-- Save as what, numpy/pandas?        
 
+            # User-set dielectric slab quantites to be in primary
+            for trait in sconfig.additional_list:
+                traitval = xgetattr(b_app.layereditor, trait)
+                primary_increment['%s' % trait]  = traitval
+
+            # --- DEEP RESULTS
             # Store full Optical Stack
             if sconfig.store_optical_stack:
                 results_increment[globalparms.optresponse] = b_app.opticstate.optical_stack.simulation_requested(update=False)

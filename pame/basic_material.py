@@ -43,11 +43,13 @@ class BasicMaterial(HasTraits):
     mviewbutton=Button 
     allbutt=Button
 
-    basic_group=VGroup( Item('mat_name', label='Material Name', style='simple'),
-                        Item('mviewbutton', label='Show Material'), 
-                        Item('allbutt', label='Show allview'),
+    basic_group=HGroup(
+                       Item('mviewbutton', label='Show Material', show_label=False), 
+                       Item('mat_name', label='Material Name', style='simple')
+                       
+                       # Item('allbutt', label='Show allview', show_label=False),
                        #Item('specparms', style='custom'),  #INCLUDE FOR TESTING PURPOSES
-                                )
+                        )
 
     traits_view=View(
         Include('basic_group'),

@@ -9,3 +9,4 @@ scipy
 traits
 traitsui
 pyyaml
+mpmath

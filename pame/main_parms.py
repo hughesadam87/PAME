@@ -29,11 +29,11 @@ class SpecParms(HasTraits):
             HGroup(  Item(name = 'xstart'),  
                      Item(name = 'xend'),
                      Item(name ='x_samples'),
-                     Item(name = 'x_increment', style='readonly')
                      ),
             
-            HGroup(  Item(name='x_unit', style='readonly'), 
-                     Item(name='x_unit', style='simple', label='Change Units' ) 
+            HGroup(  
+                     Item(name='x_unit', style='simple', label='Spectral Unit'),
+                     Item(name = 'x_increment', style='readonly'),                     
                    ), #    label='Spectral Parameters'
              )
         )
@@ -102,7 +102,7 @@ class SpecParms(HasTraits):
 
 
 class FiberParms(HasTraits):
-    Config=Enum('Axial', 'Transversal')
+    Config=Enum(['Axial', 'Transversal'])
 
     # Don't change these or BasicReflectance.update_R will get mad
     Mode=Enum('S-polarized', 'P-polarized', 'Unpolarized')
@@ -113,8 +113,7 @@ class FiberParms(HasTraits):
     angle_start = Float(.5)
     angle_stop = Float()
     angle_inc = Float(.5)
-    angle_avg = Enum('Equal', 'Gupta') #Why not in fiberparms
-    
+    angle_avg = Enum('Equal', 'Gupta') #Why not in fiberparms    
 
     ### Used to compute hypothetical max angle capacity, but are not actually used in iteration over angle start-stop
     NA=Float(.275)
@@ -126,64 +125,42 @@ class FiberParms(HasTraits):
 
     N=Property(Array, depends_on=['Config', 'angles', 'Lregion', 'Dcore'])  #NUMBER OF REFLECTIONS
 
-    
-    def simulation_requested(self):
-        ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
-        traitdic={'Optical Configuration':self.Config, 
-                  'Mode':self.Mode, 
-                  'Core Diameter':self.Dcore, 
-                  'Numerical Aperature':self.NA, 
-                  'Critical Angle':self.critical_angle, 
-                  'Angle Min':self.angle_start, 
-                  'Angle Max':self.angle_stop,
-                  'Angle Inc.':self.angle_inc}
-
-        if self.Config=='Transversal':
-            l=self.Lregion
-        else:
-            l='N/A'
-        traitdic.update({'Strip Region':l})
-        return traitdic
-
+    _angle_sumstring = Property(Str, depends_on='angles')
 
     # VIEW
     # -------------
 
-    SharedGroup =Group(
+    traits_view = \
+      View(
+        VGroup(
         HGroup(
             Item('Config'), 
             Item('Mode'), 
             Item('angle_avg', label='Angle Averaging'),            
             Item(name='NA', label='Numerical Aperature'), 
-            Item('critical_angle', label='Critical Angle')            
+            Item('critical_angle', label='Critical Angle')         
             ),
-#        HGroup(
-#            Item(name='NA', label='Numerical Aperature'), 
-#            Item('critical_angle', label='Critical Angle')
-#            ),
         HGroup(
             Item('angle_start', label='Angle Start'), 
-            Item('angle_stop', label='Angle End'), 
-            Item('angle_inc', label='Angle Increment'),
-            ),
-        show_border = True, #group border
-    )
+            Item('angle_stop', label='End'), 
+            Item('angle_inc', label='Increment'),
+            Item('_angle_sumstring', 
+                 style='readonly', 
+                 show_label=False)            
+            ),    
 
-    RefGroup=HGroup(
-        Item(name = 'Rcore', label='Core Radius (nm)'),
-        Item(name = 'Dcore', label='Core Diameter(um)')
-    )
-
-    TransGroup=Group(
-        Item(name='Lregion', label='Length of Exposed Region (um)',
-             enabled_when='Config==Transversal'), 
-        Item('N', style='readonly'), 
-        Item('angles', style='readonly'),
-    )
-
-    traits_view=View(
-        Group(SharedGroup, RefGroup, TransGroup)
-    )
+        HGroup(
+            Item(name = 'Rcore', label='Core Radius (nm)'),
+            Item(name = 'Dcore', label='Core Diameter(um)'),
+            Item(name='Lregion',
+                 label='Length of Exposed Region (um)',
+                 visible_when='Config=="Transversal"'),  #<-- NEED INNER QUOTES       
+                )
+        ))
+                
+    def _get__angle_sumstring(self):
+        """ Summary of angles for nicer output"""
+        return 'Angles=%s' % str(len(self.angles))
 
     def _angle_stop_default(self): 
         return self.critical_angle
@@ -234,6 +211,24 @@ class FiberParms(HasTraits):
 
     def _get_angles_radians(self):
         return np.radians(self.angles)
+
+    def simulation_requested(self):
+        ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
+        traitdic={'Optical Configuration':self.Config, 
+                  'Mode':self.Mode, 
+                  'Core Diameter':self.Dcore, 
+                  'Numerical Aperature':self.NA, 
+                  'Critical Angle':self.critical_angle, 
+                  'Angle Min':self.angle_start, 
+                  'Angle Max':self.angle_stop,
+                  'Angle Inc.':self.angle_inc}
+
+        if self.Config=='Transversal':
+            l=self.Lregion
+        else:
+            l='N/A'
+        traitdic.update({'Strip Region':l})
+        return traitdic
 
 
 if __name__ == '__main__':
