@@ -218,7 +218,7 @@ class NanoSphereShell(NanoSphere):
                     #Neceassary because Mix() already defined such that Corematerial is already sync'd to solute
                     #TotalMix syncs CompositeCore to solutematerial.  Solution not ideal
 
-    doublescattview=Instance(DoubleSview)
+    np_plots=Instance(DoubleSview)
 
     earray=DelegatesTo('TotalMix')
     Vfrac=DelegatesTo('TotalMix')
@@ -275,7 +275,7 @@ class NanoSphereShell(NanoSphere):
     )
 
 
-    traits_view=View(Item('doublescattview', label='Cross Section Mixing'),#Item('allbutt', label='Plot Comparison'),
+    traits_view=View(Item('np_plots', label='Cross Section Mixing'),#Item('allbutt', label='Plot Comparison'),
                      Include('compnpgroup'), title='Composite Nanoparticle with Shell', resizable=True )
 
     def __init__(self, *args, **kwds):
@@ -349,12 +349,12 @@ class NanoSphereShell(NanoSphere):
     def _mat_name_default(self): 
         return str('Composite NP:  ')+str(self.Material1.mat_name)+' IN '+str(self.Material2.mat_name)
 
-    def _doublescattview_default(self): 
+    def _np_plots_default(self): 
         return self.DoubleSview(scatt1=self.FullMie.sview, 
                                 scatt2=self.CompositeMie.sview)
 
 #	def update_allplots(self): 
-#		''' I replaced this with doublescattview anyway'''
+#		''' I replaced this with np_plots anyway'''
 #		self.allplots={'full':self.FullMie.sview, 'comp':self.CompositeMie.sview}
 
     def simulation_requested(self):

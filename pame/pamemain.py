@@ -222,7 +222,7 @@ class GlobalScene(HasTraits):
         self.opticstate.update_opticview()
 
     def _plot_selector_default(self):
-        return PlotSelector(b_app=self)
+        return PlotSelector(layereditor = self.layereditor)
         
     # Where should this point?  WHAT IF DOESN"T EXIST
     def _sim_outdir_default(self):

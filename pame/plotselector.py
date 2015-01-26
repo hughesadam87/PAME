@@ -1,5 +1,5 @@
 from traits.api import Any, Enum, Dict, List, DelegatesTo, HasTraits, \
-     Bool, Instance
+     Bool, Instance, on_trait_change
 from traitsui.api import Item, View, HGroup, VGroup
 from interfaces import IView, ICompositeView
 import utils as pamutils
@@ -9,9 +9,8 @@ class PlotSelector(HasTraits):
    them with dropdown selection.  Allows users to choose which views of a 
    selected material they want to observe.
    """
-   b_app = Any
-   stack = DelegatesTo('b_app')
-   stack_shortname = List #<-- can't be property because of Delgation
+   layereditor = Any #DelegatesTo('b_app')
+   stack = DelegatesTo('layereditor')
    selected_layer = Enum(values='stack') #<-- make shortname
    sync = Bool(True)
    
@@ -19,7 +18,13 @@ class PlotSelector(HasTraits):
    _plot_list = List 
    plot_list = Enum(values='_plot_list') 
    selected_plot = Instance(IView)
-   
+
+   @on_trait_change('layereditor.selected_layer')
+   def _syncup(self):
+      if self.sync:
+         if self.layereditor.selected_layer is not None: # init case
+            self.selected_layer  = self.layereditor.selected_layer 
+          
    # Necessary to have some default or view wont' render correctly
    def _selected_plot_default(self):
       return self.selected_layer.material.mview
@@ -29,18 +34,23 @@ class PlotSelector(HasTraits):
                         self.selected_layer.material,
                         IView) #<--- Types plots shown
       
-      self._plot_list = sorted(self.plot_dict.keys())
-#      print len(self._plot_list), len(set(self._plot_list)), 'OWOWWO'
-      self.stack_shortname = [s.__repr__()[0:10] for s in self.stack]
+      # Special sorting for objects of form [a, a.b, b.c.e]...
+      # http://stackoverflow.com/questions/28156414/sorting-strings-in-python-that-have-a-hierarchical-alphabetical-order
+      _plot_list = self.plot_dict.keys()
+      _plot_list.sort(key=lambda v: (len(v.split('.')), v.split('.')))# 
+      self._plot_list = _plot_list
+      
+      # Force redraw of selected plot when plot list is updated
+      self.selected_plot = self.plot_dict[self._plot_list[0]]
    
    def _plot_list_changed(self):
       self.selected_plot = self.plot_dict[self.plot_list]
       
    traits_view = View(
                       HGroup(
+                         Item('sync'),                     
                          Item('selected_layer', show_label=False, style='simple'),
                          Item('plot_list', show_label=False, style='simple'),
-                         Item('sync')                         
                          ),
                      Item('selected_plot', show_label=False, style='custom'),
                      )
