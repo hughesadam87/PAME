@@ -99,7 +99,8 @@ class GlobalScene(HasTraits):
 #    angle_avg=DelegatesTo('current_state')
 
     ##Stack Actions##
-    showreflectance=Action(name="Interface View", action="compute_optics")  #PHASE THIS OUT LATER WITH UNIFIED VIEW FRAMEWORK
+    showreflectance=Action(name="Popout Optics Plot", action="popout_optics")  #PHASE THIS OUT LATER WITH UNIFIED VIEW FRAMEWORK
+    showmaterial = Action(name='Popout Material Plot', action="popout_material")
     appendsim=Action(name="Add Simulation", action="new_sim")
     savesim=Action(name="Save Selected Simulation", action="save_sim")  #action gets underscore
     savesim_all=Action(name="Save All Simulation", action="save_allsims")  #action gets underscore
@@ -107,7 +108,7 @@ class GlobalScene(HasTraits):
 
     # Make Menubar
     mainmenu=MenuBar(
-        Menu(showreflectance, name='Layer Options'), 	
+        Menu(showmaterial, showreflectance, name='Plot Options'), 	
         Menu(appendsim, savesim, savesim_all, name='Simulation Options'), 	       
     )                      
 
@@ -267,11 +268,15 @@ class GlobalScene(HasTraits):
         message('%s simulation(s) saved to directory: "%s"'%(len(outsims),
                   op.split(self.sim_outdir)[1]), title='Success')
 
-    # Show Reflectance --------
-    def compute_optics(self):
+    # Pop Reflectance/Material Plots
+    # ------------------------
+    def popout_optics(self):
         """ Refresh and popup optics plot """
         self.opticstate.update_opticview()
         self.opticstate.opticview.edit_traits()
+        
+    def popout_material(self):
+        self.plot_selector.edit_traits()
 
 def main():
     # HACK FOR DEBUG UNTIL DATA CAN BE IMPORTED CORRECTLY
