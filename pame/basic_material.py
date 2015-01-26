@@ -9,7 +9,7 @@ from basicplots import MaterialView, ScatterView
 from composite_plots import MultiView  
 from converter import SpectralConverter
 from main_parms import SpecParms
-from interfaces import IMaterial, IMie, ICompositeView
+from interfaces import IMaterial, IMie
 from chaco.api import Plot
 import copy
 
@@ -37,19 +37,12 @@ class BasicMaterial(HasTraits):
     eplot=Instance(Plot)
     nplot=Any
 
-    allview=Instance(ICompositeView) #Test)
-    allplots=Dict
-
     mviewbutton=Button 
-    allbutt=Button
 
     basic_group=HGroup(
                        Item('mviewbutton', label='Show Material', show_label=False), 
                        Item('mat_name', label='Material Name', style='simple')
-                       
-                       # Item('allbutt', label='Show allview', show_label=False),
-                       #Item('specparms', style='custom'),  #INCLUDE FOR TESTING PURPOSES
-                        )
+                       )
 
     traits_view=View(
         Include('basic_group'),
@@ -58,10 +51,12 @@ class BasicMaterial(HasTraits):
 
     def __init__(self, *args, **kwargs):
         super(BasicMaterial, self).__init__(*args, **kwargs)
-        self.update_data(); self.update_mview() ; self.update_allplots()  #Needs to be run because the update_data generates the earray for all objects
-        self.sync_trait('allplots', self.allview, 'nameplot')
+        self.update_data()
+        self.update_mview()  
 
-    def _earray_default(self): return empty(self.lambdas.shape, dtype='complex')   #Used later so not always redeclaring this
+    def _earray_default(self): 
+        #Used later so not always redeclaring this
+        return empty(self.lambdas.shape, dtype='complex') 
 
     def _lambdas_changed(self): 
         self.update_data()
@@ -93,21 +88,10 @@ class BasicMaterial(HasTraits):
                 'earray':self.earray,
                 'narray':self.narray}
 
-    def update_allplots(self): 
-        self.allplots={'KEY':self.eplot, }#'ni': self.nplot}  #Format is better than _allplots_defaults() for composite objects
-    #	self.allplots={'di':self.mview, 'ni':self.mview}
-
-    def _allview_default(self): 
-        return MultiView(nameplot=self.allplots, host=self.mat_name)
-
     def _mviewbutton_fired(self): 
         self.mview.data=None  #This will force a redraw which forces resizing of the plot.  Remove if you can fix the "auto_size" axis reset issue
         self.update_mview()
         self.mview.edit_traits()
-
-
-    def _allbutt_fired(self): 
-        self.allview.edit_traits()
 
     def complex_n_to_e(self, narray): 		
         self.earray = empty(narray.shape, dtype='complex')  #This is necessary if changing lambdas, so everything works
@@ -133,8 +117,4 @@ class BasicMaterial(HasTraits):
 if __name__ == '__main__':
     a=BasicMaterial() ; a2=a.clone_traits(copy='deep')
     print '-----------------'
-    print a.eplot, a.allplots
-    print '-----------------'
-    print a2.eplot, a2.allplots
-    print '-----------------'
-
+    print a.eplot

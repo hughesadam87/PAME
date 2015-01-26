@@ -47,8 +47,7 @@ class CompositeMaterial(BasicMaterial):
                            ),
                        label='Materials')
 
-    traits_view=View(Item('allbutt', label='Show Allview'),
-                     Item('specparms', style='custom'),
+    traits_view=View(
                      Include('compmatgroup' ),
                      Include('mixgroup'), 
                      #Item('Mat1History', editor=ListEditor(), style='custom'), 
@@ -60,7 +59,6 @@ class CompositeMaterial(BasicMaterial):
         self.sync_trait('specparms', self.Material2, 'specparms', mutual=True)  
         self.sync_trait('Material1', self.Mix, 'solutematerial')	
         self.sync_trait('Material2', self.Mix, 'solventmaterial') 
-        self.update_allplots()
 
     def simulation_requested(self):
         out = super(CompositeMaterial, self).simulation_requested()
@@ -71,10 +69,6 @@ class CompositeMaterial(BasicMaterial):
             'mixing_style':self.MixingStyle,
             'Vfrac':self.Vfrac})
         return out
-
-#	def update_allplots(self): 
-#			self.allplots={'Dielectric '+str(self.Material1.mat_name):self.Material1.eplot,  'Dielectric '+str(self.Material2.mat_name):self.Material2.eplot, 
-#			'Refractive Index  '+str(self.Material1.mat_name):self.Material1.nplot, 'Refractive Index  '+str(self.Material2.mat_name):self.Material2.nplot}
 
     def _Material1_default(self): 
         mat1def=Sellmeir()
@@ -101,14 +95,12 @@ class CompositeMaterial(BasicMaterial):
     def _Material1_changed(self): 
         self.sync_trait('specparms', self.Material1, 'specparms', mutual=True)  	  #This is necessary because syncing is only done for the object
         self.sync_trait('Material1', self.Mix, 'solutematerial')
-        self.update_allplots()
         self.Mat1History.append(self.Material1)
 
 
     def _Material2_changed(self): 
         self.sync_trait('specparms', self.Material2, 'specparms', mutual=True)  	  #This is necessary because syncing is only done for the object
         self.sync_trait('Material2', self.Mix, 'solventmaterial')
-        self.update_allplots()
         self.Mat2History.append(self.Material2)
 
 

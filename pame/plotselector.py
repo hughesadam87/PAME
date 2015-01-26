@@ -30,6 +30,7 @@ class PlotSelector(HasTraits):
                         IView) #<--- Types plots shown
       
       self._plot_list = sorted(self.plot_dict.keys())
+#      print len(self._plot_list), len(set(self._plot_list)), 'OWOWWO'
       self.stack_shortname = [s.__repr__()[0:10] for s in self.stack]
    
    def _plot_list_changed(self):
