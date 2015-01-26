@@ -31,7 +31,6 @@ import customjson
 class SimError(Exception):
     """ """
 
-
 WRAPWIDTH = 100 # Text characters for wrapping lines
 
 # ADD SAVE/LOAD UBTTONS
@@ -137,12 +136,13 @@ class SimConfigure(HasTraits):
         """ Return config parameters, will end up in the 'About' portion of
         the simulation dictionary.
         """
-        return OrderedDict(('Optical Quantities',self.choose_optics),
+        return OrderedDict((k,v) for k,v in \
+                           [('Optical Quantities',self.choose_optics),
                            ('Angle Averaging', self.averaging),
                            ('Copy Full Optical Stack', self.store_optical_stack),
                            ('Layer Quantities', self.additional_list),
                            ('Deep Layer Storage', self.choose_layers)
-                           )
+                           ])
     
     def _get_additional_list(self):
         """ User adds custom traits to additional box, deliminted by newline.
@@ -199,7 +199,7 @@ class ABCSim(HasTraits):
     start = Button
     time = Str('(not started)')   #Stores time that simulation ended
     outname = Str('Testsim') #Output name, can be overwritten when output called
-    outdir = DelegatesTo('base_app')
+    sim_outdir = DelegatesTo('base_app')
 
     save_as = Enum(config.SIMEXT, '.json')
 
@@ -266,14 +266,14 @@ class ABCSim(HasTraits):
             Item('restore_status', label='Restore program state after run' ),                
             Item('time', label='Start Time', style='readonly'), 
               ),
-        
           label = 'Selection') 
     
     notesIO_group = Group(
         # Outdirectory
         HGroup(
         Item('outname',label='Run Name'),   
-        Item('save_as'),        
+        Item('save_as',label='ext'),
+        Item('sim_outdir', label='directory'),
         ),
         Item('notes',
              style='custom',
@@ -286,10 +286,8 @@ class ABCSim(HasTraits):
              style='custom',
              label='Configure Storage',
              show_label=False),                          
-
                     label='Storage')   
     
-
     maingroup = Group(
             Include('selection_group'),
             Include('notesIO_group'),
@@ -299,13 +297,17 @@ class ABCSim(HasTraits):
 
     def simulation_requested(self):
         """Method for returning parameters/metadata about the simulation"""
-        return {'Simulation Name':self.outname, 
+        return  {'Simulation Name':self.outname, 
                 'Steps':self.inc, 
                 'Time/Date':self.time, 
                 'Notes':self.notes,
+                #Storage objects stored in SimConfigure 
+                # XX IMPORTANT XX
+                'Storage':self.configure_storage.simulation_requested()
                 # Simulated traits end up in inputs dict
-#                'Simulated Traits':sorted(self.simulation_traits.keys()) 
+                # 'Simulated Traits':sorted(self.simulation_traits.keys()) 
                 }
+
 
     def _tvals_changed(self): 
         """ Set current layer from the name translator for more clear use. """	
@@ -405,8 +407,6 @@ class ABCSim(HasTraits):
         if self.restore_status:
             self.restore_original_values()
         self.time=time.asctime( time.localtime(time.time()))
-
-
 
 class LayerSimulation(ABCSim): 
     """ Simulate stack layer traits like selected material traits (ie d_core) and thickness
@@ -574,7 +574,7 @@ class LayerSimulation(ABCSim):
             # --- DEEP RESULTS
             # Store full Optical Stack
             if sconfig.store_optical_stack:
-                results_increment[globalparms.optresponse] = b_app.opticstate.optical_stack.simulation_requested(update=False)
+                results_increment[globalparms.optresponse] = b_app.opticstate.optical_stack
                 
             # Save layer/material traits.  If None selected, it just skips
             if sconfig.choose_layers == 'Selected Layer':
@@ -655,7 +655,7 @@ class LayerSimulation(ABCSim):
         will add it.  If has a different one, will raise error.
         """
         if outpath is None:
-            outpath = op.join(self.outdir, self.outname)
+            outpath = op.join(self.sim_outdir, self.outname)
             
         ext = op.splitext(outpath)[-1]
         if ext:

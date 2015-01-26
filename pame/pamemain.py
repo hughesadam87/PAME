@@ -22,12 +22,10 @@ from gensim import LayerSimulation, ABCSim, SimConfigure
 from handlers import WarningDialog
 import config
 
+#http://stackoverflow.com/questions/27790572/traitsui-buggy-view-depending-on-os
 #import os 
-#os.environ['QT_API'] = 'pyqt'
-
-
-# Used to present a summary of the state of the program.   #
-#This may be deprecated or unuseful and is not all that important I think #
+#os.environ['QT_API'] = 'pyside'
+#os.environ['ETS_TOOLKIT'] = 'qt4'#, QT_API=pyside
 
 # Reflectance/Mode summary (don't think its used; think its deprecated)
 state_editor =\

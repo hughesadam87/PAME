@@ -262,9 +262,13 @@ class OpticalView(HasTraits):
             self.plot.legend.border_visible = True
             self.plot.legend.resizable = 'hv' #<--- doesn't work
         
-        ## Attach some tools to the plot
+        # Attach some tools to the plot
+        #http://docs.enthought.com/chaco/api/tools.html
         self.plot.tools.append(PanTool(self.plot))
-        zoom = BetterSelectingZoom(component=self.plot, tool_mode="box", always_on=False)
+        self.plot.tools.append(LineInspector(self.plot))
+        zoom = BetterSelectingZoom(component=self.plot,
+                                   tool_mode="box", 
+                                   always_on=False)
         self.plot.overlays.append(zoom)
         
     def infer_ndlayer(self, attr_name):

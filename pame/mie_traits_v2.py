@@ -255,8 +255,11 @@ class bare_sphere(ABCsphere):
                 f1=f1/m1  ; f2=m1*f2 ;  f3=f3/m1  ; f4=m1*f4            #Relation between at and be is simply adjusting these by m or 1/m
                 b=(f1-f2)/(f3-f4)
 
-                asum=asum+a ; bsum=bsum+b ;AB=a+b
-
+                asum=asum+a 
+                bsum=bsum+b 
+                AB=a+b
+                
+                # Why only real components in ext term?
                 ext_term=ext_term + ( (2.0*n + 1.0)  * AB.real)      #UNITLESS
                 scatt_term=scatt_term + ( (2.0*n + 1.0) ) * ( (abs(a))**2  + (abs(b))**2)
 
