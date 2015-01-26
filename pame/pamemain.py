@@ -17,6 +17,7 @@ from main_parms import FiberParms, SpecParms
 from interfaces import IOptic, ILayer, IMaterial, IStorage, ISim
 from fiberview import FiberView
 from modeltree_v2 import Model
+from plotselector import PlotSelector
 from gensim import LayerSimulation, ABCSim, SimConfigure
 from handlers import WarningDialog
 import config
@@ -71,38 +72,20 @@ class GlobalScene(HasTraits):
     fiberparms=Instance(FiberParms,())
     modeltree=Instance(Model,())
     lambdas=DelegatesTo('specparms')  #Actually not used except for making it easy to run sims
+    plot_selector = Instance(PlotSelector)
 
     fview=Instance(FiberView,())     #May want to pass specparms and fiberparms to this later if it requries them
 
     current_state = Instance(IOptic)
     opticstate = Instance(IOptic)
     opticview = DelegatesTo('opticstate')
-
+    
     save=Button
     load=Button
     refresh = Button  #FOR TESTING, DELETE AFTER DONE
     
-    
-    ## For simulations
-    sim_outdir=Directory 
-
-    def _load_fired(self):
-        self.simulations=pickle.load(open("test.p", "rb") )
-
-    def _save_fired(self):
-        pickle.dump(self.simulations , open( "test.p", "wb" ) )
-        
-    def _refresh_fired(self):
-        self.opticstate.update_opticview()
-        
-    # Where should this point?  WHAT IF DOESN"T EXIST
-    def _sim_outdir_default(self):
-        if op.exists(config.SIMFOLDER):
-            return config.SIMFOLDER
-        else:
-            return op.abspath('.')
-
     #Simulation 
+    sim_outdir=Directory     
     simulations=List(ISim)  
     selected_sim=Instance(ISim)
     configure_storage = Instance(SimConfigure,())   #<--- Want all sims to share this, right?
@@ -151,7 +134,7 @@ class GlobalScene(HasTraits):
         label='Material'
     )            
 
-    summarygroup=Group(
+    choosesimgroup=Group(
         Item('simulations', editor=sims_editor, show_label=False),
 
         # Can't remove this or program trips
@@ -163,18 +146,27 @@ class GlobalScene(HasTraits):
         label='Choose Simulation'
     )
 
-    simgroup=Group( Item('selected_sim', 
+    simgroup=Group(
+        Item('selected_sim', 
                          style='custom',
                          editor=InstanceEditor(),
-                         show_label=False), 
+                         show_label=False),           
                     label='Simulations')
+
+    globalgroup = Group( 
+        Item('specparms',show_label=False, style='custom'),      
+        Include('choosesimgroup'), #simulation and summary        
+        label='Globals',
+        )
+
 
     fullgroup=VSplit(
                 HSplit(
                   VGroup(
-                    Item('specparms',show_label=False, style='custom'),
-                    Item('sim_outdir', label='Output Directory', show_label=False),
-                    Include('summarygroup'), #simulation and summary
+                      Item('plot_selector', show_label=False, style='custom'),
+#                    Item('specparms',show_label=False, style='custom'),
+#                    Item('sim_outdir', label='Output Directory', show_label=False),
+#                    Include('choosesimgroup'), #simulation and summary
                       ),
                 # PLOT
                 VGroup(
@@ -186,6 +178,7 @@ class GlobalScene(HasTraits):
                 ),
                 
         Tabbed(
+            Include('globalgroup'),
             Include('fibergroup'), 
             Include('layergroup'),
             Include('materialgroup'),
@@ -217,6 +210,26 @@ class GlobalScene(HasTraits):
         self.simulations.append(LayerSimulation(base_app=self,
                                                 outname=config.SIMPREFIX+'0')
                                 )   #Pass self to a simulation environment
+
+
+    def _load_fired(self):
+        self.simulations=pickle.load(open("test.p", "rb") )
+
+    def _save_fired(self):
+        pickle.dump(self.simulations , open( "test.p", "wb" ) )
+        
+    def _refresh_fired(self):
+        self.opticstate.update_opticview()
+
+    def _plot_selector_default(self):
+        return PlotSelector(b_app=self)
+        
+    # Where should this point?  WHAT IF DOESN"T EXIST
+    def _sim_outdir_default(self):
+        if op.exists(config.SIMFOLDER):
+            return config.SIMFOLDER
+        else:
+            return op.abspath('.')
         
     # Store copy of current simulation 
     def new_sim(self): 

@@ -232,7 +232,7 @@ class ABCSim(HasTraits):
     missing_taits = List
     # Restore all traits to original values after simulation is over
     restore_status=Bool(True)     
-    status_message = Str #HTML
+    status_message = HTML#Str #HTML
     ready = Bool(False)
 
     simeditor =\
@@ -358,8 +358,7 @@ class ABCSim(HasTraits):
         # Are traits missing?
         if len(missing) > 0:
             status_message='<font color="red"> Could not find required traits: </font>'
-            for trait in missing:
-                status_message += trait + ',  '
+            status_message += ', '.join(missing)
             ready = False
             
         # Did user select duplicates of trait names
@@ -427,8 +426,6 @@ class LayerSimulation(ABCSim):
             )
         )      
         
-    
-
     def _outname_default(self): 
         return config.SIMPREFIX
 

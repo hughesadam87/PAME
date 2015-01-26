@@ -50,6 +50,8 @@ class DoubleSview(HasTraits):
 
     scatt1=Instance(ScatterView) 
     scatt2=Instance(ScatterView)
+    
+    implements(ICompositeView)    
 
     datanames=['Scattering', 'Absorbance', 'Extinction']
     hideplots=List( editor = CheckListEditor(

@@ -27,8 +27,10 @@ class IView(Interface):
     def set_sexy_data(self, data_list):
         ''' Same as above, used to restore trait values and things '''
 
-class ICompositeView(Interface):
+class ICompositeView(IView):
     '''Used mainly when simple plots are ported into more composite objects for better comparisons '''
+    # TECHNICALLY THIS SHOULDN"T BE AN INSTANCE OF IVEW BUT HAD TO DO IT TO 
+    # GET MAIN PLOTTING OF ALL MATERIALS TO WORK
 
 
 class IOptic(Interface):
