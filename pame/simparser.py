@@ -66,7 +66,7 @@ class LayerSimParser(HasTraits):
         """ Initialize from json file, output of simulation.save_json. """
         stream = customjson.load(path_or_fileobj)
         
-        return cls(about = stream['about'],      #<-- use **stream?
+        return cls (about = stream['about'],      #<-- use **stream?
                     static = stream['static'],
                     primary = stream['primary'],
                     results = stream['results'],
@@ -100,7 +100,6 @@ class LayerSimParser(HasTraits):
             except Exception:
                 return str(array_or_numeric)
         
-        print 'LOLOL'
         new_indent = '\n\t'  #Newline and indent line below
         
 #        if style == 'short':  
@@ -124,8 +123,10 @@ class LayerSimParser(HasTraits):
                 static_printout += '\n\t\t%s : %s' % (k, _smart_format(v) )
                                          
 
-        return 'dasdddddss'        
-#        return '\n\n'.join([input_printout, panel_printout, about_printout, static_printout])
+        return '\n\n'.join([input_printout,
+                            panel_printout, 
+                            about_printout,
+                            static_printout])
             
     def primary_panel(self, minor_axis=None, prefix=None):
         """ Returns primary as a Panel if possible, if fails, raises warning

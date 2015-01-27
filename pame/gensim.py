@@ -27,6 +27,7 @@ from interfaces import IMaterial, ISim
 from layer_editor import LayerEditor
 import config
 import customjson
+from simparser import LayerSimParser
 
 class SimError(Exception):
     """ """
@@ -136,13 +137,21 @@ class SimConfigure(HasTraits):
         """ Return config parameters, will end up in the 'About' portion of
         the simulation dictionary.
         """
-        return OrderedDict((k,v) for k,v in \
-                           [('Optical Quantities',self.choose_optics),
-                           ('Angle Averaging', self.averaging),
-                           ('Copy Full Optical Stack', self.store_optical_stack),
-                           ('Layer Quantities', self.additional_list),
-                           ('Deep Layer Storage', self.choose_layers)
-                           ])
+        #return OrderedDict((k,v) for k,v in \
+                           #[('Optical Quantities',self.choose_optics),
+                           #('Angle Averaging', self.averaging),
+                           #('Copy Full Optical Stack', self.store_optical_stack),
+                           #('Layer Quantities', self.additional_list),
+                           #('Deep Layer Storage', self.choose_layers)
+                           #])
+
+        return {'Optical Quantities':self.choose_optics,
+                'Angle Averaging': self.averaging,
+                'Copy Full Optical Stack': self.store_optical_stack,
+                'Layer Quantities': self.additional_list,
+                'Deep Layer Storage': self.choose_layers
+                           }                           
+        
     
     def _get_additional_list(self):
         """ User adds custom traits to additional box, deliminted by newline.
@@ -204,7 +213,7 @@ class ABCSim(HasTraits):
     save_as = Enum(config.SIMEXT, '.json')
 
     implements(ISim)
-    inc=Range(low=1,high=50,value=10) # Need as range for now I think
+    inc=Range(low=1,high=config.MAXSTEPS,value=10) # Need as range for now I think
 
     notes=Str('<ADD NOTES ON SIMULATION>')
 
@@ -219,7 +228,8 @@ class ABCSim(HasTraits):
     primary = Dict
     results = Dict            
     static = Dict
-    allstorage = Property(Dict) # Stores all three dicts plus metadata bout self
+    about = Dict #<-- Bug: if not trait, wouldn't save right...
+    allstorage = Property(Dict) # Stores all four dicts plus metadata bout self
     _completed = Property(Bool)  # Set to true when results is populated (better criteria?) 
 
     # Table for selecting objects
@@ -297,13 +307,14 @@ class ABCSim(HasTraits):
 
     def simulation_requested(self):
         """Method for returning parameters/metadata about the simulation"""
-        return  {'Simulation Name':self.outname, 
+        storage = self.configure_storage.simulation_requested()
+        return {'Simulation Name':self.outname, 
                 'Steps':self.inc, 
                 'Time/Date':self.time, 
                 'Notes':self.notes,
                 #Storage objects stored in SimConfigure 
                 # XX IMPORTANT XX
-                'Storage':self.configure_storage.simulation_requested()
+                'Storage':{'a':'b'}#copy.deepcopy(storage)
                 # Simulated traits end up in inputs dict
                 # 'Simulated Traits':sorted(self.simulation_traits.keys()) 
                 }
@@ -463,13 +474,11 @@ class LayerSimulation(ABCSim):
         """ 
         allout = OrderedDict()
         allout['static'] = self.static
-        allout['about'] = self.simulation_requested()
+        allout['about'] = self.simulation_requested()#{"FUCK":"YOU"} #<-- bug: simulation_requested9
         allout['primary'] = self.primary
         allout['results'] = self.results      
         allout['inputs'] = self.simulation_traits
-        return allout
-        
-        
+        return allout        
 
     def runsim(self): 
         """ Increments, updates all results.  Thre primary storage objects:
@@ -594,6 +603,7 @@ class LayerSimulation(ABCSim):
         self.primary = primarydict
         self.results = resultsdict
         self.static = staticdict
+        self.about = self.simulation_requested()
         
 
         # Prompt user to save?
@@ -639,7 +649,6 @@ class LayerSimulation(ABCSim):
 
         # Save .mpickle by opening simparser instance
         elif self.save_as == config.SIMEXT:
-            from simparser import LayerSimParser
             obj = LayerSimParser(**self.allstorage)
             obj.save(outpath)
             

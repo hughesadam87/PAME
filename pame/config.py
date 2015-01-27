@@ -31,7 +31,7 @@ xunit = 'Nanometers'
 SIMFOLDER = op.join( op.abspath('.'),'Simulations') #Default save folder for sims (smart to have this way?)
 SIMPREFIX = 'Layersim'
 SIMPARSERBACKEND = 'pandas' #pandas or skspec
-
+MAXSTEPS = 50
 # File extension
 SIMEXT = '.mpickle'
 
