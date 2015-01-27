@@ -38,6 +38,7 @@ _header = (
     ('wn', 'Backward Traveling Amp.'),
 #    ('vw','vw_list'),
     ('kz','Wavenumber Normal Comp.'),
+    ('absorb', 'Proportion Light Absorbed'),    
     ('ang_prop','Propagation angle (rad)')
     )
 

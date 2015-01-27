@@ -85,7 +85,8 @@ class LayerSimParser(HasTraits):
         
             
     def summary(self, style='short'):
-        """ """
+        """ Summarizes all dictionaries in nice, formatted output.  Arrays/
+        Lists are formatted for clarity."""
         if style not in ['short', 'full']:
             raise AttributeError('Style must be "short" or "full", got %s' % style)
         
@@ -100,7 +101,9 @@ class LayerSimParser(HasTraits):
             except Exception:
                 return str(array_or_numeric)
         
-        new_indent = '\n\t'  #Newline and indent line below
+        # Dictionaries loopings should be refactored into a function, but it
+        # would probably have to be recursive since sometimes have dict
+        # of dict, sometimes dict of scalars, some times mixed scalars/dict
         
 #        if style == 'short':  
         panel_printout = 'Primary:'
@@ -113,7 +116,13 @@ class LayerSimParser(HasTraits):
             
         about_printout = 'About:'
         for k,v in self.about.items():
-            about_printout += '\n\t%s : %s' % (k, _smart_format(v) )        
+            # TOTAL HACK FOR SINGLE ATTRIBUTE: Storage, which is dict
+            if isinstance(v, dict): #or ORderedDIct
+                about_printout += '\n\t%s:\n' % (k)        
+                for subk, subv in v.items():
+                    about_printout += '\t\t%s : %s\n' % (subk, _smart_format(subv) )                            
+            else:
+                about_printout += '\n\t%s : %s' % (k, _smart_format(v) )        
             
         static_printout = 'Static Parameters:'
         # Static is a dict of dicts

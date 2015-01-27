@@ -389,6 +389,27 @@ def coh_tmm(pol, n_list, d_list, th_0, lam_vac, pame_output=False):
 
     power_entering = power_entering_from_r(pol, r, n_list[0], th_0)
 
+    # Need unaltered output to comput absorb_in_each_layer
+    # Unchanged return from original source
+    # https://github.com/sbyrnes321/tmm/blob/master/tmm_core.py#L304
+    unaltered_out= {'r': r, 
+            't': t,
+            'R': R, 
+            'T': T, 
+            'power_entering': power_entering,
+             'vw_list': vw_list,
+             'kz_list': kz_list, 
+             'th_list': th_list,
+             'pol': pol,
+             'n_list': n_list,
+             'd_list': d_list, 
+             'th_0': th_0,
+             'lam_vac':lam_vac
+             }
+
+    
+    absorp_in_layers = absorp_in_each_layer(unaltered_out)
+
     if pame_output:
         # pame /vector_coh_tmm return
         out = {'r_amp': r, 
@@ -398,29 +419,18 @@ def coh_tmm(pol, n_list, d_list, th_0, lam_vac, pame_output=False):
              'A': A,
              'pe': power_entering,
              }
+        # Add quantities that have a value in each layer
         out.update( _flatten('vn', vn) )
         out.update( _flatten('wn', wn) )
         out.update( _flatten('kz', kz_list) ) 
+        #adsorption in each layer (special)        
+        out.update( _flatten('absorb',  absorp_in_layers))
         out.update( _flatten('ang_prop', th_list) )
         return out
 
     else:
-        # Unchanged return from original source
-        # https://github.com/sbyrnes321/tmm/blob/master/tmm_core.py#L304
-        return {'r': r, 
-                't': t,
-                'R': R, 
-                'T': T, 
-                'power_entering': power_entering,
-                 'vw_list': vw_list,
-                 'kz_list': kz_list, 
-                 'th_list': th_list,
-                 'pol': pol,
-                 'n_list': n_list,
-                 'd_list': d_list, 
-                 'th_0': th_0,
-                 'lam_vac':lam_vac
-                 }
+        return unaltered_out
+
 
 def coh_tmm_reverse(pol, n_list, d_list, th_0, lam_vac):
     """

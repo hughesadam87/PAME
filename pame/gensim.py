@@ -56,8 +56,12 @@ class SimConfigure(HasTraits):
     averaging = Enum('Average', 'Not Averaged', 'Both')
         
     #https://github.com/enthought/traitsui/blob/master/examples/demo/Standard_Editors/CheckListEditor_simple_demo.py
+    #http://stackoverflow.com/questions/23650049/traitsui-checklisteditor-changing-the-case-of-values?rq=1 
     choose_optics = List(editor=CheckListEditor(values = globalparms.header.keys(),  
-                                                cols=3), value=globalparms.selected)
+                                                cols=3), 
+                                                #format_func=lambda x: x.lower(), #<-- no works
+                                                value=globalparms.selected)
+    _ignoreme = Property(List, depends_on='choose_optics')
 
     choose_layers = Enum('Selected Layer', 'All Layers', 'None')
     additional = Str()
@@ -95,6 +99,12 @@ class SimConfigure(HasTraits):
             layout='tabbed'),
         buttons = [ 'OK', 'Cancel' ],#'Undo]
                  )       
+    
+    def _get__ignoreme(self):
+        """ Weird BUG where choose_optics (as defined) doesn't save when 
+        simulation requested, so if I make a regular list without defining
+        a checklist editor, it just works..."""
+        return [i for i in self.choose_optics]
     
     def _justwrapit(self, text, width=WRAPWIDTH):
         """ Wrap long lines of text to WRAPWIDTH"""
@@ -137,20 +147,21 @@ class SimConfigure(HasTraits):
         """ Return config parameters, will end up in the 'About' portion of
         the simulation dictionary.
         """
-        #return OrderedDict((k,v) for k,v in \
-                           #[('Optical Quantities',self.choose_optics),
-                           #('Angle Averaging', self.averaging),
-                           #('Copy Full Optical Stack', self.store_optical_stack),
-                           #('Layer Quantities', self.additional_list),
-                           #('Deep Layer Storage', self.choose_layers)
-                           #])
+        return OrderedDict((k,v) for k,v in \
+                           [('Optical Quantities',self._ignoreme),
+                           ('Angle Averaging', self.averaging),
+                           ('Copy Full Optical Stack', self.store_optical_stack),
+                           ('Layer Quantities', self.additional_list),
+                           ('Deep Layer Storage', self.choose_layers)
+                           ])
 
-        return {'Optical Quantities':self.choose_optics,
-                'Angle Averaging': self.averaging,
-                'Copy Full Optical Stack': self.store_optical_stack,
-                'Layer Quantities': self.additional_list,
-                'Deep Layer Storage': self.choose_layers
-                           }                           
+                           
+        #return {'Optical Quantities':self.choose_optics,
+                #'Angle Averaging': self.averaging,
+                #'Copy Full Optical Stack': self.store_optical_stack,
+                #'Layer Quantities': self.additional_list,
+                #'Deep Layer Storage': self.choose_layers
+                #}                           
         
     
     def _get_additional_list(self):
@@ -228,7 +239,6 @@ class ABCSim(HasTraits):
     primary = Dict
     results = Dict            
     static = Dict
-    about = Dict #<-- Bug: if not trait, wouldn't save right...
     allstorage = Property(Dict) # Stores all four dicts plus metadata bout self
     _completed = Property(Bool)  # Set to true when results is populated (better criteria?) 
 
@@ -308,16 +318,15 @@ class ABCSim(HasTraits):
     def simulation_requested(self):
         """Method for returning parameters/metadata about the simulation"""
         storage = self.configure_storage.simulation_requested()
-        return {'Simulation Name':self.outname, 
-                'Steps':self.inc, 
-                'Time/Date':self.time, 
-                'Notes':self.notes,
-                #Storage objects stored in SimConfigure 
-                # XX IMPORTANT XX
-                'Storage':{'a':'b'}#copy.deepcopy(storage)
-                # Simulated traits end up in inputs dict
-                # 'Simulated Traits':sorted(self.simulation_traits.keys()) 
-                }
+        return OrderedDict([(k,v) for k,v in 
+                            ('Simulation Name',self.outname), 
+                            ('Steps',self.inc), 
+                            ('Time/Date',self.time), 
+                            ('Notes',self.notes),
+                            #Storage objects stored in SimConfigure 
+                            # XX IMPORTANT XX
+                            ('Storage',storage)
+                            ])
 
 
     def _tvals_changed(self): 
@@ -474,7 +483,7 @@ class LayerSimulation(ABCSim):
         """ 
         allout = OrderedDict()
         allout['static'] = self.static
-        allout['about'] = self.simulation_requested()#{"FUCK":"YOU"} #<-- bug: simulation_requested9
+        allout['about'] = self.simulation_requested() #<-- bug: simulation_requested9
         allout['primary'] = self.primary
         allout['results'] = self.results      
         allout['inputs'] = self.simulation_traits
@@ -602,9 +611,7 @@ class LayerSimulation(ABCSim):
         # SET STORAGE TRAITS
         self.primary = primarydict
         self.results = resultsdict
-        self.static = staticdict
-        self.about = self.simulation_requested()
-        
+        self.static = staticdict        
 
         # Prompt user to save?
         popup = BasicDialog(message='Simulation complete.  Would you like to save now?')
