@@ -1,9 +1,10 @@
 from __future__ import absolute_import
 from traitsui.value_tree import TraitsNode
 
-from traits.api import HasTraits, Any, Enum, List, Bool
+from traits.api import HasTraits, Any, Enum, List, Bool, Function, Str, \
+     Property
 from traitsui.api import View, Item, ValueEditor, OKCancelButtons, \
-     CheckListEditor
+     CheckListEditor, HGroup
 import numpy as np
 import functools
 
@@ -16,16 +17,13 @@ def _RESTORE():
      """
      TraitsNode.tno_get_children = ORIGINALTRAITNODE
      
-def hackednode( traitsnodeobj, ndoe, hide_privates=True,  
-                allowed=[int, float, np.ndarray] ):
+def arraynode( traitsnodeobj, node, hide_privates=True,  
+                allowed=[np.ndarray] ):
      """ Gets the object's children.  
       self=TraitsNode object
       node=ObjectTreeNode
      """
      
-     #if traitsnodeobj is None:
-          #return 
-     #print 'hi', traitsnodeobj, node, 'fofof\n\n\n'
      names = traitsnodeobj._get_names()
      names.sort()
      value    = traitsnodeobj.value
@@ -41,19 +39,37 @@ def hackednode( traitsnodeobj, ndoe, hide_privates=True,
               if name.startswith('_'):
                   continue #<-- skip 
 
-          print 'checking', type(item_value)
           if type(item_value) in allowed or isinstance(item_value, HasTraits):
               nodes.append( node_for( '.' + name, item_value ) )
 
      return nodes   
 
-#def set_hack(hack=1):     
-     #if hack == 1: 
-          #TraitsNode.tno_get_children = hack1
-     #elif hack == 2:
-          #TraitsNode.tno_get_children = hack2
-     #else:
-          #_RESTORE()
+def numericnode( traitsnodeobj, node, hide_privates=True,  
+                allowed=[int, float] ):
+     """ Gets the object's children.  
+      self=TraitsNode object
+      node=ObjectTreeNode
+     """
+     
+     names = traitsnodeobj._get_names()
+     names.sort()
+     value    = traitsnodeobj.value
+     node_for = traitsnodeobj.node_for
+     nodes    = []
+     for name in names:
+          try:
+               item_value = getattr( value, name, '<unknown>' )
+          except Exception, excp:
+               item_value = '<%s>' % excp
+
+          if hide_privates:
+              if name.startswith('_'):
+                  continue #<-- skip 
+
+          if type(item_value) in allowed or isinstance(item_value, HasTraits):
+              nodes.append( node_for( '.' + name, item_value ) )
+
+     return nodes   
 
 class TraitBrowser(HasTraits):
      """ View value heirarchy in traits.  Selection not working at the 
@@ -61,19 +77,25 @@ class TraitBrowser(HasTraits):
      to change output style.
      """
 
-     traits_tree = Any #<-- Instance of selected traits 
-#     hack = Enum([1,2,3])
+     traits_tree = Any #<-- Instance of stack 
      use_default = Bool(False)
-     #http://stackoverflow.com/questions/23650049/traitsui-checklisteditor-changing-the-case-of-values?rq=1      
-     hide = List(editor=CheckListEditor(
-                       values = ['arrays', 'scalars', 'strings', 'private'],
-                        cols=4),
-                    value=['strings', 'private'])
+     monkeyfunction = Function
+
+     # For display/view only
+     _allowed = Str #<-- defined in subclasses
+     _infostr = Property(Str, depends_on='use_default')
+     
+     def _get__infostr(self):
+          """ View message. """
+          if not self.use_default:
+               return 'Showing %s Traits only' % self._allowed
+          return 'Showing Everything'
      
      traits_view = View(
- #         Item('hack'),
-          Item('use_default'),
-          Item('hide', show_label=False, style='custom'),
+          HGroup(
+               Item('use_default', label='Show All Traits'),
+               Item('_infostr', style='readonly', show_label=False)
+               ),
           Item('traits_tree', 
                editor=ValueEditor(), 
                show_label=False),
@@ -83,69 +105,71 @@ class TraitBrowser(HasTraits):
           width=.4,
           height=.4                              
      )
-
-     #def _hack_changed(self):
-          #print 'setting hack to', self.hack
-          ##TraitsNode.tno_get_children = hack1
-          #set_hack(self.hack)
-
-          ## Force Refresh view
-          #self.trait_view().updated = True      
+     
+     def __init__(self, *args, **kwargs):
+          super(TraitBrowser, self).__init__(*args, **kwargs)
+          TraitsNode.tno_get_children = self.monkeyfunction               
+     
           
-     def _hide_changed(self):
-          """ Hide or show various attributes in ValueEditor.  Constructs
-          a partial function based on values of self.hide and monkeypatches
-          TraitNode.  Very hacky.
-          """
-          if self.use_default:
-               return
-          hide = self.hide
-          if 'private' in hide:
-               hide_privates = True
-          else:
-               hide_privates = False
-          # Could make this more "general" with a mapper, but it's 1am
-          allowed = []
-          if 'strings' not in hide:
-               allowed.append(basestring)
-          if 'scalars' not in hide:
-               allowed += [int, float]
-          if 'arrays' not in hide:
-               allowed.append(np.ndarray)
+     #def _hide_changed(self):
+          #""" Hide or show various attributes in ValueEditor.  Constructs
+          #a partial function based on values of self.hide and monkeypatches
+          #TraitNode.  Very hacky.
+          #"""
+          #if self.use_default:
+               #return
+          
+          #hide = self.hide
+          #if 'private' in hide:
+               #hide_privates = True
+          #else:
+               #hide_privates = False
+          ## Could make this more "general" with a mapper, but it's 1am
+          #allowed = []
+          #if 'strings' not in hide:
+               #allowed.append(basestring)
+          #if 'scalars' not in hide:
+               #allowed += [int, float]
+          #if 'arrays' not in hide:
+               #allowed.append(np.ndarray)
 
           # X MONKEY PATCH
+          # http://stackoverflow.com/questions/28185336/monkey-patching-with-a-partial-function
           #outfcn = functools.partial(hackednode,
                                      #hide_privates = hide_privates,
                                      #allowed = allowed)
           
-         #TraitsNode.tno_get_children = outfcn
+          #TraitsNode.tno_get_children = outfcn
 
                    
-         #XXX
-         # SINCE MONKEY PATCHING DOES WORK, JUST GOING TO CALL THIS WITH DEFAULTS
-          TraitsNode.tno_get_children = hackednode
+         ##XXX
+         ## SINCE MONKEY PATCHING DOES WORK, JUST GOING TO CALL THIS WITH DEFAULTS
+          #TraitsNode.tno_get_children = self.monkeyfunction
           
-          # Force Refresh view
-          self.trait_view().updated = True             
+          ##Force Refresh view
+          #self.trait_view().updated = True             
           
-     def __use_default_changed(self):
+     def _use_default_changed(self):
           """ Restore ValueEditor to unchanged values. """
-          if self._use_default:
+          if self.use_default:
                _RESTORE()
-               # Force Refresh view
-               self.trait_view().updated = True                
+          else:
+               TraitsNode.tno_get_children = self.monkeyfunction               
+           # Force Refresh view
+          self.trait_view().updated = True                
 
-     def __init__(self, *args, **kwargs):
-          super(TraitBrowser, self).__init__(*args, **kwargs)
 
-     # No Works
-     #def _current_selection_changed(self):
-          #print 'woot current select'
-          
-if __name__ == '__main__':
-     # Pass test HasTraits object in to test it
-     test_object = HasTraits()
-     TraitBrowser(trait_tree=test_object).configure_traits()
+class ArrayBrowser(TraitBrowser):
+     """ Display only array and Traits. """
+     _allowed = 'Array'
+
+     def _monkeyfunction_default(self):
+          return arraynode
      
+class NumericBrowser(TraitBrowser):
+     """ Display only int, floats and Traits """
+     _allowed = 'Numerical (int/float)'    
      
+     def _monkeyfunction_default(self):
+          return numericnode    
 

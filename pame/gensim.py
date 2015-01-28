@@ -143,10 +143,8 @@ class SimConfigure(HasTraits):
                                 ' For just the selected layer, or None?')
 
     def __grabbutton_fired(self):
-        """ Launch """
-        import random
-        browser = hackedvtree.TraitBrowser(traits_tree=self.b_app.stack,
-                                     hack=random.randint(1,2))
+        """ Launch Browser to view traits """
+        browser = hackedvtree.ArrayBrowser(traits_tree=self.b_app.stack)
         browser.edit_traits()#kind='modal') #Modal may be necessary when select works
         #foo = browser.configure_traits(kind='modal')
         #common_traits.append(foo.selected)
@@ -180,13 +178,15 @@ class SimConfigure(HasTraits):
         out = [str(s) for s in self.additional.strip().split('\n') if s] #<-- blank string
         return list(set(out))  #<-- remove duplicates
 
-    # Eventually replace with tree editor
     def _translator_default(self):	
+        # Make ordered dict       
         return {          
+            'Selected Layer Dielectric Function':'selected_material.earray',
+            'Selected Layer Index of Refraction':'selected_material.narray',
             'Selected Layer Extinction Cross Section (NanoMaterials Only)':'selected_material.FullMie.Cext',
             'Selected Layer Scattering Cross Section (NanoMaterials Only)':'selected_material.FullMie.Cscatt',
             'Selected Layer Absorbance Cross Section (NanoMaterials Only)':'selected_material.FullMie.Cabs',
-        }
+             }
 
     def _traitscommon_changed(self): 
         """ Set current layer from the name translator for more clear use. """	
@@ -423,7 +423,6 @@ class ABCSim(HasTraits):
         """ ABC METHOD """
         pass
 
-
     def _start_fired(self): 
         # Check sim traits one more time in case overlooked some trait that should call 
         # check_sim_ready()
@@ -471,7 +470,7 @@ class LayerSimulation(ABCSim):
             'NP Core radius (NanoMaterials Only)':'selected_material.r_core',
             'NP Shell Thickness (NanoShell Only)':'selected_material.shell_thickness',
             'NP Shell Fill Fraction (NanoShell Only)':'selected_material.CoreShellComposite.Vfrac' 
-        }
+             }
 
 
     def _sim_variables_default(self):
