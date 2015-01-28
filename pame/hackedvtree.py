@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from traitsui.value_tree import TraitsNode
+from traitsui.value_tree import TraitsNode, IntNode
 
 from traits.api import HasTraits, Any, Enum, List, Bool, Function, Str, \
      Property
@@ -14,6 +14,12 @@ from pame.interfaces import IView
 
 # Original value of monkeypatched method
 ORIGINALTRAITNODE = TraitsNode.tno_get_children
+
+def newformat(self, value):
+     return repr('fuck it%s' % value)
+
+IntNode.format_value = newformat
+
 
 def _RESTORE():
      """ Restore method to default behavior; othrerwise, all ValueEditors
@@ -81,11 +87,11 @@ def numericnode( parentnode, node, hide_privates=True,
                newnode = node_for( '.' + name, item_value ) 
                nodes.append( newnode )
                label = newnode.label
-               print 'oldlabel', label, newnode.tno_get_label()
                # What is the method that actually sets the value?
-               if isinstance(newnode, IntNode):
-                    newnode.label='Int(%s)' % value
-               print newnode
+
+             #  if isinstance(newnode, IntNode):
+             #       newnode.label='Int(%s)' % value
+             #  print newnode
                
                
      return nodes   

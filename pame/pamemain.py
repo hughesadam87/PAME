@@ -209,9 +209,9 @@ class GlobalScene(HasTraits):
           self.sync_trait('layereditor', self.opticstate, 'layereditor')
 
      #self.simulations.append(LayerSimulationEpsilon(base_app=self))   #Pass self to a simulation environment
-          self.simulations.append(LayerSimulation(base_app=self,
-                                                  outname=config.SIMPREFIX+'0')
-                                  )   #Pass self to a simulation environment
+          self.simulations.append(
+               LayerSimulation(base_app=self, outname=config.SIMPREFIX+'0')
+                                  )  
 
 
      def _load_fired(self):
