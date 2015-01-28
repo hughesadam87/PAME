@@ -23,7 +23,7 @@ USERIINFO = True #slows performance
 # Spectral parameters
 xstart = 400 
 xend = 700
-xpoints = 100
+xpoints = 5
 xunit = 'Nanometers'
 
 # Simulation

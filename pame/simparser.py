@@ -23,6 +23,7 @@ import cPickle, types, collections, sys, os #For type checking, collections only
 from traits.api import *
 from traitsui.api import message
 from pandas import DataFrame, Panel
+from pame.utils import AttrDict
 
 #Local imports
 from handlers import FileOverwriteDialog
@@ -52,14 +53,22 @@ class LayerSimParser(HasTraits):
     about = Dict()
     static = Dict()
     primary = Dict()
-    results = Dict()
+    results = Instance(AttrDict) #<-- Actually a special dictionary with attribute access
     inputs = Dict()
-
+    
     primarypanel = Instance(Panel)
     backend = Str('pandas')#Enum(['skspec', 'pandas'])
 
+    def __init__(self, *args, **kwargs):
+        #Initialize traits
+        results = kwargs.pop('results', {})
+        super(LayerSimParser, self).__init__(*args, **kwargs)
+        # Change results to AttrDict
+        self.results = AttrDict(results)
+
     def _backend_default(self):
         return config.SIMPARSERBACKEND
+    
     
     @classmethod
     def load_json(cls, path_or_fileobj, **traitkwds):
@@ -97,7 +106,9 @@ class LayerSimParser(HasTraits):
             if isinstance(array_or_numeric, basestring):
                 return array_or_numeric
             try:
-                return '(%s - %s)' % (array_or_numeric[0], array_or_numeric[-1])
+                return '%s(%s - %s)' % (type(array_or_numeric), 
+                                        array_or_numeric[0], 
+                                        array_or_numeric[-1])
             except Exception:
                 return str(array_or_numeric)
         
@@ -136,6 +147,24 @@ class LayerSimParser(HasTraits):
                             panel_printout, 
                             about_printout,
                             static_printout])
+            
+    def promote(self, attr, alias=None):
+        """ Takes results attribute of form 'a.b.c' corresponding to 
+        'step.results.a.b.c and promotes it for each step into 
+        primary.  Alias is name of attr put into primary.
+        """
+        out = []
+        if not alias:
+            alias = attr 
+        for step in self.results:
+            try:
+                longattr = '%s.%s' % (step, attr)
+                value = getattr(self.results, longattr)
+            except AttributeError:
+                raise SimParserError('Could not find attribute %s on step %s')
+            
+            # Just adds it to primary at each step
+            self.primary[step].update({alias:value})
             
     def primary_panel(self, minor_axis=None, prefix=None):
         """ Returns primary as a Panel if possible, if fails, raises warning
@@ -215,58 +244,6 @@ class LayerSimParser(HasTraits):
                 delattr(self, attr)
                 if verbose==True:
                     print 'Removing attribute, %s, from toplevel namespace'%attr                
-
-    def write_parms(self, full=True, outfile=None):
-        """ Print simulation parameters to screen.  If full=True, prints values as well.  
-        full:
-           If false, program will only print names of parameters, not values (e.g. lite version)
-        outfile:
-           If true, lazy use of stdout to redirect output (instead of using loggin module which is better for this)."""
-        if outfile:
-            if os.path.exists(outfile):
-                test=FileOverwriteDialog(filename=outfile)
-                ui=test.edit_traits(kind='modal')
-                # break out and don't save#
-                if ui.result==False:
-                    print '\n\t Aborting write_parms()'
-                    return            
-
-
-            o=open(outfile, 'w')
-            sys.stdout=o
-
-        if full==True:
-            print '**Results panel** (self.results)\n\n', self.results
-            print '\n**Parameters Dataframe** (self.sim_parms)\n\n', self.sim_parms
-
-        print '\nVariable parameters:\n'
-
-        for key in sorted(self.simparms):
-            if key in self.translator:
-                key=key+' ('+self.translator[key] +')'  #These are awlays strings so get away with +
-            print '\t',key
-
-
-        print '\nStatic parameters:'  #dict of dicts like {A: {B:(c,d), E:(f,g) }} (strict type check)
-        for major in sorted(self.parms):
-            print '\n\t',major+':'
-            for minor in self.parms[major]:
-                if full==True:
-                    value=self.parms[major][minor]
-
-                # Output iterables separate from rest (str is iterable so be carefule) 
-                    if isinstance(value, collections.Iterable) and not isinstance(value, basestring):
-                        value=' , '.join(str(i) for i in value)
-
-                    out=':  '.join([minor,str(value)])                      
-                else:
-                    out=minor
-                print '\t\t',out
-
-        if outfile:
-            sys.stdout=sys.__stdout__
-            o.close()
-            message('Parameters copied to file %s'%outfile, title='Success')
 
     # Quick interface to save/load this entire object.  This entire object can itself pickle normally,
     # so downstream processing can open it up and then output data as necessary.

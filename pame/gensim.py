@@ -26,8 +26,11 @@ from main_parms import SpecParms
 from interfaces import IMaterial, ISim
 from layer_editor import LayerEditor
 import config
+import hackedvtree
 import customjson
+import utils
 from simparser import LayerSimParser
+
 
 class SimError(Exception):
     """ """
@@ -37,16 +40,17 @@ WRAPWIDTH = 100 # Text characters for wrapping lines
 # ADD SAVE/LOAD UBTTONS
 class SimConfigure(HasTraits):
     """ Configuration what is stored/output in simulation."""
-    
+
+    b_app = Any #<-- necessary for the grab viewer
     save = Button
     outpath = File
-    
+
     _opticalmessage_p1 = Str
     _opticalmessage_p2 = Str
     _layermessage_p1 = Str    
     _layermessage_p2 = Str
     _grabbutton = Button
-    
+
     # Used to store most common simulation names in a user-readable fashion, Enum for dropdown list.
     translator=Dict()
     translist=Property(List, depends_on='translator')
@@ -54,22 +58,22 @@ class SimConfigure(HasTraits):
 
     # Summary storage
     averaging = Enum('Average', 'Not Averaged', 'Both')
-        
+
     #https://github.com/enthought/traitsui/blob/master/examples/demo/Standard_Editors/CheckListEditor_simple_demo.py
     #http://stackoverflow.com/questions/23650049/traitsui-checklisteditor-changing-the-case-of-values?rq=1 
     choose_optics = List(editor=CheckListEditor(values = globalparms.header.keys(),  
                                                 cols=3), 
-                                                #format_func=lambda x: x.lower(), #<-- no works
-                                                value=globalparms.selected)
+                         #format_func=lambda x: x.lower(), #<-- no works
+                         value=globalparms.selected)
     _ignoreme = Property(List, depends_on='choose_optics')
 
     choose_layers = Enum('Selected Layer', 'All Layers', 'None')
     additional = Str()
     additional_list = Property(List, depends_on = 'additional, traitscommon')
-    
+
     # Simulation object to be stored
     store_optical_stack = Bool(False)
-    
+
     traits_view = View(
         Group(
             VGroup(
@@ -78,69 +82,73 @@ class SimConfigure(HasTraits):
                 Item('choose_optics', style='custom', label='Optical Quantities', show_label=False),
                 Item('_opticalmessage_p2', show_label=False, style='readonly'),
                 Item('store_optical_stack', show_label=False, label='copy'),      
-              label='Optics'
-              ),
-    
-            VGroup(
-              Item('_layermessage_p1', show_label=False, style='readonly'),
-              HGroup(
-                   Item('traitscommon', label='Common'),
-                   Item('_grabbutton', label='Browse')
-                   ),
-              Item('additional', 
-                   style='custom',
-                   show_label=False,
-                   label='<font color="red">Top-level Traits </font>'),
-              Item('_layermessage_p2', show_label=False, style='readonly'),              
-              Item('choose_layers', style='custom', show_label=False, label='Deep Copy'),
-              label='Dielectric Slab'              
+                label='Optics'
+                ),
 
-              ),
+            VGroup(
+                Item('_layermessage_p1', show_label=False, style='readonly'),
+                HGroup(
+                    Item('traitscommon', label='Common'),
+                    Item('_grabbutton', label='Browse', show_label=False)
+                    ),
+                Item('additional', 
+                     style='custom',
+                     show_label=False,
+                     label='<font color="red">Top-level Traits </font>'),
+                Item('_layermessage_p2', show_label=False, style='readonly'),              
+                Item('choose_layers', style='custom', show_label=False, label='Deep Copy'),
+                label='Dielectric Slab'              
+
+                ),
             layout='tabbed'),
         buttons = [ 'OK', 'Cancel' ],#'Undo]
-                 )       
-    
+    )       
+
     def _get__ignoreme(self):
         """ Weird BUG where choose_optics (as defined) doesn't save when 
         simulation requested, so if I make a regular list without defining
         a checklist editor, it just works..."""
         return [i for i in self.choose_optics]
-    
+
     def _justwrapit(self, text, width=WRAPWIDTH):
         """ Wrap long lines of text to WRAPWIDTH"""
         return '\n'.join(textwrap.wrap(text, width=width))
-    
+
     # Can't put a newline character before a <font> statment (after is ok), so can't 
     # color code any of this text.
     def __opticalmessage_p1_default(self):
         return self._justwrapit('Select which optical quantities (Reflectance, Transmittance etc...) '
-            'the simulation should store for immediate access when parsing.  Choose to average '
-            'over the angles or to store each quantity at every angle.  For example, for '
-            'three angles, should simulation will output R_1, R_2, R_3 or R_Avg or both?')
-        
+                                'the simulation should store for immediate access when parsing.  Choose to average '
+                                'over the angles or to store each quantity at every angle.  For example, for '
+                                'three angles, should simulation will output R_1, R_2, R_3 or R_Avg or both?')
+
 
     def __opticalmessage_p2_default(self):
         return self._justwrapit('Check the box below and a deep copy of the full optical stack will store the '
-            'unaltered optical quantites in their original, unparsed form for each step of the '
-            'iteration.  This will add appreciably to the size of the saved simulation file.')
-        
+                                'unaltered optical quantites in their original, unparsed form for each step of the '
+                                'iteration.  This will add appreciably to the size of the saved simulation file.')
+
 
     def __layermessage_p1_default(self):
         return self._justwrapit('Choose Material quantites like index of refraction and nanoparticle scattering'
-                ' cross section to be stored for immediate access when parsing.  For example,'
-                '<selected_material.FullMie.Cscatt> stores the scattering cross section of a nanoparticles for a selected material.'
-                ' Some common ones are provided, or browse through the full stack.')
-        
+                                ' cross section to be stored for immediate access when parsing.  For example,'
+                                '<selected_material.FullMie.Cscatt> stores the scattering cross section of a nanoparticles for a selected material.'
+                                ' Some common ones are provided, or browse through the full stack.')
+
 
     def __layermessage_p2_default(self):
         return self._justwrapit('In addition to the material you selected for primary storage, the simulation'
-                ' will store many other material attributes which can be accessed by a'
-                ' parser.  Should the simulation store these for layers of the dielectric slab?'
-                ' For just the selected layer, or None?')
+                                ' will store many other material attributes which can be accessed by a'
+                                ' parser.  Should the simulation store these for layers of the dielectric slab?'
+                                ' For just the selected layer, or None?')
 
-    def _grabbutton_fired(self):
+    def __grabbutton_fired(self):
         """ Launch """
-        #foo = something.configure_traits(kind='modal')
+        import random
+        browser = hackedvtree.TraitBrowser(traits_tree=self.b_app.stack,
+                                     hack=random.randint(1,2))
+        browser.edit_traits()#kind='modal') #Modal may be necessary when select works
+        #foo = browser.configure_traits(kind='modal')
         #common_traits.append(foo.selected)
 
     def simulation_requested(self):
@@ -149,21 +157,21 @@ class SimConfigure(HasTraits):
         """
         return OrderedDict((k,v) for k,v in \
                            [('Optical Quantities',self._ignoreme),
-                           ('Angle Averaging', self.averaging),
-                           ('Copy Full Optical Stack', self.store_optical_stack),
-                           ('Layer Quantities', self.additional_list),
-                           ('Deep Layer Storage', self.choose_layers)
-                           ])
+                            ('Angle Averaging', self.averaging),
+                            ('Copy Full Optical Stack', self.store_optical_stack),
+                            ('Layer Quantities', self.additional_list),
+                            ('Deep Layer Storage', self.choose_layers)
+                            ])
 
-                           
+
         #return {'Optical Quantities':self.choose_optics,
                 #'Angle Averaging': self.averaging,
                 #'Copy Full Optical Stack': self.store_optical_stack,
                 #'Layer Quantities': self.additional_list,
                 #'Deep Layer Storage': self.choose_layers
                 #}                           
-        
-    
+
+
     def _get_additional_list(self):
         """ User adds custom traits to additional box, deliminted by newline.
         This removes unicode and returns as a list like:
@@ -171,23 +179,23 @@ class SimConfigure(HasTraits):
          """
         out = [str(s) for s in self.additional.strip().split('\n') if s] #<-- blank string
         return list(set(out))  #<-- remove duplicates
-        
+
     # Eventually replace with tree editor
     def _translator_default(self):	
         return {          
-           'Selected Layer Extinction Cross Section (NanoMaterials Only)':'selected_material.FullMie.Cext',
-           'Selected Layer Scattering Cross Section (NanoMaterials Only)':'selected_material.FullMie.Cscatt',
-           'Selected Layer Absorbance Cross Section (NanoMaterials Only)':'selected_material.FullMie.Cabs',
-            }
-    
+            'Selected Layer Extinction Cross Section (NanoMaterials Only)':'selected_material.FullMie.Cext',
+            'Selected Layer Scattering Cross Section (NanoMaterials Only)':'selected_material.FullMie.Cscatt',
+            'Selected Layer Absorbance Cross Section (NanoMaterials Only)':'selected_material.FullMie.Cabs',
+        }
+
     def _traitscommon_changed(self): 
         """ Set current layer from the name translator for more clear use. """	
         self.additional += self.translator[self.traitscommon]+'\n' #String
 
     def _get_translist(self): 
         return self.translator.keys()      
-    
-    
+
+
 
 class SimAdapter(HasTraits):
     """Shows selected simulation in table on main view """
@@ -244,7 +252,7 @@ class ABCSim(HasTraits):
 
     # Table for selecting objects
     selected_traits=Instance(SimAdapter) 
-    
+
     # Status/meta traits 
     sim_variables = List(SimAdapter) #Actual table of trait sto simulate over
     simulation_traits = Dict  #Dictionary of required trait names, with start, end values in tuple form for iteration.  For example "Volume": (13.2, 120.0)"
@@ -271,49 +279,49 @@ class ABCSim(HasTraits):
             selection_bg_color = 0xFBD391,
             row_factory=SimAdapter
         )
-    
+
     selection_group = Group(
         HGroup(
             Item('inc',label='Steps'), #<-- make me nicer after wx works                    
             #CHOOSE INPUT BUTTON            
             Item('tvals',
-             visible_when='selected_traits is not None', #<-- Should always be selected, but not in qt
-             label='Selected Layer Common Traits'),
+                 visible_when='selected_traits is not None', #<-- Should always be selected, but not in qt
+                 label='Selected Layer Common Traits'),
             ),       
         # sim_variables is actual table list of traits
         Item('sim_variables', editor=simeditor, show_label=False),
         HGroup(
             Item('restore_status', label='Restore program state after run' ),                
             Item('time', label='Start Time', style='readonly'), 
-              ),
-          label = 'Selection') 
-    
+            ),
+        label = 'Selection') 
+
     notesIO_group = Group(
         # Outdirectory
         HGroup(
-        Item('outname',label='Run Name'),   
-        Item('save_as',label='ext'),
-        Item('sim_outdir', label='directory'),
-        ),
+            Item('outname',label='Run Name'),   
+            Item('save_as',label='ext'),
+            Item('sim_outdir', label='directory'),
+            ),
         Item('notes',
              style='custom',
              show_label=False),
-    
-                   label='Notes/IO')
-    
+
+        label='Notes/IO')
+
     storage_group = Group(
         Item('configure_storage', 
              style='custom',
              label='Configure Storage',
              show_label=False),                          
-                    label='Storage')   
-    
+        label='Storage')   
+
     maingroup = Group(
-            Include('selection_group'),
-            Include('notesIO_group'),
-            Include('storage_group'),
-            layout='tabbed'
-            )    
+        Include('selection_group'),
+        Include('notesIO_group'),
+        Include('storage_group'),
+        layout='tabbed'
+    )    
 
     def simulation_requested(self):
         """Method for returning parameters/metadata about the simulation"""
@@ -348,7 +356,7 @@ class ABCSim(HasTraits):
         if self.results == {} and self.primary == {} and self.static == {}:
             return False
         return True
-        
+
     def _sim_variables_default(self): 
         return []
 
@@ -382,7 +390,7 @@ class ABCSim(HasTraits):
             status_message='<font color="red"> Could not find required traits: </font>'
             status_message += ', '.join(missing)
             ready = False
-            
+
         # Did user select duplicates of trait names
         trait_names = [obj.trait_name for obj in self.sim_variables]
         duplicates = set([name for name in trait_names if trait_names.count(name) > 1])
@@ -391,7 +399,7 @@ class ABCSim(HasTraits):
             for trait in duplicates:
                 status_message += trait + ',  '
             ready = False                        
-        
+
 
         if ready:
             status_message='<font color="green"> Simulation ready: all traits found</font>'
@@ -410,12 +418,12 @@ class ABCSim(HasTraits):
     def runsim(self): 
         """ ABC METHOD """
         pass
-    
+
     def save(self):
         """ ABC METHOD """
         pass
 
-    
+
     def _start_fired(self): 
         # Check sim traits one more time in case overlooked some trait that should call 
         # check_sim_ready()
@@ -439,33 +447,33 @@ class LayerSimulation(ABCSim):
     traits_view=View(
         VGroup(
             HGroup( 
-                    Item('status_message', style='readonly', label='Status'),           
-                    Item('start', show_label=False),   
-                    ),
+                Item('status_message', style='readonly', label='Status'),           
+                Item('start', show_label=False),   
+                ),
             Include('maingroup'),
-            )
-        )      
-        
+        )
+    )      
+
     def _outname_default(self): 
         return config.SIMPREFIX
 
     def _selected_material_changed(self):
         self.check_sim_ready()
-        
+
     def _selected_layer_changed(self):
         self.check_sim_ready()
 
     def _translator_default(self):	
         """ Common traits for INPUTS TO simulation.  NOT THE SAME AS STORAGE!"""
         return {
-           'Layer Fill Fraction':'selected_material.Vfrac',
-           'Layer Thickness':'selected_layer.d',
-           'NP Core radius (NanoMaterials Only)':'selected_material.r_core',
-           'NP Shell Thickness (NanoShell Only)':'selected_material.shell_thickness',
-           'NP Shell Fill Fraction (NanoShell Only)':'selected_material.CoreShellComposite.Vfrac' 
-            }
-    
-    
+            'Layer Fill Fraction':'selected_material.Vfrac',
+            'Layer Thickness':'selected_layer.d',
+            'NP Core radius (NanoMaterials Only)':'selected_material.r_core',
+            'NP Shell Thickness (NanoShell Only)':'selected_material.shell_thickness',
+            'NP Shell Fill Fraction (NanoShell Only)':'selected_material.CoreShellComposite.Vfrac' 
+        }
+
+
     def _sim_variables_default(self):
         """ Initial traits to start with """
         obs=[]
@@ -473,7 +481,7 @@ class LayerSimulation(ABCSim):
         obs.append(SimAdapter(trait_name='selected_layer.d', start=50., end=100., inc=self.inc)),
         obs.append(SimAdapter(trait_name='selected_material.r_core', start=25., end=50., inc=self.inc)),
         return obs 
-           
+
 
     def _get_allstorage(self):
         """ Returns Ordered dict of dicts, where each dictionary is a primary storage dictionary:
@@ -491,15 +499,15 @@ class LayerSimulation(ABCSim):
 
     def runsim(self): 
         """ Increments, updates all results.  Thre primary storage objects:
-        
+
         staticdict --> Traits that are no altered in simulation.  
            Includes simulation inputs, spectral parameters and fiber/strata
            parameters.  In future version, could relax these if needed
            to simulation over a fiber parameter like core size.
-           
+
         primarydict --> Results that are to be promoted to top level.  
             Simparaser will try to show these as a panel.
-            
+
         resultsdict ---> Deep, nested results of layer and optical stack.  For 
             example, could access full optical stack on third increment via:
                  resultsdict['step3']['optics']['opticalstack'] 
@@ -507,11 +515,11 @@ class LayerSimulation(ABCSim):
                  resultsdict['step5']['selectedlayer']['material1']['fullmie']
             etc...
             Simparser should have methods to make these data more accessible.
-            
+
         """
 
         print 'running sim with traits', self.simulation_traits.keys()
-        
+
         # for name brevity
         sconfig = self.configure_storage 
         b_app = self.base_app
@@ -519,37 +527,37 @@ class LayerSimulation(ABCSim):
         # Storage
         primarydict = OrderedDict()   #<-- Keyed by increment, becomes primary panel!
         resultsdict = OrderedDict()   #<-- Keyed by increment, stores deep results, stays as dict
-                       
+
         # Traits not involved in simulation.  For this sim, includes spectral parameters, fiber/strata params
         # at simulation inputs.  Later sims may want to simulate over fiber traits (ie fiber diameter changes)
         # so would migrate these into resultsdict instead
         staticdict = OrderedDict()
         staticdict[globalparms.spectralparameters] = b_app.specparms.simulation_requested()         
         staticdict[globalparms.strataname] = b_app.fiberparms.simulation_requested()
-                
+
         # Begin iterations
         sorted_keys = []
         for i in range(self.inc):
             for trait in self.simulation_traits.keys():
                 trait = str(trait) # <--- get rid of damn unicode if user entered it
                 xsetattr(b_app, trait, self.simulation_traits[trait][i]) #Object, traitname, traitvalue
-                
+
             stepname = 'step_%s' % i
-                
+
             primary_increment = OrderedDict()  #<--- Toplevel/Summary of just this increment (becomes dataframe)
             results_increment = OrderedDict()  #<--- Deep results of just thsi increment (ie selected_material/layer etc..)
 
             key = '%s_%s' % (str(i), self.key_title)
             sorted_keys.append(key)
-            
+
             # Update Optical Stack
             b_app.opticstate.update_optical_stack() 
-            
+
             # Flatten sim attributes.  For example, if attrs selected for Sim are R, A, kz
             # kz actually has value in each layer so R, A, kz_1, kz_2, kz_3 is what needs
             # to be iterated over.
             flat_attributes = []
-           
+
             # How many layers in optical stack
             layer_indicies = range(len(b_app.opticstate.ns)) #0,1,2,3,4 for 5 layers etc...            
 
@@ -559,7 +567,7 @@ class LayerSimulation(ABCSim):
                 else:
                     # http://stackoverflow.com/questions/28031354/match-the-pattern-at-the-end-of-a-string
                     delim = '_%s' % globalparms._flat_suffix
-                    
+
                     # ['kz', 'vn', 'ang_prop']
                     setkeys = set(name.split(delim)[0] for name in 
                                   b_app.opticstate.optical_stack.minor_axis if delim in name)    
@@ -569,20 +577,20 @@ class LayerSimulation(ABCSim):
                     else:
                         raise SimError('Cannot simulate over optical stack attr "%s" '
                                        ' not found in optical stack.' % attr)
-            
+
             # --- PRIMARY RESULTS           
             # Take parameters from optical stack, put in toplevel via sconfig.choose_optics
             if sconfig.averaging in ['Average','Both']:
                 for optical_attr in flat_attributes:
                     primary_increment['%s_%s' % (optical_attr, 'avg')] = \
                         b_app.opticstate.compute_average(optical_attr) #<-- IS NUMPY ARRAY, object type
-                
+
             if sconfig.averaging in ['Not Averaged', 'Both']:
                 for optical_attr in flat_attributes:
                     # ITERATE OVER ANGLES! SAVE EACH ANGLE
                     for angle in b_app.opticstate.angles:
                         primary_increment['%s_%.2f' % (optical_attr, angle)] = \
-                                    b_app.opticstate.optical_stack[angle][optical_attr]  #<-- Save as what, numpy/pandas?        
+                            b_app.opticstate.optical_stack[angle][optical_attr]  #<-- Save as what, numpy/pandas?        
 
             # User-set dielectric slab quantites to be in primary
             for trait in sconfig.additional_list:
@@ -593,15 +601,15 @@ class LayerSimulation(ABCSim):
             # Store full Optical Stack
             if sconfig.store_optical_stack:
                 results_increment[globalparms.optresponse] = b_app.opticstate.optical_stack
-                
+
             # Save layer/material traits.  If None selected, it just skips
             if sconfig.choose_layers == 'Selected Layer':
                 results_increment['selected_layer'] = self.selected_layer.simulation_requested()
-                
+
             elif sconfig.choose_layers == 'All Layers':
                 results_increment['dielectric_layers'] = b_app.stack.simulation_requested()
-                    
-                                  
+
+
             # resultsdict >>  {step1 : {results_of_increment}, ...}
             resultsdict[stepname] = results_increment               
             primarydict[stepname] = primary_increment
@@ -628,11 +636,11 @@ class LayerSimulation(ABCSim):
 
         outpath: 
             Absolute save path.
-            
+
         confirmwindow:
             Confirms simulation saved with popup window.
         """
-                            
+
         outpath = self._validate_extension(outpath, self.save_as)
 
         # Check for file overwriting    
@@ -649,7 +657,7 @@ class LayerSimulation(ABCSim):
                     ' See self._completed to debug', 
                     title='Warning')
             return 
-        
+
         # Save json data
         if self.save_as == '.json':
             customjson.dump(self.allstorage, outpath)
@@ -658,10 +666,10 @@ class LayerSimulation(ABCSim):
         elif self.save_as == config.SIMEXT:
             obj = LayerSimParser(**self.allstorage)
             obj.save(outpath)
-            
+
         else:
             raise SimError("Don't know how to save simulation of type %s!" % self.save_as)
-            
+
         if confirmwindow == True:
             message('Simulation data saved to file %s' % outpath, title='Success')      
 
@@ -672,7 +680,7 @@ class LayerSimulation(ABCSim):
         """
         if outpath is None:
             outpath = op.join(self.sim_outdir, self.outname)
-            
+
         ext = op.splitext(outpath)[-1]
         if ext:
             if ext != extension:
