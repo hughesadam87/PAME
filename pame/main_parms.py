@@ -101,7 +101,50 @@ class SpecParms(HasTraits):
             return self.conv.output_array   
 
 
-class FiberParms(HasTraits):
+class AngleParms(HasTraits):
+    """ ABC class for Ellipsometry, Optical fibers.  Essentially stores a series of angles
+    and Modes used on reflectance computations.
+    """
+
+    Mode=Enum('S-polarized', 'P-polarized', 'Unpolarized')
+    
+    angle_start = Float(.5)
+    angle_stop = Float()
+    angle_inc = Float(.5)    
+    angle_avg = Str('Equal')
+    
+    angle_samples=Property(Int, depends_on=['angle_start', 'angle_stop', 'angle_inc'])
+    angles = Property(Array, depends_on=['angle_samples, Config']) 
+    angles_radians = Property(Array, depends_on=['angles'])
+    _angle_sumstring = Property(Str, depends_on='angles')
+    
+    def _get__angle_sumstring(self):
+        """ Summary of angles for nicer output"""
+        return 'Angles=%s' % str(len(self.angles))
+
+    def _angle_stop_default(self): 
+        return self.critical_angle
+
+    #@cached_property
+    def _get_angles(self):
+        return linspace(self.angle_start, self.angle_stop, num=self.angle_samples)
+
+    def _get_angles_radians(self):
+        return np.radians(self.angles)
+    
+    #@cached_property
+    def _get_angle_samples(self):
+        return round ((self.angle_stop-self.angle_start)  / self.angle_inc)     
+    
+    
+
+class EllipsometryParms(AngleParms):
+    """
+    """
+    Mode = Str('Unpolarized') #<-- Fixed because need RS, RP
+    
+
+class FiberParms(AngleParms):
     Config=Enum(['Axial', 'Transversal'])
 
     # Don't change these or BasicReflectance.update_R will get mad
@@ -110,22 +153,22 @@ class FiberParms(HasTraits):
     Dcore=Float(62.5)  #um
     Rcore=Property(Float, depends_on=['Dcore'])
 
-    angle_start = Float(.5)
-    angle_stop = Float()
-    angle_inc = Float(.5)
+    #angle_start = Float(.5)
+    #angle_stop = Float()
+    #angle_inc = Float(.5)
     angle_avg = Enum('Equal', 'Gupta') #Why not in fiberparms    
 
-    ### Used to compute hypothetical max angle capacity, but are not actually used in iteration over angle start-stop
+    # Hypothetical max angle capacity, but are not actually used in iteration over angle start-stop
     NA=Float(.275)
     critical_angle=Property(Float, depends_on=['NA'])  #Critical angle
 
-    angle_samples=Property(Int, depends_on=['angle_start', 'angle_stop', 'angle_inc'])
-    angles = Property(Array, depends_on=['angle_samples, Config']) 
-    angles_radians = Property(Array, depends_on=['angles'])
+#    angle_samples=Property(Int, depends_on=['angle_start', 'angle_stop', 'angle_inc'])
+#    angles = Property(Array, depends_on=['angle_samples, Config']) 
+#    angles_radians = Property(Array, depends_on=['angles'])
+#    _angle_sumstring = Property(Str, depends_on='angles')
+
 
     N=Property(Array, depends_on=['Config', 'angles', 'Lregion', 'Dcore'])  #NUMBER OF REFLECTIONS
-
-    _angle_sumstring = Property(Str, depends_on='angles')
 
     # VIEW
     # -------------
@@ -158,18 +201,25 @@ class FiberParms(HasTraits):
                 )
         ))
                 
-    def _get__angle_sumstring(self):
-        """ Summary of angles for nicer output"""
-        return 'Angles=%s' % str(len(self.angles))
-
-    def _angle_stop_default(self): 
-        return self.critical_angle
-    
     def _Mode_default(self): 
         return 'S-polarized'
 
     def _Config_default(self): 
         return 'Axial'
+
+
+    #@cached_property
+    def _get_angles(self):
+        angles=linspace(self.angle_start, self.angle_stop, num=self.angle_samples)
+
+        if self.Config=='Axial': 
+            return angles
+        
+        # betas?
+        elif self.Config == 'Transversal':
+            betas=abs(90.0-angles)
+            return betas
+
 
     #@cached_property
     def _get_Rcore(self): return (1000.0 * self.Dcore)/2.0
@@ -193,25 +243,7 @@ class FiberParms(HasTraits):
     def _set_critical_angle(self, theta): 
         self.NA=round(np.sin(np.radians(theta)),2)
 
-    #@cached_property
-    def _get_angle_samples(self):
-        return round ((self.angle_stop-self.angle_start)  / self.angle_inc) 
-
-    #@cached_property
-    def _get_angles(self):
-        angles=linspace(self.angle_start, self.angle_stop, num=self.angle_samples)
-
-        if self.Config=='Axial': 
-            return angles
-        
-        # betas?
-        elif self.Config == 'Transversal':
-            betas=abs(90.0-angles)
-            return betas
-
-    def _get_angles_radians(self):
-        return np.radians(self.angles)
-
+    
     def simulation_requested(self):
         ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
         traitdic={'Optical Configuration':self.Config, 

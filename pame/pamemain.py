@@ -22,6 +22,7 @@ from gensim import LayerSimulation, ABCSim, SimConfigure
 from handlers import WarningDialog
 import config
 
+
 #http://stackoverflow.com/questions/27790572/traitsui-buggy-view-depending-on-os
 #import os 
 #os.environ['QT_API'] = 'pyside'
@@ -80,16 +81,12 @@ class GlobalScene(HasTraits):
 
      save=Button
      load=Button
-     refresh = Button  #FOR TESTING, DELETE AFTER DONE
 
      #Simulation 
      sim_outdir=Directory     
      simulations=List(ISim)  
      selected_sim=Instance(ISim)
      configure_storage = Instance(SimConfigure)   #<--- Want all sims to share this, right?
-
-     def _configure_storage_default(self):
-          return SimConfigure(b_app=self)
 
      #Editors##
      layereditor=Instance(LayerEditor)
@@ -172,7 +169,6 @@ class GlobalScene(HasTraits):
 ),
                # PLOT
                VGroup(
-                    Item('refresh', label='REFRESH', show_label=False),                                                           
                     Item('opticview', 
                          style='custom',
                          show_label=False),
@@ -188,7 +184,11 @@ class GlobalScene(HasTraits):
                ),
      )
 
-     Mainview = View(#Item('stack', editor=ValueEditor()), 
+
+#     from traitsui.value_tree import ValueTree, value_tree_editor, TreeEditor, _ValueTree
+#     from traitsui.editors.value_editor import _ValueEditor, ValueEditor
+     Mainview = View(
+#                     Item(name='stack', editor=TreeEditor()), 
                      Include('fullgroup'), 
                      #       Item('save'), Item('load'),  #FOR SAVING ENTIRE STATE OF SIMULATION
                      menubar=mainmenu,
@@ -220,11 +220,11 @@ class GlobalScene(HasTraits):
      def _save_fired(self):
           pickle.dump(self.simulations , open( "test.p", "wb" ) )
 
-     def _refresh_fired(self):
-          self.opticstate.update_opticview()
-
      def _plot_selector_default(self):
           return PlotSelector(layereditor = self.layereditor)
+
+     def _configure_storage_default(self):
+          return SimConfigure(b_app=self)
 
      # Where should this point?  WHAT IF DOESN"T EXIST
      def _sim_outdir_default(self):
@@ -238,7 +238,7 @@ class GlobalScene(HasTraits):
           self.simulations.append(LayerSimulation(base_app=self,  #<--- LayerSimulation.  Base_app = self.copy?
                                                   outname=config.SIMPREFIX+str(len(self.simulations))))
      def save_sim(self): 
-          self.selected_sim.output_simulation(self.sim_outdir) #<--- NEED TO CALL TO_JSON NOT OUTPUT_SIMULATION
+          self.selected_sim.save() #<--- NEED TO CALL TO_JSON NOT OUTPUT_SIMULATION
 
      def save_allsims(self):
           ''' Saves all stored simulations in the sims_editor.  Checks for duplicate names and non-run/incomplete
@@ -265,7 +265,7 @@ class GlobalScene(HasTraits):
           # Output completed simulations
           outsims=[s for s in self.simulations if s not in unrun]
           for s in outsims:
-               s.output_simulation(self.sim_outdir, confirmwindow=False)
+               s.save(confirmwindow=False)
           message('%s simulation(s) saved to directory: "%s"'%(len(outsims),
                                                                op.split(self.sim_outdir)[1]), title='Success')
 
@@ -273,18 +273,25 @@ class GlobalScene(HasTraits):
      # ------------------------
      def popout_optics(self):
           """ Refresh and popup optics plot """
-          self.opticstate.update_opticview()
           self.opticstate.opticview.edit_traits()
 
      def popout_material(self):
-          self.plot_selector.edit_traits()
+          #http://code.enthought.com/projects/files/ets_api/enthought.traits.ui.view.html
+          # what kind should these use
+          self.plot_selector.edit_traits()#kind='panel')
 
 def main():
      # HACK FOR DEBUG UNTIL DATA CAN BE IMPORTED CORRECTLY
      # os.chdir('/home/glue/Desktop/fibersim')    
 
      popup=GlobalScene()
-     popup.opticstate.update_opticview()
+     
+     # Need to force selections for QT to default correctly.  Not a prob in WX...
+     popup.selected_layer = popup.layereditor.stack[0] #<-- need to go 0,1 to trigger update
+     popup.selected_layer = popup.layereditor.stack[1]
+     popup.selected_sim = popup.simulations[0]
+     
+     popup.opticstate.update_opticview()     
      popup.configure_traits()    
 
 

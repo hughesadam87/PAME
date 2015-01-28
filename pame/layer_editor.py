@@ -75,8 +75,6 @@ class LayerEditor(HasTraits):
                     for idx, layer in enumerate(self.stack))
         
 
-    ####BUTTONS MOSTLY FOR TESTING, IF YOU COULD HAVE A ROW FACTORY THAT NEW HOW TO ADD AND ASSIGN SPEC PARMS VARIABLE (AKA A ROW FACTOR THAT WAS AN OBJECT FUNCTION, THIS BE BETTER###
-
     def _selected_layer_default(self):
         return self.stack[1]
 
@@ -164,7 +162,6 @@ class LayerEditor(HasTraits):
                     newlayer=Nanoparticle(material=newmat, 
                                           d = self.selected_d)
 
-            print self.selected_index
             self.stack[self.selected_index] = newlayer
             self.selected_layer = self.stack[self.selected_index]
 
@@ -179,7 +176,8 @@ class LayerEditor(HasTraits):
 
     def _stack_default(self):
         '''Initialize the stack with some layers'''
-        solvent=Solvent() ; substrate=Substrate()
+        solvent=Solvent() 
+        substrate=Substrate()
         mats=[substrate, Nanoparticle(d=24.0), solvent]  #Default layer is nanoparticle with shell
 #		mats=[substrate, Composite(d=24.0), solvent]     #Default layer is composite material
 #		mats=[substrate, BasicLayer(d=24.0), solvent]    #Default layer is basic layer
@@ -228,7 +226,6 @@ class LayerEditor(HasTraits):
 
     traits_view=View(
         #	HSplit(
-        Item('stack', editor=layereditor, show_label=False),
         HGroup(
             Item('add_basic', show_label=False), 
             Item('remove', enabled_when='selected_layer != solvent and selected_layer != substrate', show_label=False),
@@ -241,8 +238,10 @@ class LayerEditor(HasTraits):
             Item('sync_solvent', label='Sync solvent material', enabled_when='selected_layer.designator != "basic"'),
             Item('sync_d_radius', enabled_when='selected_layer.designator == "nanoparticle"'), 
             Item('sync_rad_selection',enabled_when='selected_layer.designator == "nanoparticle"'),
-            Item('selected_index', style='readonly', label='Position in stack'),
+            Item('selected_index', style='readonly', label='Stack position'),
             ),
+        Item('stack', editor=layereditor, show_label=False),
+        
         #	      ),
         resizable=True)
 

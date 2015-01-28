@@ -4,7 +4,7 @@ getters and setter model components.'''
 
 from enable.api import Component, ComponentEditor
 from traits.api import HasTraits, Instance, Array, Property, CArray, Str, Float, Tuple, Any, Dict, List, \
-     Enum, Bool, cached_property, implements, DelegatesTo, on_trait_change
+     Enum, Bool, cached_property, implements, DelegatesTo, on_trait_change, Button
 from traitsui.api import Item, Group, View, Tabbed, Action, HGroup, InstanceEditor, \
      VGroup, ListStrEditor
 
@@ -93,11 +93,14 @@ def plot_line_points(*args, **kwargs):
 
 
 class OpticalView(HasTraits):
-    optic_model = Any # DielectricSlab object, must be initialized with this by calling fcn    
+    """ Plot reflectance, transmission etc... from dielectric slab."""
+    optic_model = Any # DielectricSlab object, must be initialized with this by calling fcn        
     optical_stack = DelegatesTo('optic_model')
     lambdas = DelegatesTo('optic_model')  #Xarray everywhere will need replaced
     angles = DelegatesTo('optic_model')
     x_unit = DelegatesTo('optic_model')
+    
+    refresh = Button  #FOR TESTING, DELETE AFTER DONE    
 
     # Plot category (R, kz, A etc...)
     choose = Enum(globalparms.header.keys())  # SHOULD DELEGATE OR HAVE ADAPTER     
@@ -117,6 +120,7 @@ class OpticalView(HasTraits):
     data = Instance(ArrayPlotData,())
 
     traits_view = View( HGroup(
+                             Item('refresh', label='REFRESH', show_label=False),                                                                   
                              Item('average'),
                              Item('show_legend', label='Legend'),                             
                              Item('choose', 
@@ -145,6 +149,9 @@ class OpticalView(HasTraits):
                   height=600,
                   resizable=True
                   )
+
+    def _refresh_fired(self):
+        self.optic_model.update_opticview()
 
     def __model_attr_default(self):
         return self.choose
@@ -378,10 +385,10 @@ class MaterialView(HasTraits):
         self.eplot = ToolbarPlot(self.data)
         self.nplot= ToolbarPlot(self.data)
 
-        plot_line_points(self.eplot, ('x','er'), color='orange', name='ereal')
-        plot_line_points(self.eplot, ('x','ei'), color='green', name='eimag')
-        plot_line_points(self.nplot, ('x','nr'), color='orange', name='nreal')
-        plot_line_points(self.nplot, ('x','ni'), color='green', name='nimag')
+        plot_line_points(self.eplot, ('x','er'), color='orange', name='e1')
+        plot_line_points(self.eplot, ('x','ei'), color='green', name='ie2')
+        plot_line_points(self.nplot, ('x','nr'), color='orange', name='n')
+        plot_line_points(self.nplot, ('x','ni'), color='green', name='ik')
 
         self.add_tools_title(self.eplot, 'Dielectric ')
         self.add_tools_title(self.nplot, 'Index of Refraction ')

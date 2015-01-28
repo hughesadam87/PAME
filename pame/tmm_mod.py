@@ -196,7 +196,6 @@ def vector_com_tmm(pol, n_matrix, d_list, angle, vacuum_wavelengths):
     """
 
     # MUST CORRESPOND IN LENGTH TO RETURN OF coh_tmm() 
-    #header = globalparms.header.keys() 
     
     # n = m x lambda   where m is number of layers
     if n_matrix.shape[1] != vacuum_wavelengths.shape[0]:
@@ -230,7 +229,7 @@ def vector_com_tmm(pol, n_matrix, d_list, angle, vacuum_wavelengths):
     # Further typecasting?    
 
     # FROM DICT
-    dfout = DataFrame(optical_dict, index=vacuum_wavelengths)#(outvals, columns=header, index=vacuum_wavelengths)    
+    dfout = DataFrame(optical_dict, index=vacuum_wavelengths)
     return dfout
 
 # Changed option for dict_output (other modules herein use dict output, so only vector_com_tmm needs)

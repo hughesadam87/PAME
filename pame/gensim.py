@@ -229,6 +229,8 @@ class ABCSim(HasTraits):
     outname = Str('Testsim') #Output name, can be overwritten when output called
     sim_outdir = DelegatesTo('base_app')
 
+    browse_numerics = Button # Browse avaialable numeric traits for sim
+
     save_as = Enum(config.SIMEXT, '.json')
 
     implements(ISim)
@@ -260,7 +262,7 @@ class ABCSim(HasTraits):
     missing_taits = List
     # Restore all traits to original values after simulation is over
     restore_status=Bool(True)     
-    status_message = HTML#Str #HTML
+    status_message = Str #HTML
     ready = Bool(False)
 
     simeditor =\
@@ -282,11 +284,15 @@ class ABCSim(HasTraits):
 
     selection_group = Group(
         HGroup(
-            Item('inc',label='Steps'), #<-- make me nicer after wx works                    
-            #CHOOSE INPUT BUTTON            
+            Item('inc',label='Steps'), #<-- make me nicer after wx works           
             Item('tvals',
                  visible_when='selected_traits is not None', #<-- Should always be selected, but not in qt
                  label='Selected Layer Common Traits'),
+            Item('browse_numerics', 
+                 show_label=False,
+                 label='Browse',
+                 visible_when='selected_traits is not None'),
+            
             ),       
         # sim_variables is actual table list of traits
         Item('sim_variables', editor=simeditor, show_label=False),
@@ -322,6 +328,13 @@ class ABCSim(HasTraits):
         Include('storage_group'),
         layout='tabbed'
     )    
+
+    def _browse_numerics_fired(self):
+        browser = hackedvtree.NumericBrowser(traits_tree=self.base_app.stack)
+        browser.edit_traits()#kind='modal') #Modal may be necessary when select works
+        #foo = browser.configure_traits(kind='modal')
+        #common_traits.append(foo.selected)        
+        
 
     def simulation_requested(self):
         """Method for returning parameters/metadata about the simulation"""

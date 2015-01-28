@@ -8,6 +8,10 @@ from traitsui.api import View, Item, ValueEditor, OKCancelButtons, \
 import numpy as np
 import functools
 
+# Disallowed types 
+from chaco.api import ToolbarPlot
+from pame.interfaces import IView
+
 # Original value of monkeypatched method
 ORIGINALTRAITNODE = TraitsNode.tno_get_children
 
@@ -17,17 +21,17 @@ def _RESTORE():
      """
      TraitsNode.tno_get_children = ORIGINALTRAITNODE
      
-def arraynode( traitsnodeobj, node, hide_privates=True,  
-                allowed=[np.ndarray] ):
+def arraynode( parentnode, node, hide_privates=True,  
+                allowed=[np.ndarray, HasTraits] ):
      """ Gets the object's children.  
       self=TraitsNode object
       node=ObjectTreeNode
      """
      
-     names = traitsnodeobj._get_names()
+     names = parentnode._get_names()
      names.sort()
-     value    = traitsnodeobj.value
-     node_for = traitsnodeobj.node_for
+     value    = parentnode.value
+     node_for = parentnode.node_for
      nodes    = []
      for name in names:
           try:
@@ -40,23 +44,29 @@ def arraynode( traitsnodeobj, node, hide_privates=True,
                   continue #<-- skip 
 
           if type(item_value) in allowed or isinstance(item_value, HasTraits):
+
+              # Disallowed trait types like Plot
+              if isinstance(item_value, ToolbarPlot) or isinstance(item_value, IView):
+                   continue
+ 
               nodes.append( node_for( '.' + name, item_value ) )
 
      return nodes   
 
-def numericnode( traitsnodeobj, node, hide_privates=True,  
+def numericnode( parentnode, node, hide_privates=True,  
                 allowed=[int, float] ):
      """ Gets the object's children.  
       self=TraitsNode object
       node=ObjectTreeNode
      """
      
-     names = traitsnodeobj._get_names()
+     names = parentnode._get_names()
      names.sort()
-     value    = traitsnodeobj.value
-     node_for = traitsnodeobj.node_for
+     value    = parentnode.value
+     node_for = parentnode.node_for
      nodes    = []
-     for name in names:
+     from traitsui.value_tree import IntNode
+     for name in names: #<- name is trait name, value is actual valu in program
           try:
                item_value = getattr( value, name, '<unknown>' )
           except Exception, excp:
@@ -67,8 +77,17 @@ def numericnode( traitsnodeobj, node, hide_privates=True,
                   continue #<-- skip 
 
           if type(item_value) in allowed or isinstance(item_value, HasTraits):
-              nodes.append( node_for( '.' + name, item_value ) )
-
+               print name, item_value, node_for, value
+               newnode = node_for( '.' + name, item_value ) 
+               nodes.append( newnode )
+               label = newnode.label
+               print 'oldlabel', label, newnode.tno_get_label()
+               # What is the method that actually sets the value?
+               if isinstance(newnode, IntNode):
+                    newnode.label='Int(%s)' % value
+               print newnode
+               
+               
      return nodes   
 
 class TraitBrowser(HasTraits):

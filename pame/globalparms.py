@@ -42,6 +42,13 @@ _header = (
     ('ang_prop','Propagation angle (rad)')
     )
 
+# http://en.wikipedia.org/wiki/Ellipsometry
+#http://www.aps.org/units/fiap/meetings/presentations/upload/tompkins.pdf
+_ellipsometry = (
+    ('r_delta', 'Reflectance Phase'),
+    ('r_psi', 'Reflectance Amp Ratio')
+    )
+
 header = OrderedDict((k, v) for k, v in _header)
 selected = ['R','T','A'] #<--- Default selected traits for primary view
 

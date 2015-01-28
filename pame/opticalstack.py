@@ -4,7 +4,7 @@ import sys
 import math
 from numpy import empty, array, conj, inf
 from basicplots import OpticalView
-from main_parms import SpecParms, FiberParms
+from main_parms import SpecParms, AngleParms
 from interfaces import IOptic, ILayer
 from layer_editor import LayerEditor
 from scipy.integrate import simps
@@ -21,7 +21,7 @@ class DielectricSlab(HasTraits):
     '''Class used to store data in an interactive tabular environment'''
 
     specparms = Instance(SpecParms,())
-    fiberparms = Instance(FiberParms,())
+    fiberparms = Instance(AngleParms,())
 
     x_unit = DelegatesTo('specparms') #<-- Required by optic_view for xaxis, wish easier to acess these globally
     lambdas = DelegatesTo('specparms')	
@@ -46,22 +46,6 @@ class DielectricSlab(HasTraits):
 
     #sim_designator=Str('New Simulation') #<--- WHY
     implements(IOptic)
-
-     # !!! Necessary?
-    #traits_view=View(
-        #Item('Mode'),
-        #Item('sim_designator'),
-        #Item('ds', style='simple'), 
-        #Item('Reflectance'),
-        #resizable=True
-    #)
-
-
-     # AUTO UPDATE PLOT WITH VARIOUS TRAITS
-#    @on_trait_change('fiberparms.Config, fiberparms.Mode, fiberparms.Lregion, fiberparms.Dcore,'
-#                     'fiberparms.angle_start, fiberparms.angle_stop, fiberparms.angle_ind') 
-#    def sync_stack(self):
-#        self.update_opticview()
 
     def _opticview_default(self):
         return OpticalView(optic_model = self)
@@ -125,6 +109,7 @@ class DielectricSlab(HasTraits):
         else:
             raise OpticalModelError('Mode must be "S-polarized", "P-polarized" or Unpolarized; crashing intentionally.')
             sys.exit()
+            
 
         paneldict = {}        
         for ang in self.angles:
@@ -132,10 +117,17 @@ class DielectricSlab(HasTraits):
             ang_rad = math.radians(ang)
             
             if pol == 'both':
-                result_dataframe = \
-                    vector_com_tmm('s', self.ns, self.ds, ang_rad, self.lambdas) + \
-                    vector_com_tmm('p', self.ns, self.ds, ang_rad, self.lambdas)                  
-                result_dataframe = result_dataframe / 2.0
+                df_s = vector_com_tmm('s', self.ns, self.ds, ang_rad, self.lambdas) 
+                df_p = vector_com_tmm('p', self.ns, self.ds, ang_rad, self.lambdas)                  
+                result_dataframe = (df_s+df_p) / 2.0
+
+                # Add ellipsometry parameter Psi
+                tan_psi = df_p['r_amp'].abs() / df_s['r_amp'].abs()
+
+                result_dataframe['r_psi'] = np.arctan(tan_psi)
+                # j ln( tan_psi * [r_s / r_p ] ) reversed ratio in algebra, work it out...
+                result_dataframe['r_delta'] = 1j * np.log (tan_psi * (df_s['r_amp'] / df_p['r_amp']))
+                
                 
             else:
                 result_dataframe = vector_com_tmm(
