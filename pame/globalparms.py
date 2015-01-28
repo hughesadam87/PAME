@@ -49,7 +49,7 @@ _ellipsometry = (
     ('r_psi', 'Reflectance Amp Ratio')
     )
 
-header = OrderedDict((k, v) for k, v in _header)
+header = OrderedDict((k, v) for k, v in _header+_ellipsometry)
 selected = ['R','T','A'] #<--- Default selected traits for primary view
 
 # Names of Categories used in View and in Simulation output

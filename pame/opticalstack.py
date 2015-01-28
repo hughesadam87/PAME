@@ -133,6 +133,10 @@ class DielectricSlab(HasTraits):
                 result_dataframe = vector_com_tmm(
                     pol, self.ns, self.ds, ang_rad, self.lambdas
                                             )
+                # FILL PSI/DELTA TO NANS IF UNPOLARIZED!
+                result_dataframe['r_psi'] = np.nan * np.empty(len(self.lambdas))
+                result_dataframe['r_delta'] = np.nan * np.empty(len(self.lambdas))
+                
 
             paneldict[ang] = result_dataframe
 
