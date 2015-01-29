@@ -63,6 +63,43 @@ class Constant(ABCMaterialModel):
         resizable=True, width=.5, height=.2,
     )
 
+class Cauchy(ABCMaterialModel):
+    """ """
+    mat_name = Str('Fushed Silica')
+    model_id = Str('cauchy') #Waht are model id's for?
+    
+    A = Float(1.4580)
+    B = Float(0.00354)
+    C = Float(0.0)
+    D = Float(0.0)
+    
+    cauchy_group=VGroup(HGroup(Item('A'), 
+                               Item('B'),
+                               Item('C'), 
+                               Item('D'))) 
+    
+    traits_view=View (
+        VGroup( Include('basic_group'), 
+                Include('cauchy_group') 
+                ),
+        resizable=True
+    )        
+    
+    @on_trait_change('A, B, C, D')
+    def update_model(self):
+        """ Update data and view.  For trait_change decorator, need to use a new
+        method so I arbirarily named this "update_model()".
+        """
+        self.update_data_view()
+
+
+    def update_data(self):		
+        um = self.specparms.specific_array('Micrometers')  #<---
+        A,B,C,D = self.A, self.B, self.C, self.D
+        self.narray = self.A + self.B/um**2 + C/um**3 + D/um**4       
+
+    
+
 class Sellmeir(ABCMaterialModel):
     """Returns sellmeir dispersion of glass.  Valid between 210-2200nm 
     according to:
@@ -89,8 +126,9 @@ class Sellmeir(ABCMaterialModel):
         resizable=True
     )
 
-    def __init__(self, *args, **kwargs):
-        super(Sellmeir, self).__init__(*args, **kwargs)
+    ## Necessary??
+    #def __init__(self, *args, **kwargs):
+        #super(Sellmeir, self).__init__(*args, **kwargs)
 
 
     @on_trait_change('a1, b1, a2, b2, a3, b3')
@@ -100,9 +138,6 @@ class Sellmeir(ABCMaterialModel):
         """
         self.update_data_view()
 
-    def _mat_name_default(self):
-        return 'Sellmeir'	
-    
     def update_data(self):		
         um_xarray = self.specparms.specific_array('Micrometers')
         l_sqr = um_xarray**2

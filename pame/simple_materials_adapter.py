@@ -13,7 +13,7 @@ class BasicAdapter(HasTraits):
     name=Str('Basic Material')
     source=Str('Abstract Base Class for material')
     notes=Str('Not Found')
-    matobject = Instance(BasicMaterial)
+    matobject = Instance(IMaterial)
     preview = Button
 
     def _preview_fired(self): 
@@ -47,7 +47,6 @@ class ConstantAdapter(BasicAdapter):
     name="Constant"
     source="Custom Made"
     notes="Simply provide a constant value for the dielectric/index of refraction and it will return a constant array of values.  Can enter complex values in the form"
-    matobject=Instance(Constant)
 
     def populate_object(self): 
         self.matobject=self.Constant()
@@ -55,12 +54,21 @@ class ConstantAdapter(BasicAdapter):
 
 class SellmeirAdapter(BasicAdapter):
     from material_models import Sellmeir
-    name="Sellmeir dispersion for optical-fiber glass"
+    name="Sellmeir Model (defaults to optical fiber glasss)"
     source="Gupta Paper" #CITE
-    matobject=Instance(Sellmeir)
 
     def populate_object(self): 
         self.matobject=self.Sellmeir()
+        
+class CauchyAdapter(BasicAdapter):
+    from material_models import Cauchy
+    
+    name="Cauchy Model (defaults to fused silicate)"
+    source="http://en.wikipedia.org/wiki/Cauchy%27s_equation" 
+
+    def populate_object(self): 
+        self.matobject=self.Cauchy()    
+    
 
 
 class DrudeBulkAdapter(BasicAdapter):
@@ -68,7 +76,6 @@ class DrudeBulkAdapter(BasicAdapter):
     name="Drude Bulk"
     source="One of the gupta papers"
     notes="Uses lamplasma and lamcollision to predict dielectric function based on Drude model"
-    matobject=Instance(DrudeBulk)
 
     def populate_object(self):
         self.matobject=self.DrudeBulk()

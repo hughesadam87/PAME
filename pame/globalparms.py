@@ -53,6 +53,12 @@ header = OrderedDict((k, v) for k, v in _header+_ellipsometry)
 selected = ['R','T','A'] #<--- Default selected traits for primary view
 
 # Names of Categories used in View and in Simulation output
-strataname = 'Fiber'
+globsname = 'Main' # Globals
+strataname = 'Strata'
+stackname = 'Stack'
+materialname = 'Material'
+
 optresponse = 'Optical Response'
 spectralparameters = 'Spectral Parms.'
+
+missinglayer = 'semi-infinite' #Missing a layer

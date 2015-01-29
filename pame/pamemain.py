@@ -15,7 +15,7 @@ from basicplots import OpticalView
 from layer_editor import LayerEditor
 from main_parms import FiberParms, SpecParms
 from interfaces import IOptic, ILayer, IMaterial, IStorage, ISim
-from fiberview import FiberView
+from fiberview import ViewMlab, FiberView, EllispometryView
 from modeltree_v2 import Model
 from plotselector import PlotSelector
 from gensim import LayerSimulation, ABCSim, SimConfigure
@@ -123,14 +123,14 @@ class GlobalScene(HasTraits):
                editor=InstanceEditor(),
                style='custom', 
                show_label=False),
-          label='Stack')  
+          label=globalparms.stackname)  
 
      materialgroup=Group(
           Item('selected_material',
                editor=InstanceEditor(),
                style='custom',
                show_label=False),
-          label='Material'
+          label=globalparms.materialname
      )            
 
      choosesimgroup=Group(
@@ -155,7 +155,7 @@ class GlobalScene(HasTraits):
      globalgroup = Group( 
           Item('specparms',show_label=False, style='custom'),      
           Include('choosesimgroup'), #simulation and summary        
-          label='Globals',
+          label=globalparms.globsname,
      )
 
 
@@ -185,10 +185,14 @@ class GlobalScene(HasTraits):
      )
 
 
-#     from traitsui.value_tree import ValueTree, value_tree_editor, TreeEditor, _ValueTree
+#     from traitsui.value_tree import ValueTree, value_tree_editor, TreeEditor, _ValueTree, value_tree_nodes, value_tree_editor_with_root
 #     from traitsui.editors.value_editor import _ValueEditor, ValueEditor
      Mainview = View(
-#                     Item(name='stack', editor=TreeEditor()), 
+                     #Item(name='stack', editor=TreeEditor(auto_open=2, 
+                                                          #hide_root=False,
+                                                          #editable=True,
+                                                          #nodes=value_tree_nodes)
+                                                          #), 
                      Include('fullgroup'), 
                      #       Item('save'), Item('load'),  #FOR SAVING ENTIRE STATE OF SIMULATION
                      menubar=mainmenu,

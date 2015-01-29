@@ -11,6 +11,7 @@ from traitsui.table_filter \
 from main_parms import FiberParms, SpecParms
 from modeltree_v2 import Model
 from material_models import Dispwater
+import globalparms
 
 
 class BasicLayer(HasTraits):
@@ -115,7 +116,7 @@ class Nanoparticle(Composite):
 class Boundary(BasicLayer):
     """Represent the interface of the stack on either the left or right"""
     designator=Str('basic')
-    d=Str('N/A')	
+    d=Str(globalparms.missinglayer)	
 
 class Substrate(Boundary):             #THESE ARE NOT IMPLEMENTED IN SUPERMODEL YET
     name=Str('Substrate')

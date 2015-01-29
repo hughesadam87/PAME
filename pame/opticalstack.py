@@ -12,6 +12,7 @@ import logging
 from tmm_mod import vector_com_tmm
 import numpy as np
 from pandas import Panel
+import globalparms
 
 
 class OpticalModelError(Exception):
@@ -77,7 +78,7 @@ class DielectricSlab(HasTraits):
         """Returns inf, d1, d2, d3, inf for layers"""
         ds = [inf, inf]
         for layer in self.stack:
-            if layer.d != 'N/A':  #When does this happen?  Substrate/solvent?
+            if layer.d != globalparms.missinglayer:  #When does this happen?  Substrate/solvent?
                 ds.insert(-1, layer.d)
         return array(ds)
 
