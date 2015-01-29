@@ -22,7 +22,7 @@ class DielectricSlab(HasTraits):
     '''Class used to store data in an interactive tabular environment'''
 
     specparms = Instance(SpecParms,())
-    fiberparms = Instance(AngleParms,())
+    fiberparms = Instance(AngleParms)
 
     x_unit = DelegatesTo('specparms') #<-- Required by optic_view for xaxis, wish easier to acess these globally
     lambdas = DelegatesTo('specparms')	
@@ -124,10 +124,15 @@ class DielectricSlab(HasTraits):
 
                 # Add ellipsometry parameter Psi
                 tan_psi = df_p['r_amp'].abs() / df_s['r_amp'].abs()
-
                 result_dataframe['r_psi'] = np.arctan(tan_psi)
+
                 # j ln( tan_psi * [r_s / r_p ] ) reversed ratio in algebra, work it out...
-                result_dataframe['r_delta'] = 1j * np.log (tan_psi * (df_s['r_amp'] / df_p['r_amp']))
+
+                # Use mpmath http://mpmath.googlecode.com/svn/trunk/doc/build/functions/powers.html
+                # But mpmath needs loops, doesn't work on array
+                # Tried numpy.log, numpy.lib.scimath.log.... same thing
+                result_dataframe['r_delta'] = 1.0j * \
+                    (np.log( (tan_psi * (df_s['r_amp'] / df_p['r_amp']) ) ))
                 
                 
             else:

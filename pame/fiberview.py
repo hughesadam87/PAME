@@ -42,21 +42,23 @@ class EllispometryView(ViewMlab):
 	""" Square is a surface with a constant surface function IE f(x,y) = 1
 	for constant color.  2dSquare glyph didn't have any fill
 	"""
-	square = np.empty((50,50)).fill(1)
-	self.FiberScene.mlab.surf(square, color=LIGHTGRAY)
+	square = np.empty((50,50))
+	square.fill(1)
+	self.FiberScene.mlab.surf(square, 
+	                          color=LIGHTGRAY)
 
 
-    
 class FiberView(ViewMlab):
     
     def draw(self):
 	outter_tube=self.FiberScene.mlab.points3d(0, 0, 0, 
-	                                          color = DARKGRAY,
+	                                          color = LIGHTGRAY,
 	                                          opacity=0, 
 	                                          mode='cylinder',	                                          
 	                                          extent=[-1, 1,-.1, .1, -.1, .1] )  #controls xmax,xmin,ymax etc.. all relative.  Must be -a to a for centered 
+
 	inner_tube=self.FiberScene.mlab.points3d(0, 0, 0, 
-	                                         color = LIGHTGRAY,
+	                                         color = DARKGRAY,
 	                                         mode='cylinder',
 	                                         extent=[-1.01, 1.01,-.05, .05, -.05, .05] )     
 

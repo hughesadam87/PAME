@@ -108,9 +108,9 @@ class AngleParms(HasTraits):
 
     Mode=Enum('S-polarized', 'P-polarized', 'Unpolarized')
     
-    angle_start = Float(.5)
-    angle_stop = Float()
-    angle_inc = Float(.5)    
+    angle_start = Float(0)
+    angle_stop = Float(45)
+    angle_inc = Float(5)
     angle_avg = Str('Equal')
     
     angle_samples=Property(Int, depends_on=['angle_start', 'angle_stop', 'angle_inc'])
@@ -121,9 +121,6 @@ class AngleParms(HasTraits):
     def _get__angle_sumstring(self):
         """ Summary of angles for nicer output"""
         return 'Angles=%s' % str(len(self.angles))
-
-    def _angle_stop_default(self): 
-        return self.critical_angle
 
     #@cached_property
     def _get_angles(self):
@@ -139,12 +136,32 @@ class AngleParms(HasTraits):
     
 
 class EllipsometryParms(AngleParms):
-    """
+    """ Unpolarized light and a range of angles for ellipsometry.
     """
     Mode = Str('Unpolarized') #<-- Fixed because need RS, RP
+    _mode_message = Str('[required for ellipsometry]')
     
+    traits_view = View(
+        VGroup(
+            HGroup(           
+                   Item('_angle_sumstring', style='readonly', show_label=False),            
+                   Item('Mode', style='readonly'),
+                   Item('_mode_message', style='readonly', show_label=False)
+                   ),
+            HGroup(
+                    Item('angle_start', label='Angle Start'), 
+                    Item('angle_stop', label='End'),
+                    Item('angle_inc', label='Increment')                    
+                    ),
+       )
+    )
 
 class FiberParms(AngleParms):
+    """ Optical fiber of Transversal or Axial configuration of layers."""
+
+    angle_start = Float(0.5)
+    angle_inc = Float(0.5)    
+    
     Config=Enum(['Axial', 'Transversal'])
 
     # Don't change these or BasicReflectance.update_R will get mad
@@ -207,6 +224,8 @@ class FiberParms(AngleParms):
     def _Config_default(self): 
         return 'Axial'
 
+    def _angle_stop_default(self): 
+        return self.critical_angle
 
     #@cached_property
     def _get_angles(self):

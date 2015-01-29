@@ -13,7 +13,7 @@ import globalparms
 from opticalstack import DielectricSlab
 from basicplots import OpticalView
 from layer_editor import LayerEditor
-from main_parms import FiberParms, SpecParms
+from main_parms import FiberParms, SpecParms, EllipsometryParms, AngleParms
 from interfaces import IOptic, ILayer, IMaterial, IStorage, ISim
 from fiberview import ViewMlab, FiberView, EllispometryView
 from modeltree_v2 import Model
@@ -68,12 +68,14 @@ class GlobalScene(HasTraits):
      '''Global class to define all view-based stuff'''
 
      specparms=Instance(SpecParms,())
-     fiberparms=Instance(FiberParms,())
+     fiberparms=Instance(AngleParms)
+    
      modeltree=Instance(Model,())
      lambdas=DelegatesTo('specparms')  #Actually not used except for making it easy to run sims
      plot_selector = Instance(PlotSelector)
 
-     fview=Instance(FiberView,())     #May want to pass specparms and fiberparms to this later if it requries them
+     fview=Instance(ViewMlab)     #May want to pass specparms and fiberparms to this later if it requries them
+     stratastyle = Enum('Fiber', 'Glass Slide')
 
      current_state = Instance(IOptic)
      opticstate = Instance(IOptic)
@@ -132,6 +134,18 @@ class GlobalScene(HasTraits):
                show_label=False),
           label=globalparms.materialname
      )            
+     
+     # Main Panel
+     #-----------
+     spectralgroup = Group(
+         Item('specparms', show_label=False, style='custom'),
+         label='Spectral Parameters'
+     )
+     
+     stratagroup = Group(
+         Item('stratastyle', show_label=False),
+         label='Choose Strata'
+     )
 
      choosesimgroup=Group(
           Item('simulations', editor=sims_editor, show_label=False),
@@ -152,8 +166,9 @@ class GlobalScene(HasTraits):
                show_label=False),           
           label='Simulations')
 
-     globalgroup = Group( 
-          Item('specparms',show_label=False, style='custom'),      
+     maingroup = Group( 
+          Include('spectralgroup'),
+          Include('stratagroup'),
           Include('choosesimgroup'), #simulation and summary        
           label=globalparms.globsname,
      )
@@ -176,7 +191,7 @@ class GlobalScene(HasTraits):
                ),
 
           Tabbed(
-               Include('globalgroup'),
+               Include('maingroup'),
                Include('fibergroup'), 
                Include('layergroup'),
                Include('materialgroup'),
@@ -205,12 +220,17 @@ class GlobalScene(HasTraits):
           self.layereditor=LayerEditor()
           self.sync_trait('specparms', self.layereditor, 'specparms')
           self.sync_trait('modeltree', self.layereditor, 'modeltree')
+          
 
           # NEED TO RENAME AND REWRITE THIS... ITS NOT "opticstate"
           self.opticstate=DielectricSlab()
           self.sync_trait('specparms', self.opticstate, 'specparms')
-          self.sync_trait('fiberparms', self.opticstate, 'fiberparms')
           self.sync_trait('layereditor', self.opticstate, 'layereditor')
+
+          # This will change with stratastyle, so sets in handler
+#          self.opticstate.fiberparms = self.fiberparms
+          self.sync_trait('fiberparms', self.opticstate, 'fiberparms')
+
 
      #self.simulations.append(LayerSimulationEpsilon(base_app=self))   #Pass self to a simulation environment
           self.simulations.append(
@@ -283,6 +303,26 @@ class GlobalScene(HasTraits):
           #http://code.enthought.com/projects/files/ets_api/enthought.traits.ui.view.html
           # what kind should these use
           self.plot_selector.edit_traits()#kind='panel')
+
+     def _stratastyle_changed(self):
+          if self.stratastyle == 'Fiber':
+               self.fiberparms = FiberParms()
+               self.fview = FiberView()
+
+          elif self.stratastyle == 'Glass Slide':
+               self.fiberparms = EllipsometryParms()
+               self.fview = EllispometryView()
+               
+     # Strata parmaeters
+     # -----------------
+     def _stratastyle_default(self):
+          return 'Fiber'
+     
+     def _fiberparms_default(self):
+          return FiberParms()
+     
+     def _fview_default(self):
+          return FiberView()
 
 def main():
      # HACK FOR DEBUG UNTIL DATA CAN BE IMPORTED CORRECTLY

@@ -65,7 +65,7 @@ class Constant(ABCMaterialModel):
 
 class Cauchy(ABCMaterialModel):
     """ """
-    mat_name = Str('Fushed Silica')
+    mat_name = Str('Fused Silica')
     model_id = Str('cauchy') #Waht are model id's for?
     
     A = Float(1.4580)
