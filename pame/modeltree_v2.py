@@ -13,7 +13,7 @@ from interfaces import IAdapter
 from File_Finder import LiveSearch
 
 from simple_materials_adapter import BasicAdapter, SellmeirAdapter, ConstantAdapter, \
-    DrudeBulkAdapter, SopraFileAdapter, XNKFileAdapter
+    DrudeBulkAdapter, SopraFileAdapter, XNKFileAdapter, CauchyAdapter
 
 from yamlmaterials import YamlAdapter
 
@@ -179,8 +179,9 @@ class Model( HasTraits ):
     def _nonmetals_default(self): 
         return [
             BasicAdapter(),
+            ConstantAdapter(),            
+            CauchyAdapter(),
             SellmeirAdapter(),
-            ConstantAdapter(),
         ]
 
     # Metal Models Models ------

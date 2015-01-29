@@ -56,6 +56,7 @@ class SellmeirAdapter(BasicAdapter):
     from material_models import Sellmeir
     name="Sellmeir Model (defaults to optical fiber glasss)"
     source="Gupta Paper" #CITE
+    notes="Preserves Kramers Kronig relation"
 
     def populate_object(self): 
         self.matobject=self.Sellmeir()
@@ -65,6 +66,7 @@ class CauchyAdapter(BasicAdapter):
     
     name="Cauchy Model (defaults to fused silicate)"
     source="http://en.wikipedia.org/wiki/Cauchy%27s_equation" 
+    notes="Does not necessarily preserve Kramers Kronig relation (non-physical materials)"
 
     def populate_object(self): 
         self.matobject=self.Cauchy()    

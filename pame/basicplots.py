@@ -337,6 +337,8 @@ class OpticalView(HasTraits):
         
 
 
+# MVIEW SHOULD HAVE A SECOND TYPE OF DIFFERENT Y-AXIS IE
+# https://github.com/enthought/chaco/blob/master/examples/demo/multiaxis.py
 class MaterialView(HasTraits):
 
     implements(IView)

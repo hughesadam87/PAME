@@ -33,6 +33,9 @@ class BasicLayer(HasTraits):
 
     traits_view = View(Item('name', label='Layer Name'))
 
+    def _d_changed(self):
+        self.d = float(self.d) #<--- Unicode bug user enters it gets unicode-converted
+
     def __init__(self, *args, **kwargs):
         super(BasicLayer, self).__init__(*args, **kwargs)
         self.sync_trait('specparms', self.material, 'specparms')
