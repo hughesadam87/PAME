@@ -54,7 +54,7 @@ selected = ['R','T','A'] #<--- Default selected traits for primary view
 
 # Names of Categories used in View and in Simulation output
 globsname = 'Main' # Globals
-strataname = 'Strata'
+strataname = 'Substrate'
 stackname = 'Stack'
 materialname = 'Material'
 

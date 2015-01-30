@@ -84,7 +84,8 @@ class BasicMaterial(HasTraits):
         """Dictionary of various traits that are useful for outputting as parameters. Overwrite
         with personal tastes.
         """
-        return {'name':self.mat_name,
+        return {'name':self.mat_name, 
+                #'source':self.source, (not useful for simulation, right)                
                 'earray':self.earray,
                 'narray':self.narray}
 

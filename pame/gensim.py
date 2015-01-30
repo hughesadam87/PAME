@@ -619,7 +619,7 @@ class LayerSimulation(ABCSim):
                 results_increment['selected_layer'] = self.selected_layer.simulation_requested()
 
             elif sconfig.choose_layers == 'All Layers':
-                results_increment['dielectric_layers'] = b_app.stack.simulation_requested()
+                results_increment['dielectric_layers'] = b_app.layereditor.simulation_requested()
 
 
             # resultsdict >>  {step1 : {results_of_increment}, ...}

@@ -8,7 +8,6 @@ class ABCMaterialModel(BasicMaterial):
         super(ABCMaterialModel, self).__init__(*args, **kwargs)
 
     source='Model'
-    model_id=Str('')    #model ID references the model used to construct the array
 
     def update_data_view(self):
         """ update_data() 
@@ -23,8 +22,8 @@ class ABCMaterialModel(BasicMaterial):
 class Constant(ABCMaterialModel):
     from numpy.lib import scimath as SM
     constant_dielectric=Complex() 
-    constant_index=Property(Complex, depends_on='constant_dielectric')
-    model_id=Str('constant')   
+    constant_index=Property(Complex,
+                            depends_on='constant_dielectric')
 
     def __init__(self, *args, **kwargs):
         super(Constant, self).__init__(*args, **kwargs)
@@ -50,6 +49,13 @@ class Constant(ABCMaterialModel):
 
     def update_data(self): 
         self.earray[:]=self.constant_dielectric
+        
+        
+    def simulation_requested(self):
+        out = super(Constant, self).simulation_requested()
+        out['e_constant'] = self.constant_dielectric
+        out['n_constant'] = self.constant_index
+        return out
 
 
     traits_view=View (
@@ -97,6 +103,12 @@ class Cauchy(ABCMaterialModel):
         um = self.specparms.specific_array('Micrometers')  #<---
         A,B,C,D = self.A, self.B, self.C, self.D
         self.narray = self.A + self.B/um**2 + C/um**3 + D/um**4       
+        
+    def simulation_requested(self):
+        out = super(Cauchy, self).simulation_requested()
+        for attr in ['A','B','C','D']:
+            out[attr] = getattr(self, attr)
+        return out        
 
     
 
@@ -126,10 +138,13 @@ class Sellmeir(ABCMaterialModel):
         resizable=True
     )
 
-    ## Necessary??
-    #def __init__(self, *args, **kwargs):
-        #super(Sellmeir, self).__init__(*args, **kwargs)
 
+    def simulation_requested(self):
+        out = super(Sellmeir, self).simulation_requested()       
+        for attr in ['a1','a2','a3','b1','b2','b3']:
+            out[attr] = getattr(self, attr)       
+        return out
+           
 
     @on_trait_change('a1, b1, a2, b2, a3, b3')
     def update_model(self):

@@ -66,6 +66,28 @@ class LayerEditor(HasTraits):
             selection_bg_color = 0xFBD391,
         )
 
+    traits_view=View(
+        #	HSplit(
+        HGroup(
+            Item('add_basic', show_label=False), 
+            Item('remove', enabled_when='selected_layer != solvent and selected_layer != substrate', show_label=False),
+            Item('changematerial', label='Configure Layer Material', show_label=False, enabled_when='selected_layer is not None'),
+            Item('layer_type', label='Choose Material Type', style='simple'),
+            ), 
+
+        HGroup(
+            Item('selected_d', enabled_when='selected_layer != solvent and selected_layer != substrate', label='Layer thickness(nm)'),
+            Item('sync_solvent', label='Sync solvent material', enabled_when='selected_layer.designator != "basic"'),
+            Item('sync_d_radius', enabled_when='selected_layer.designator == "nanoparticle"'), 
+            Item('sync_rad_selection',enabled_when='selected_layer.designator == "nanoparticle"'),
+            Item('selected_index', style='readonly', label='Stack position'),
+            ),
+        Item('stack', editor=layereditor, show_label=False),
+        
+        #	      ),
+        resizable=True)
+
+
 
     def simulation_requested(self):
         """ Nested dictionary keyed by layer number:
@@ -222,28 +244,6 @@ class LayerEditor(HasTraits):
                 if layer.sync_status==True:	
                     layer.sync_solvent(self.solvent.material)
 
-
-
-    traits_view=View(
-        #	HSplit(
-        HGroup(
-            Item('add_basic', show_label=False), 
-            Item('remove', enabled_when='selected_layer != solvent and selected_layer != substrate', show_label=False),
-            Item('changematerial', label='Configure Layer Material', show_label=False, enabled_when='selected_layer is not None'),
-            Item('layer_type', label='Choose Material Type', style='simple'),
-            ), 
-
-        HGroup(
-            Item('selected_d', enabled_when='selected_layer != solvent and selected_layer != substrate', label='Layer thickness(nm)'),
-            Item('sync_solvent', label='Sync solvent material', enabled_when='selected_layer.designator != "basic"'),
-            Item('sync_d_radius', enabled_when='selected_layer.designator == "nanoparticle"'), 
-            Item('sync_rad_selection',enabled_when='selected_layer.designator == "nanoparticle"'),
-            Item('selected_index', style='readonly', label='Stack position'),
-            ),
-        Item('stack', editor=layereditor, show_label=False),
-        
-        #	      ),
-        resizable=True)
 
 
 if __name__ == '__main__':
