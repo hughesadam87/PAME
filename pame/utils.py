@@ -1,3 +1,10 @@
+#http://stackoverflow.com/questions/4287209/sort-list-of-strings-by-integer-suffix-in-python
+def stepsort(the_list, separator='_'):
+    """ Sort a list of items separated by an underscore like:
+    's_1, s_3, s_5, s_4, s_10' correclty based on suffix.
+    """
+    return sorted(the_list, key = lambda x: int(x.split("_")[1]))
+
 #http://stackoverflow.com/questions/28131446/get-nested-arrays-out-of-a-dictionary
 def flatten_dict(d, *types):
     """ Flatten a dictionary {a:{b:c}} of arbitrary depths and
@@ -78,6 +85,7 @@ class AttrDict(dict):
         if key not in self:
             self[key] = default
         return self[key]
+            
     
     # Will allow compatibility with pickle
     def __getattr__(self, key):

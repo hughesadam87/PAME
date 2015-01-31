@@ -23,7 +23,7 @@ import cPickle, types, collections, sys, os #For type checking, collections only
 from traits.api import *
 from traitsui.api import message
 from pandas import DataFrame, Panel
-from pame.utils import AttrDict
+import pame.utils as putil
 
 #Local imports
 from handlers import FileOverwriteDialog
@@ -53,7 +53,7 @@ class LayerSimParser(HasTraits):
     about = Dict()
     static = Dict()
     primary = Dict()
-    results = Instance(AttrDict) #<-- Actually a special dictionary with attribute access
+    results = Instance(putil.AttrDict) #<-- Actually a special dictionary with attribute access
     inputs = Dict()
     
     primarypanel = Instance(Panel)
@@ -63,8 +63,8 @@ class LayerSimParser(HasTraits):
         #Initialize traits
         results = kwargs.pop('results', {})
         super(LayerSimParser, self).__init__(*args, **kwargs)
-        # Change results to AttrDict
-        self.results = AttrDict(results)
+        # Change results to putil.AttrDict
+        self.results = putil.AttrDict(results)
 
     def _backend_default(self):
         return config.SIMPARSERBACKEND
@@ -156,7 +156,9 @@ class LayerSimParser(HasTraits):
         out = []
         if not alias:
             alias = attr 
-        for step in self.results:
+        if alias in self.primary:
+            raise SimParserError('"%s" already exists in primary, please choose different alias.' % alias)
+        for step in putil.stepsort(self.results):
             try:
                 longattr = '%s.%s' % (step, attr)
                 value = getattr(self.results, longattr)
@@ -188,7 +190,7 @@ class LayerSimParser(HasTraits):
         outpanel = Panel.from_dict(primary_of_df, orient='minor')
         
         # Sort Items alphabetically (R_avg, R_0, R_1, T_avg, ...)
-        outpanel = outpanel.reindex_axis(sorted(outpanel.items),
+        outpanel = outpanel.reindex_axis(sorted(outpanel.items),  #<-- Sorted items alphabetically
                                      axis=0, #items axis
                                      copy=False) #Save memory
 

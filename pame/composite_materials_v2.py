@@ -275,7 +275,7 @@ class SphericalInclusions(CompositeMaterial):
         out['coverage'] = self.coverage
         out['platform'] = self.platform_type
         out['r_particle'] = self.r_particle
-        out['r_plastform'] = self.r_platform
+        out['r_platform'] = self.r_platform
 
         return out
         
