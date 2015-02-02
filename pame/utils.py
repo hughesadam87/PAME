@@ -1,3 +1,28 @@
+# DynamicRange Imports:
+from traits.api import HasPrivateTraits, Int, Range, Int
+from traitsui.api import View, Group, Item, Label, RangeEditor
+ 
+#https://github.com/enthought/traitsui/blob/master/examples/demo/Dynamic_Forms/dynamic_range_editor.py   
+#http://stackoverflow.com/questions/9956167/change-property-parameter-from-within-class-constructor-python-traits/28286878#28286878
+class DynamicRange( HasPrivateTraits ):
+    """ Defines an editor for dynamic ranges (i.e. ranges whose bounds can be
+        changed at run time).  ALL CREDIT TO JONATHAN MARCH, Enthought
+    """
+    value = Int
+    low = Int(0.0)
+    high = Int(50)
+    
+    # Traits view definitions:
+    traits_view = View(Item('value', show_label=False, 
+                            editor = RangeEditor( low_name    = 'low',
+                                                    high_name   = 'high',
+                                                    format      = '%.1f',
+                                                    label_width = 28,
+                                                    mode        = 'auto' )                            
+                            )
+                       )
+
+
 #http://stackoverflow.com/questions/28131446/get-nested-arrays-out-of-a-dictionary
 def flatten_dict(d, *types):
     """ Flatten a dictionary {a:{b:c}} of arbitrary depths and
@@ -86,3 +111,4 @@ class AttrDict(dict):
         return self.__getitem__(key)
 
     __setattr__ = __setitem__
+

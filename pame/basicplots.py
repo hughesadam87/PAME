@@ -1,10 +1,12 @@
 ''' A set of plotting components for Fiber Reflectance, Dielectric material, scattering cross section.
 They each have special get/set methods for communicating with simulations in gensim and other
 getters and setter model components.'''
+from __future__ import division
 
 from enable.api import Component, ComponentEditor
 from traits.api import HasTraits, Instance, Array, Property, CArray, Str, Float, Tuple, Any, Dict, List, \
      Enum, Bool, cached_property, implements, DelegatesTo, on_trait_change, Button
+from pame.utils import DynamicRange
 from traitsui.api import Item, Group, View, Tabbed, Action, HGroup, InstanceEditor, \
      VGroup, ListStrEditor
 
@@ -95,13 +97,15 @@ def plot_line_points(*args, **kwargs):
 class OpticalView(HasTraits):
     """ Plot reflectance, transmission etc... from dielectric slab."""
     optic_model = Any # DielectricSlab object, must be initialized with this by calling fcn        
-    optical_stack = DelegatesTo('optic_model')
-    lambdas = DelegatesTo('optic_model')  #Xarray everywhere will need replaced
-    angles = DelegatesTo('optic_model')
-    x_unit = DelegatesTo('optic_model')
-    
-    refresh = Button  #FOR TESTING, DELETE AFTER DONE    
+    optical_stack = Property()
+    x_unit = Property()
 
+    # Extended behavior to pivot wavelength and angles.  Fairly hacked in
+    primary_axis = Enum('Angles', 'Wavelengths')    
+    lam_samples = Instance(DynamicRange)
+    ang_samples = Instance(DynamicRange)
+    refresh = Button  
+    
     # Plot category (R, kz, A etc...)
     choose = Enum(globalparms.header.keys())  # SHOULD DELEGATE OR HAVE ADAPTER     
     chosen_name = Property(Str, depends_on='choose')
@@ -118,6 +122,7 @@ class OpticalView(HasTraits):
     average = Bool(False)  #Averaging style
     plot = Any #Plot, ToolbarPlot, ImagePlot
     data = Instance(ArrayPlotData,())
+    
 
     traits_view = View( HGroup(
                              Item('refresh', label='REFRESH', show_label=False),                                                                   
@@ -135,11 +140,23 @@ class OpticalView(HasTraits):
                              Item('real_or_imag', 
                               #    visible_when='_nonzero_complex==True', 
                                   label='Component'
-                                  ),                                  
+                                  ),                   
                              #Item('chosen_name', 
                                   #style='readonly',
                                   #label='Displaying'
                                   #)
+                                ),
+                        HGroup(Item('primary_axis', label='Axis'),
+                               Item('lam_samples',
+                                    label='Wavelength Sampling:',
+                                    editor=InstanceEditor(),
+                                    style='custom',
+                                    visible_when='primary_axis=="Wavelengths"'),
+                               Item('ang_samples',
+                                    label='Angle Sampling:',
+                                    editor=InstanceEditor(),
+                                    style='custom',
+                                    visible_when='primary_axis=="Angles"')                               
                              ),
                   Item('plot', 
                        show_label=False, 
@@ -149,6 +166,17 @@ class OpticalView(HasTraits):
                   height=600,
                   resizable=True
                   )
+
+    # Default sampling sliders.  Note that if lambdas actually changed,
+    # there's no event listner to update the range on this.  Would need
+    # something like "lambdas_changed"/"angles_changed"
+    def _lam_samples_default(self):
+        lammax = self.optic_model.lambdas.shape[0]/2
+        return DynamicRange(low=1, high=int(lammax), value=1)
+    
+    def _ang_samples_default(self):
+        angmax = self.optic_model.angles.shape[0]/2
+        return DynamicRange(low=1, high=int(angmax), value=1)
 
     def _refresh_fired(self):
         self.optic_model.update_opticview()
@@ -160,7 +188,21 @@ class OpticalView(HasTraits):
         """ Long name corresponding to selected plot attribute"""
         return globalparms.header[self.choose]
     
-    @on_trait_change('average, show_legend, real_or_imag')
+    def _get_optical_stack(self):
+        """ If primary axis is wavelegnths, pivot"""
+        out = self.optic_model.optical_stack
+        if self.primary_axis == 'Wavelengths':
+            out = out.swapaxes('items', 'major')
+        return out
+            
+    def _get_x_unit(self):
+        """ Return either Angles (rads) or current spectral unit """
+        if self.primary_axis == 'Wavelengths':
+            return 'Angles'
+        return self.optic_model.x_unit    
+    
+    @on_trait_change('average, show_legend, real_or_imag, primary_axis,\
+                      lam_samples.value, ang_samples.value')
     def _update_plot(self):
         """ Change which data (R, T, A...) to view.  These all trigger
         full redraw."""
@@ -181,14 +223,28 @@ class OpticalView(HasTraits):
         # At this point, assumes that arrays have been redraw so overwrite data or just
     
         self.plot = ToolbarPlot(self.data) #Requires access to arrayplotdata
+        ostack = self.optical_stack #So don't have to recall property over and over
+        
+        # Depending on primary_axis, set X to lambdas Y to Angles or vice/ver
+        primary_x = self.optic_model.lambdas[::self.lam_samples.value]
+        primary_y = self.optic_model.angles[::self.ang_samples.value]
+        colormap = config.LINECMAP
+        
+        if self.primary_axis == 'Wavelengths':
+            colormap = config.LINECMAP_LAMBDA
+            primary_x, primary_y = primary_y, primary_x
 
         self.data.arrays={} #Clear DATA!!!
-        self.data.set_data('x', self.lambdas)
-        linenames = [] #<-- To put into legend in sorted order         
-                    
-        # FROM HERE DOWN, ASSUMES SINGLE LAYER LIKE R
+        self.data.set_data('x', primary_x)
+        linenames = [] #<-- To put into legend in sorted order     
+                            
+        # If angle averaging, can be many styles.  If wavelength, just call mean
         if self.average:
-            avg_array = self.optic_model.compute_average(self._model_attr).astype(complex)
+            if self.primary_axis == 'Angles':
+                # Why can't I just use panel.minor_xs().slice()?
+                avg_array = self.optic_model.compute_average(self._model_attr).astype(complex)
+            else:
+                avg_array = ostack.minor_xs(self._model_attr).mean(axis=1).values.astype(complex)
             yout = self.infer_complex(avg_array)
           
             self.data.set_data('y', yout) 
@@ -201,20 +257,21 @@ class OpticalView(HasTraits):
         else:
             # http://stackoverflow.com/questions/15140072/how-to-map-number-to-color-using-matplotlibs-colormap
             # http://stackoverflow.com/questions/27908032/custom-labels-in-chaco-legend/27950555#27950555            
-            amin = self.angles[0]
-            amax = self.angles[-1]
+            amin = primary_y[0]
+            amax = primary_y[-1]
             if amin > amax:  #If counting backwards angles like in transmission
                 amax, amin = amin, amax
 
             norm = mpl.colors.Normalize(vmin=amin, vmax=amax)
-            cmapper = cm.ScalarMappable(norm=norm, cmap=config.LINECMAP ).to_rgba  #THIS IS A FUNCTION
+            cmapper = cm.ScalarMappable(norm=norm, cmap=colormap ).to_rgba  #THIS IS A FUNCTION
     
-            for idx, angle in enumerate(self.angles):
-                linecolor = cmapper(angle)    
-                linename = '%.2f' % angle
+            # yval is angle or wavelength
+            for idx, yval in enumerate(primary_y):
+                linecolor = cmapper(yval)    
+                linename = '%.2f' % yval
                 linenames.append(linename)
 
-                array = self.optical_stack[angle][self._model_attr].astype(complex)
+                array = ostack[yval][self._model_attr].astype(complex)
                 yout = self.infer_complex(array)
                                 
                 self.data.set_data(linename, yout)                    

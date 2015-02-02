@@ -9,6 +9,7 @@ MARKERSIZE = 3
 
 # Default Colormap of Reflectance plot
 LINECMAP = cm.coolwarm #Divergent red/blue/gray middle
+LINECMAP_LAMBDA = cm.jet
 LINECOLOR = 'red'
 
 # Delimiter for reading in material files 
