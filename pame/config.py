@@ -4,6 +4,13 @@ import matplotlib.cm as cm
 from pame import image_dir
 import os.path as op
 
+# Scikit-Spectra compatibility
+SKSPEC_INSTALLED = True
+try:
+   import skspec
+except ImportError:
+   SKSPEC_INSTALLED = False
+   
 LINEWIDTH = 2
 MARKERSIZE = 3
 

@@ -17,8 +17,7 @@ Other important parameters in the program are stored in parms dictionary.
 Special methods like list_parms() and parms_to_csv() provide nice formats for readability."""
 
 # Python imports
-import cPickle, types, collections, sys, os #For type checking, collections only used in one method
-
+import cPickle, re 
 #3rd party imports
 from traits.api import *
 from traitsui.api import message
@@ -32,6 +31,33 @@ import customjson
 import custompp #<--- Custom pretty-print
 import logging
 import config
+
+ORIGINAL_getitem = Panel.__getitem__
+
+def skspec_getitem(panel, *args, **kwargs):
+    """ Overload __getitem__ of panel so can return Spectra.  Can't
+    set panel items to Spectra; it's forbidden."""
+    attr = args[0] #<-- R_avg, A_avg etc...
+    dfout = super(Panel, panel).__getitem__(*args, **kwargs)
+    from skspec import Spectra, Unit
+#    from skspec import Unit
+    
+    try:
+        # First item in columns (e.g. steps_1, unit becomes step)
+        # http://stackoverflow.com/questions/4998629/python-split-string-with-multiple-delimiters
+        varname = dfout.columns[0].strip()
+        unit = re.split('[_ =]', varname)[0]
+        # One big hack and should be set from "alias" parameter in primary_panel
+    except Exception:
+        varunit = None
+    else:
+        varunit = Unit(short=unit, full=unit)
+        
+    specout = Spectra(dfout, 
+                specunit='nm',  #<--- Hard-coded, can't inspect original data
+                varunit=varunit,# Since monkey-patching, so screwed
+                iunit=attr)            
+    return specout
 
 class SimParserError(Exception):
     """ """
@@ -57,7 +83,7 @@ class LayerSimParser(HasTraits):
     inputs = Dict()
     
     primarypanel = Instance(Panel)
-    backend = Str('pandas')#Enum(['skspec', 'pandas'])
+    backend = Enum(['skspec', 'pandas'])
 
     def __init__(self, *args, **kwargs):
         #Initialize traits
@@ -68,6 +94,16 @@ class LayerSimParser(HasTraits):
 
     def _backend_default(self):
         return config.SIMPARSERBACKEND
+
+    def _backend_changed(self):
+        """ Change between pandas and skspec slicing."""
+        if self.backend == 'skspec':
+            if not config.SKSPEC_INSTALLED:
+                raise SimParserError('Scikit-spectra is not installed; cannot'
+                                     ' support backend.')
+            Panel.__getitem__ = skspec_getitem            
+        else:
+            Panel.__getitem__ = ORIGINAL_getitem
     
     
     @classmethod
@@ -194,13 +230,10 @@ class LayerSimParser(HasTraits):
         
         # Sort Minor axis with integer suffix (step_0, step_1, step_2)
         # http://stackoverflow.com/questions/4287209/sort-list-of-strings-by-integer-suffix-in-python
-        outpanel = outpanel.reindex_axis(sorted(outpanel.minor_axis, key = lambda x: int(x.split("_")[1])),
-                                     axis=2, #items axis
-                                     copy=False) #Save memory        
-
-#        XXXXX HERE
-#        if self.backend == 'skspec':
-#            raise NotImplementedError('scikit spec nto builtin')
+        outpanel = outpanel.reindex_axis(
+            sorted(outpanel.minor_axis, key = lambda x: int(x.split("_")[1])),
+            axis=2, #items axis
+            copy=False) #Save memory        
 
         # REORIENTATION OF MINOR AXIS LABELS
         if minor_axis:
