@@ -17,8 +17,7 @@ Other important parameters in the program are stored in parms dictionary.
 Special methods like list_parms() and parms_to_csv() provide nice formats for readability."""
 
 # Python imports
-import cPickle, types, collections, sys, os #For type checking, collections only used in one method
-
+import cPickle, re 
 #3rd party imports
 from traits.api import *
 from traitsui.api import message
@@ -32,6 +31,33 @@ import customjson
 import custompp #<--- Custom pretty-print
 import logging
 import config
+
+ORIGINAL_getitem = Panel.__getitem__
+
+def skspec_getitem(panel, *args, **kwargs):
+    """ Overload __getitem__ of panel so can return Spectra.  Can't
+    set panel items to Spectra; it's forbidden."""
+    iunit = args[0] #<-- R_avg, A_avg etc...
+    dfout = super(Panel, panel).__getitem__(*args, **kwargs)
+    from skspec import Spectra, Unit
+    
+    try:
+        # First item in columns (e.g. steps_1, unit becomes step)
+        # http://stackoverflow.com/questions/4998629/python-split-string-with-multiple-delimiters
+        varname = dfout.columns[0].strip()
+        unit = re.split('[_ =]', varname)[0]
+        # One big hack and should be set from "alias" parameter in primary_panel
+    except Exception:
+        varunit = None
+    else:
+        varunit = Unit(short=unit, full=unit)
+
+        
+    specout = Spectra(dfout, 
+                specunit='nm',  #<--- Hard-coded, can't inspect original data
+                varunit=varunit,# Since monkey-patching, so screwed
+                iunit=iunit)            
+    return specout
 
 class SimParserError(Exception):
     """ """
@@ -57,7 +83,7 @@ class LayerSimParser(HasTraits):
     inputs = Dict()
     
     primarypanel = Instance(Panel)
-    backend = Str('pandas')#Enum(['skspec', 'pandas'])
+    backend = Enum(['skspec', 'pandas'])
 
     def __init__(self, *args, **kwargs):
         #Initialize traits
@@ -68,6 +94,16 @@ class LayerSimParser(HasTraits):
 
     def _backend_default(self):
         return config.SIMPARSERBACKEND
+
+    def _backend_changed(self):
+        """ Change between pandas and skspec slicing."""
+        if self.backend == 'skspec':
+            if not config.SKSPEC_INSTALLED:
+                raise SimParserError('Scikit-spectra is not installed; cannot'
+                                     ' support backend.')
+            Panel.__getitem__ = skspec_getitem            
+        else:
+            Panel.__getitem__ = ORIGINAL_getitem
     
     
     @classmethod
@@ -158,7 +194,7 @@ class LayerSimParser(HasTraits):
             alias = attr 
         if alias in self.primary:
             raise SimParserError('"%s" already exists in primary, please choose different alias.' % alias)
-        for step in putil.stepsort(self.results):
+        for step in self.results:
             try:
                 longattr = '%s.%s' % (step, attr)
                 value = getattr(self.results, longattr)
@@ -190,13 +226,13 @@ class LayerSimParser(HasTraits):
         outpanel = Panel.from_dict(primary_of_df, orient='minor')
         
         # Sort Items alphabetically (R_avg, R_0, R_1, T_avg, ...)
-        outpanel = outpanel.reindex_axis(sorted(outpanel.items),  #<-- Sorted items alphabetically
-                                     axis=0, #items axis
-                                     copy=False) #Save memory
-
-#        XXXXX HERE
-#        if self.backend == 'skspec':
-#            raise NotImplementedError('scikit spec nto builtin')
+        outpanel = outpanel.reindex_axis(sorted(outpanel.items))  #<-- Sorted items alphabetically
+        
+        # Sort Minor axis with integer suffix (step_0, step_1, step_2)
+        # http://stackoverflow.com/questions/4287209/sort-list-of-strings-by-integer-suffix-in-python
+        outpanel = outpanel.reindex_axis(putil.stepsort(outpanel.minor_axis),
+                                        axis=2, #items axis
+                                        copy=False) #Save memory        
 
         # REORIENTATION OF MINOR AXIS LABELS
         if minor_axis:
@@ -214,39 +250,9 @@ class LayerSimParser(HasTraits):
                    ' These should correspond to the keys in %s' % (type(minor_axis, self.inputs)))
 
             outpanel = outpanel.rename(minor_axis = newaxis)
-
+              
         return outpanel
             
-    # This can be used to promote metadata to main namespace if desirable.  Strictly for convienence.
-    def promote_parms(self, verbose=True):
-        """ Takes all keys in passive parms dictionary and makes the class attributes (that are not 
-        instance methods) for easier access.  Will make sure no name conflicts are occurring.  
-        If this ever becomes especially useful,then consider adding option to update from simulation 
-        or non-simulation parameters only."""
-
-        # List all attributes that are not instance methods 
-        allatts=[att for att in dir(self) if type(getattr(self, att)) != types.MethodType]
-
-        for attr in self.parms:
-            if attr not in allatts:
-                setattr(self, attr, self.parms[attr])
-                if verbose==True:
-                    print 'Promoting attribute, %s, to toplevel namespace'%attr
-            else:
-                print 'Name conflict, %s attribute already exists in main namespace.'%attr
-
-    def demote_parms(self, verbose=True):
-        """ Opposite of promote_parms, use to cleanup namespace."""
-        for attr in self.parms:
-            try:
-                getattr(self, attr)
-            except AttributeError:
-                pass
-            else:
-                delattr(self, attr)
-                if verbose==True:
-                    print 'Removing attribute, %s, from toplevel namespace'%attr                
-
     # Quick interface to save/load this entire object.  This entire object can itself pickle normally,
     # so downstream processing can open it up and then output data as necessary.
     def save(self, outfilename):

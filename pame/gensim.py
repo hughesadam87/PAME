@@ -482,7 +482,7 @@ class LayerSimulation(ABCSim):
             'Layer Thickness':'selected_layer.d',
             'NP Core radius (NanoMaterials Only)':'selected_material.r_core',
             'NP Shell Thickness (NanoShell Only)':'selected_material.shell_thickness',
-            'NP Shell Fill Fraction (NanoShell Only)':'selected_material.CoreShellComposite.Vfrac' 
+            'NP Shell Fill Fraction (NanoShell Only)':'selected_material.ShellMaterial.Vfrac' 
              }
 
 

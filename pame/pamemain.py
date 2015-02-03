@@ -2,7 +2,6 @@ import copy, pickle, os
 import logging
 import os.path as op
 
-
 # Enthought imports
 from traits.api import *
 from traitsui.api import *
@@ -312,6 +311,9 @@ class GlobalScene(HasTraits):
           elif self.stratastyle == 'Glass Slide':
                self.fiberparms = EllipsometryParms()
                self.fview = EllispometryView()
+
+          # Refresh plot because; otherwise can get misleading behavior
+          self.opticstate.update_opticview()
                
      # Strata parmaeters
      # -----------------

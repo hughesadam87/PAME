@@ -4,11 +4,19 @@ import matplotlib.cm as cm
 from pame import image_dir
 import os.path as op
 
+# Scikit-Spectra compatibility
+SKSPEC_INSTALLED = True
+try:
+   import skspec
+except ImportError:
+   SKSPEC_INSTALLED = False
+   
 LINEWIDTH = 2
 MARKERSIZE = 3
 
 # Default Colormap of Reflectance plot
 LINECMAP = cm.coolwarm #Divergent red/blue/gray middle
+LINECMAP_LAMBDA = cm.jet
 LINECOLOR = 'red'
 
 # Delimiter for reading in material files 
