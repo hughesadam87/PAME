@@ -1,7 +1,7 @@
 from traits.api import Str, HasTraits, Instance, Button, implements, File, Property, Bool
 from traitsui.api import View, Item, Group, Include
 from interfaces import IMaterial, IAdapter
-from os.path import basename
+import os.path as op 
 
 class BasicAdapter(HasTraits):
     """ Adapter for previewing, other things.  What is shown in "MATERIAL" tab. 
@@ -106,11 +106,25 @@ class ABCFileAdapter(BasicAdapter):
         self.contents = open(self.file_path, 'r').read()
         self.contents.edit_traits(kind='livemodal')      #Modal screws up objects for some reason
         
-    def populate_object(self): 
-        self.matobject=self.ABCFile(file_path=self.file_path)
-
     def _get_name(self): 
-        return '%s' % basename( self.file_path )
+        return op.splitext(op.basename(self.file_path))[0]        
+        
+    def populate_object(self): 
+        """ FileAdapters make the object and set the default name separately.  Default
+        material name is slightly different than self.name for display aesthetics.
+        """
+        self._set_matobject()
+        self._set_matname() 
+        
+    def _set_matobject(self):
+        """ Create material.  THIS IS WHAT SUBCLASSES SHOULD OVERLOAD"""
+        self.matobject = self.ABCFile(file_path=self.file_path)
+
+    def _set_matname(self):
+        """ Sets material name after populating object.  This name is:
+        Source : filename  instead of just filename.  Need to separate or
+        Source will end up in table when looking through DB"""    
+        self.matobject.mat_name = '%s: %s' % (self.source, self.name)
     
     def _set_name(self, newname): 
         self.name = newname
@@ -119,34 +133,27 @@ class ABCFileAdapter(BasicAdapter):
 class SopraFileAdapter(ABCFileAdapter):
     from material_files import SopraFile
     
-    source="Sopra file"
+    source="Sopra"
     notes="http://www.sspectra.com/sopra.html"
 
-    def _get_name(self): 
-        return basename(self.file_path)
-    
-    def populate_object(self): 
+    def _set_matobject(self): 
         self.matobject = self.SopraFile(file_path=self.file_path)
         
+
 
 class XNKFileAdapter(ABCFileAdapter):
     from material_files import XNKFile, XNKFileCSV
     csv = Bool(False) 
-    source="NK_Delimited File"
+    source="NK_Delimited"
     notes="Assumes real and imaginary parts of the index of refraction in "\
     "delimited columns.  If header present, must be first line and begin with "\
     "a '#' character"
 
-    def populate_object(self): 
+    def _set_matobject(self): 
         if self.csv:
             self.matobject = self.XNKFileCSV(file_path=self.file_path)            
         else:
             self.matobject = self.XNKFile(file_path=self.file_path)
-
-    def _get_name(self): 
-        return 'NK Delimited Object:  %s' % basename( self.file_path )
-
-
 
 
 if __name__ == '__main__':

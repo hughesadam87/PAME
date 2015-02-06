@@ -45,7 +45,8 @@ class SpecParms(HasTraits):
                 'xstart':self.xstart,
                 'xend':self.xend,
                 'x_increment':self.x_increment,
-                'x_samples':self.x_samples
+                'x_samples':self.x_samples,
+                'x_unit':self.x_unit
                 }
 
 

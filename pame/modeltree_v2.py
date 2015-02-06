@@ -155,6 +155,7 @@ class Model( HasTraits ):
                 if files:
                     for f in files:
                         obj = YamlAdapter(file_path = op.join(d, f),
+                                          source = 'RIInfo', #<--- CHANGE ADAPTER SOURCE!!!
                                           root=riinfo_dir) #THIS WILL SORT
                         out.append(obj)
         return out 

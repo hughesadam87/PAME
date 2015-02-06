@@ -23,6 +23,8 @@ from traits.api import *
 from traitsui.api import message
 from pandas import DataFrame, Panel
 import pame.utils as putil
+import numpy as np
+import functools, types
 
 #Local imports
 from handlers import FileOverwriteDialog
@@ -34,16 +36,20 @@ import config
 
 ORIGINAL_getitem = Panel.__getitem__
 
-def skspec_getitem(panel, *args, **kwargs):
+def skspec_getitem(*args, **kwargs):
     """ Overload __getitem__ of panel so can return Spectra.  Can't
     set panel items to Spectra; it's forbidden."""
-    iunit = args[0] #<-- R_avg, A_avg etc...
-    dfout = super(Panel, panel).__getitem__(*args, **kwargs)
+#    print args, kwargs
+#    kwargs.pop('s', None)
+    specunit = kwargs.pop('specunit', 'nm')
+    name = kwargs.pop('name', '')
+    panel, slice_attr = args[0], args[1] #<-- R_avg, A_avg etc...
+    dfout = super(Panel, panel).__getitem__(slice_attr)#*args, **kwargs)
     from skspec import Spectra, Unit
     
+    # First item in columns (e.g. steps_1, unit becomes step)
+    # http://stackoverflow.com/questions/4998629/python-split-string-with-multiple-delimiters    
     try:
-        # First item in columns (e.g. steps_1, unit becomes step)
-        # http://stackoverflow.com/questions/4998629/python-split-string-with-multiple-delimiters
         varname = dfout.columns[0].strip()
         unit = re.split('[_ =]', varname)[0]
         # One big hack and should be set from "alias" parameter in primary_panel
@@ -51,12 +57,14 @@ def skspec_getitem(panel, *args, **kwargs):
         varunit = None
     else:
         varunit = Unit(short=unit, full=unit)
-
+    dfout.columns = np.arange(dfout.shape[1]).astype(float) # Floats 0,1,2 to replace step_1, step_2
+        
         
     specout = Spectra(dfout, 
-                specunit='nm',  #<--- Hard-coded, can't inspect original data
+                specunit=specunit,
+                name=name,
                 varunit=varunit,# Since monkey-patching, so screwed
-                iunit=iunit)            
+                iunit=slice_attr)            
     return specout
 
 class SimParserError(Exception):
@@ -95,13 +103,27 @@ class LayerSimParser(HasTraits):
     def _backend_default(self):
         return config.SIMPARSERBACKEND
 
+
     def _backend_changed(self):
         """ Change between pandas and skspec slicing."""
         if self.backend == 'skspec':
             if not config.SKSPEC_INSTALLED:
                 raise SimParserError('Scikit-spectra is not installed; cannot'
                                      ' support backend.')
-            Panel.__getitem__ = skspec_getitem            
+            #http://stackoverflow.com/questions/28355896/monkeypatch-with-instance-method
+            def _partial_getitem(*args, **kwargs):
+                """ Acts like a partial function to skspec_getitem with custom
+                keywords.   Called like Panel['A_avg'] and Panel passed in, and 
+                'A_avg' becomes attr/varunit.
+                """
+                panel, attr = args
+                out = skspec_getitem(panel, 
+                                     attr, 
+                                     name = self.about['Simulation Name'],
+                                     specunit = self.static['Spectral Parms.']['x_unit'])
+                return out
+            
+            Panel.__getitem__ = _partial_getitem#types.MethodType(skspec_getitem, Panel, self)            
         else:
             Panel.__getitem__ = ORIGINAL_getitem
     

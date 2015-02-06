@@ -58,7 +58,7 @@ class YamlAdapter(ABCFileAdapter):
 
     implements(IAdapter)
 
-    source=Str('YAML-encoded datafile')
+    source=Str('YAML-encoded')  #<--- Gets overwrote from modeltree
     notes=Str('Not Found')
     REFERENCES = Str('Not Found')
     DATA = Any()
@@ -72,11 +72,14 @@ class YamlAdapter(ABCFileAdapter):
     def _get_name(self):
         """ Uses folder heirarchy and basename (ie main_AU_Johnson) """
         if not self.root:
-            return '%s' % op.basename( self.file_path )
+            name = '%s' % op.basename( self.file_path )
         
         # Strip root off path
-        relative_path = op.relpath(self.file_path, self.root)
-        return relative_path.replace(op.sep, '_')
+        else:
+            relative_path = op.relpath(self.file_path, self.root)
+            name = relative_path.replace(op.sep, '_')
+
+        return op.splitext(name)[0]
 
     def _get__is_model(self):
         """ If yaml has a FORMULA key, this is a model. """
@@ -112,18 +115,16 @@ class YamlAdapter(ABCFileAdapter):
             pass        
 
 
-    def populate_object(self): 
+    def _set_matobject(self): 
         """Method used to instantiate an object to conserve resources"""
     
         if self._is_model:
             raise NotImplementedError('RIINFO DB models not supported up yet!')
 
-
         else:
             datatype = self.DATA['type']
             data = self.DATA['data']
             self.matobject = YamlMaterial(datastring=data, datatype=datatype)
-            print self.DATA
 
 
     # VIEW
