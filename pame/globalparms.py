@@ -61,4 +61,4 @@ materialname = 'Material'
 optresponse = 'Optical Response'
 spectralparameters = 'Spectral Parms.'
 
-missinglayer = 'semi-infinite' #Missing a layer
+semiinf_layer = 'semi-infinite' #Substrate/Solvent designator

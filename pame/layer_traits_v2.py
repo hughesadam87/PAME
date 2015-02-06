@@ -119,7 +119,7 @@ class Nanoparticle(Composite):
 class Boundary(BasicLayer):
     """Represent the interface of the stack on either the left or right"""
     designator=Str('basic')
-    d=Str(globalparms.missinglayer)	
+    d=Str(globalparms.semiinf_layer)	
 
 class Substrate(Boundary):             #THESE ARE NOT IMPLEMENTED IN SUPERMODEL YET
     name=Str('Substrate')

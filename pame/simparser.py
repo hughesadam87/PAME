@@ -120,7 +120,8 @@ class LayerSimParser(HasTraits):
                 out = skspec_getitem(panel, 
                                      attr, 
                                      name = self.about['Simulation Name'],
-                                     specunit = self.static['Spectral Parms.']['x_unit'])
+                                     specunit = self.static[globalparms.spectralparameters]['x_unit']
+                                     )
                 return out
             
             Panel.__getitem__ = _partial_getitem#types.MethodType(skspec_getitem, Panel, self)            

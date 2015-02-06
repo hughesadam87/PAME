@@ -257,10 +257,11 @@ class NanoSphereShell(NanoSphere):
     compnpgroup=Group(
         HGroup(            
             Item('d_core', label='NP Core diameter', width=5),
-            Item('shell_width', label='NP Shell thickness', width=0.5),
             Item('r_core', label='NP Core radius'),
-            #Item('specparms', style='custom'), 
-            Item('mviewbutton', label='Show Full material', show_label=False)),
+            Item('shell_width', label='NP Shell thickness', width=0.5),
+            Item('mviewbutton', label='Show Full material', show_label=False),
+            Item('np_plots', show_label=False)
+            ),
         Group(
             Tabbed(
                 Include('coregroup'),
@@ -275,7 +276,7 @@ class NanoSphereShell(NanoSphere):
     )
 
 
-    traits_view=View(Item('np_plots', label='Cross Section Mixing'),#Item('allbutt', label='Plot Comparison'),
+    traits_view=View(
                      Include('compnpgroup'), title='Composite Nanoparticle with Shell', resizable=True )
 
     def __init__(self, *args, **kwds):

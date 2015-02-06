@@ -78,7 +78,7 @@ class DielectricSlab(HasTraits):
         """Returns inf, d1, d2, d3, inf for layers"""
         ds = [inf, inf]
         for layer in self.stack:
-            if layer.d != globalparms.missinglayer:  #When does this happen?  Substrate/solvent?
+            if layer.d != globalparms.semiinf_layer:  #When does this happen?  Substrate/solvent?
                 ds.insert(-1, layer.d)
         return array(ds)
 

@@ -67,7 +67,9 @@ class SimConfigure(HasTraits):
                          value=globalparms.selected)
     _ignoreme = Property(List, depends_on='choose_optics')
 
-    choose_layers = Enum('Selected Layer', 'All Layers', 'None')
+    # DONT CHANGE VALUE OF THESE, VISIBILITY TRAITS AND SO FORTH DEPEND ON EXACT NAMES/CASE
+    choose_layers = Enum('None', 'Selected Layer', 'All Layers')
+    mater_only = Enum('Material Data', 'Material and Layer Metadata')
     additional = Str()
     additional_list = Property(List, depends_on = 'additional, traitscommon')
 
@@ -79,6 +81,7 @@ class SimConfigure(HasTraits):
             VGroup(
                 Item('_opticalmessage_p1', show_label=False, style='readonly'),
                 Item('averaging', style='custom', label='Angle Averaging', show_label=False),
+                Item('_'), #Gap
                 Item('choose_optics', style='custom', label='Optical Quantities', show_label=False),
                 Item('_opticalmessage_p2', show_label=False, style='readonly'),
                 Item('store_optical_stack', show_label=False, label='copy'),      
@@ -95,14 +98,20 @@ class SimConfigure(HasTraits):
                      style='custom',
                      show_label=False,
                      label='<font color="red">Top-level Traits </font>'),
-                Item('_layermessage_p2', show_label=False, style='readonly'),              
-                Item('choose_layers', style='custom', show_label=False, label='Deep Copy'),
+                Item('_layermessage_p2', show_label=False, style='readonly'), 
+                HGroup(
+                    Item('choose_layers', style='custom', show_label=False, label='Deep Copy'),
+                    Item('mater_only', label='Store', visible_when='choose_layers == "All Layers"')
+                    ),
                 label='Dielectric Slab'              
 
                 ),
             layout='tabbed'),
         buttons = [ 'OK', 'Cancel' ],#'Undo]
     )       
+    
+    def _choose_layers_default(self):
+        return 'Selected Layer'
 
     def _get__ignoreme(self):
         """ Weird BUG where choose_optics (as defined) doesn't save when 
@@ -140,7 +149,8 @@ class SimConfigure(HasTraits):
         return self._justwrapit('In addition to the material you selected for primary storage, the simulation'
                                 ' will store many other material attributes which can be accessed by a'
                                 ' parser.  Should the simulation store these for layers of the dielectric slab?'
-                                ' For just the selected layer, or None?')
+                                ' For just the selected layer, or None?  For each layer, store the material only,'
+                                ' or store all metadata about the layer?')
 
     def __grabbutton_fired(self):
         """ Launch Browser to view traits """
@@ -158,17 +168,9 @@ class SimConfigure(HasTraits):
                             ('Angle Averaging', self.averaging),
                             ('Copy Full Optical Stack', self.store_optical_stack),
                             ('Layer Quantities', self.additional_list),
-                            ('Deep Layer Storage', self.choose_layers)
+                            ('Deep Layer Storage', self.choose_layers),
+                            ('Layer Storage Style', self.mater_only)
                             ])
-
-
-        #return {'Optical Quantities':self.choose_optics,
-                #'Angle Averaging': self.averaging,
-                #'Copy Full Optical Stack': self.store_optical_stack,
-                #'Layer Quantities': self.additional_list,
-                #'Deep Layer Storage': self.choose_layers
-                #}                           
-
 
     def _get_additional_list(self):
         """ User adds custom traits to additional box, deliminted by newline.
@@ -436,6 +438,21 @@ class ABCSim(HasTraits):
         """ ABC METHOD """
         pass
 
+    def _get_allstorage(self):
+        """ Returns Ordered dict of dicts, where each dictionary is a primary storage dictionary:
+        IE self.primary, self.results, self.static and self.simulation_requested(), where
+        simuliation requested gives metadata like num steps, simulation etc.. about this 
+        particular run.
+        """ 
+        allout = OrderedDict()
+        allout['static'] = self.static
+        allout['about'] = self.simulation_requested() #<-- bug: simulation_requested9
+        allout['primary'] = self.primary
+        allout['results'] = self.results      
+        allout['inputs'] = self.simulation_traits
+        return allout        
+
+
     def _start_fired(self): 
         # Check sim traits one more time in case overlooked some trait that should call 
         # check_sim_ready()
@@ -460,7 +477,7 @@ class LayerSimulation(ABCSim):
         VGroup(
             HGroup( 
                 Item('status_message', style='readonly', label='Status'),           
-                Item('start', show_label=False),   
+                Item('start', show_label=False, enabled_when='ready == True'),   
                 ),
             Include('maingroup'),
         )
@@ -489,25 +506,11 @@ class LayerSimulation(ABCSim):
     def _sim_variables_default(self):
         """ Initial traits to start with """
         obs=[]
-        obs.append(SimAdapter(trait_name='selected_material.Vfrac', start=0.0, end=0.1, inc=self.inc)),  
-        obs.append(SimAdapter(trait_name='selected_layer.d', start=50., end=100., inc=self.inc)),
-        obs.append(SimAdapter(trait_name='selected_material.r_core', start=25., end=50., inc=self.inc)),
+#        obs.append(SimAdapter(trait_name='selected_material.Vfrac', start=0.0, end=0.1, inc=self.inc)),  
+        obs.append(SimAdapter(trait_name='selected_layer.d', start=10.0, end=20.0, inc=self.inc)),
+#        obs.append(SimAdapter(trait_name='selected_material.r_core', start=25., end=50., inc=self.inc)),
         return obs 
 
-
-    def _get_allstorage(self):
-        """ Returns Ordered dict of dicts, where each dictionary is a primary storage dictionary:
-        IE self.primary, self.results, self.static and self.simulation_requested(), where
-        simuliation requested gives metadata like num steps, simulation etc.. about this 
-        particular run.
-        """ 
-        allout = OrderedDict()
-        allout['static'] = self.static
-        allout['about'] = self.simulation_requested() #<-- bug: simulation_requested9
-        allout['primary'] = self.primary
-        allout['results'] = self.results      
-        allout['inputs'] = self.simulation_traits
-        return allout        
 
     def runsim(self): 
         """ Increments, updates all results.  Thre primary storage objects:
@@ -544,6 +547,7 @@ class LayerSimulation(ABCSim):
         # at simulation inputs.  Later sims may want to simulate over fiber traits (ie fiber diameter changes)
         # so would migrate these into resultsdict instead
         staticdict = OrderedDict()
+        staticdict['Layers in Slab'] = len(self.b_app.stack)
         staticdict[globalparms.spectralparameters] = b_app.specparms.simulation_requested()         
         staticdict[globalparms.strataname] = b_app.fiberparms.simulation_requested()
 
@@ -616,10 +620,15 @@ class LayerSimulation(ABCSim):
 
             # Save layer/material traits.  If None selected, it just skips
             if sconfig.choose_layers == 'Selected Layer':
-                results_increment['selected_layer'] = self.selected_layer.simulation_requested()
+                key = 'Layer_%s' % (b_app.stack.selected_index) #<-- index of selected layer
+                results_increment[key] = self.selected_layer.simulation_requested()
 
             elif sconfig.choose_layers == 'All Layers':
-                results_increment['dielectric_layers'] = b_app.layereditor.simulation_requested()
+                materials_only = False
+                if sconfig.mater_only == 'Material Data':
+                    materials_only = True
+                    
+                results_increment['dielectric_layers'] = b_app.layereditor.simulation_requested(materials_only)
 
 
             # resultsdict >>  {step1 : {results_of_increment}, ...}

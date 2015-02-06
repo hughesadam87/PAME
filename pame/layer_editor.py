@@ -11,6 +11,7 @@ from traitsui.table_filter \
 from modeltree_v2 import Model
 from composite_tree import CompositeMain
 from nanotree import NanoMain
+from collections import OrderedDict
 
 from composite_materials_v2 import SphericalInclusions_Disk   #For testing purposes, once tree editors are built for this, discard
 from advanced_objects_v2 import NanoSphereShell
@@ -83,19 +84,21 @@ class LayerEditor(HasTraits):
             Item('selected_index', style='readonly', label='Stack position'),
             ),
         Item('stack', editor=layereditor, show_label=False),
-        
-        #	      ),
         resizable=True)
 
-
-
-    def simulation_requested(self):
+    def simulation_requested(self, materials_only=False):
         """ Nested dictionary keyed by layer number:
         {layer0 : {layer_name, layer_d, ...}, layer1 : {layer_name, layer_d, ...}}
+        If materials_only, {layer_0} : {material_0}, and layermetadata like
+        layer_d, layer_designatore are lost.  Option is selected by gensim.
         """
-        return dict(('layer_%s' % idx, layer.simulation_requested()) 
-                    for idx, layer in enumerate(self.stack))
-        
+        out = OrderedDict(('layer_%s' % idx, layer.simulation_requested()) 
+                    for idx, layer in enumerate(self.stack))        
+
+        if materials_only:
+            out = OrderedDict((k, v.material) for k,v in out.items())
+
+        return out          
 
     def _selected_layer_default(self):
         return self.stack[1]
