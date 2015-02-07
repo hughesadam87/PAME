@@ -117,7 +117,7 @@ class LayerSimParser(HasTraits):
                 'A_avg' becomes attr/varunit.
                 """
                 from skspec.units.specunits import _specunits
-                SPECDICT = dict((obj.short, obj.full) for obj in _specunits)
+                SPECDICT = dict((obj.full, obj.short) for obj in _specunits)
 
                 panel, attr = args
                 x_short = self.static[globalparms.spectralparameters]['x_unit'].lower()
