@@ -11,9 +11,19 @@ class CompositeMaterial(BasicMaterial):
     '''Still inherits basic traits like earray, narray and how they are interrelated'''
 
     modeltree = Instance(Model)#,())
+#    from composite_tree import CompositeMain
+#    from nanotree import NanoMain    
+
+#    compositetree = Instance(CompositeMain)
+#    nanotree = Instance(NanoMain)
+    
+
+    selectedtree=Property(depends_on='mat_class')  #Determines which tree to use to select materials
+
 
     Material1=Instance(IMaterial)
     Material2=Instance(IMaterial)   #Make these classes later
+    mat_class = Enum('Bulk Material', 'Mixed Bulk Materials', 'Nanoparticle Objects')
 
     Mat1History=List(IMaterial)  #When the materials change, this logs them.  Useful for advanced stuff
     Mat2History=List(IMaterial)
@@ -44,6 +54,7 @@ class CompositeMaterial(BasicMaterial):
                        HGroup(		
                            Item('selectmat1', label='Change Solute', show_label=False), 
                            Item('selectmat2', label='Change Solvent', show_label=False),
+                           Item('mat_class', label='Material Class')
                            ),
                        label='Materials')
 
@@ -123,21 +134,33 @@ class CompositeMaterial(BasicMaterial):
         elif self.MixingStyle=='MGMOD':
             self.Mix=MG_Mod(Vfrac=self.Vfrac)
 
+    def _get_selectedtree(self): 
+        if self.mat_class=='Bulk Material': 
+            return self.modeltree 
 
+        if self.mat_class=='Mixed Bulk Materials':
+            return self.compositetree
+
+        if self.mat_class=='Nanoparticle Objects': 
+            return self.nanotree
+
+    # Change Solute
     def _selectmat1_fired(self): 
         '''Used to select material.  The exceptions are if the user returns nothing or selects a folder rather than an object for example'''
-        self.modeltree.configure_traits(kind='modal') #Leave as configure traits not edit traits
+        self.selectedtree.configure_traits(kind='modal') #Leave as configure traits not edit traits
+
         try:
-            selected_adapter=self.modeltree.current_selection
+            selected_adapter=self.selectedtree.current_selection
             selected_adapter.populate_object()
             self.Material1=selected_adapter.matobject	
         except (TypeError, AttributeError):  #If user selects none, or selects a folder object, not an actual selection
             pass
 
+    # Change Solvent
     def _selectmat2_fired(self): 
-        self.modeltree.configure_traits(kind='modal')
+        self.selectedtree.configure_traits(kind='modal')
         try:
-            selected_adapter=self.modeltree.current_selection
+            selected_adapter=self.selectedtree.current_selection
             selected_adapter.populate_object()
             self.Material2=selected_adapter.matobject
         except (TypeError, AttributeError):  
@@ -481,6 +504,6 @@ class TriangularInclusions_Shell_case2(TriangularInclusions):
 
 if __name__ == '__main__':
 #	f=CompositeMaterial_Equiv()
-    f=TriangularInclusions_Shell_case1()
+    f = CompositeMaterial()
 #	f=SphericalInclusions_Disk()
     f.configure_traits()

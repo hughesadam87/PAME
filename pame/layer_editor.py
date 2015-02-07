@@ -8,9 +8,6 @@ from interfaces import ILayer, IMaterial
 from traitsui.table_filter \
      import EvalFilterTemplate, MenuFilterTemplate, RuleFilterTemplate, \
      EvalTableFilter
-from modeltree_v2 import Model
-from composite_tree import CompositeMain
-from nanotree import NanoMain
 from collections import OrderedDict
 
 from composite_materials_v2 import SphericalInclusions_Disk   #For testing purposes, once tree editors are built for this, discard
@@ -19,12 +16,32 @@ from advanced_objects_v2 import NanoSphereShell
 class StackError(Exception):
     """ """
 
-class LayerEditor(HasTraits):
+from modeltree_v2 import Model
+from composite_tree import CompositeMain
+from nanotree import NanoMain
+
+class MaterialChooser(HasTraits):
+    """ """
     modeltree=Instance(Model,())
     compositetree=Instance(CompositeMain,())
-    nanotree=Instance(NanoMain,())
+    nanotree=Instance(NanoMain,())    
+    
+    selectedtree=Property(depends_on='mat_class')  #Determines which tree to use to select materials
+    mat_class=Enum('Bulk Material', 'Mixed Bulk Materials', 'Nanoparticle Objects')   
+    
+    def _get_selectedtree(self): 
+        if self.mat_class=='Bulk Material': 
+            return self.modeltree 
+        if self.mat_class=='Mixed Bulk Materials':
+            return self.compositetree
+        if self.mat_class=='Nanoparticle Objects': 
+            return self.nanotree    
 
-    selectedtree=Property(depends_on='layer_type')  #Determines which tree to use to select materials
+
+class LayerEditor(HasTraits):
+    
+    materialchooser = Instance(MaterialChooser,())    
+    selected_tree = DelegatesTo('materialchooser')
 
     sync_rad_selection=Any
 
@@ -37,7 +54,6 @@ class LayerEditor(HasTraits):
     sync_d_radius=Bool(False)     #Syncs interface spacing, d, with properties of NP's
 
     selected_layer=Instance(ILayer)
-    layer_type=Enum('Bulk Material', 'Mixed Bulk Materials', 'Nanoparticle Objects')
 
     selected_d=Any  #Property/delgatesto messed up for this, perhaps because a table is involved.  Leave this way
     selected_material=Instance(IMaterial)
@@ -76,7 +92,7 @@ class LayerEditor(HasTraits):
             Item('add_basic', show_label=False), 
             Item('remove', enabled_when='selected_layer != solvent and selected_layer != substrate', show_label=False),
             Item('changematerial', label='Configure Layer Material', show_label=False, enabled_when='selected_layer is not None'),
-            Item('layer_type', label='Choose Material Type', style='simple'),
+            Item('mat_class', label='Choose Material Type', style='simple'),
             ), 
 
         HGroup(
@@ -138,17 +154,21 @@ class LayerEditor(HasTraits):
         self.stack.insert(position, layer)
 
         self.sync_trait('specparms', layer, 'specparms')
-        self.sync_trait('modeltree', layer, 'modeltree', mutual=True)
+        self.sync_trait('selectedtree', layer, 'selectedtree', mutual=True)
+#        self.sync_trait('modeltree', layer, 'modeltree', mutual=True)
+#        self.sync_trait('composite_tree', layer, 'composite_tree', mutual=True)
+#        self.sync_trait('nanotree', layer, 'nanotree', mutual=True)
+        
 
         self.selected_layer=self.stack[self.selected_index]
 
-    def _get_selectedtree(self): 
-        if self.layer_type=='Bulk Material': 
-            return self.modeltree 
-        if self.layer_type=='Mixed Bulk Materials':
-            return self.compositetree
-        if self.layer_type=='Nanoparticle Objects': 
-            return self.nanotree
+    #def _get_selectedtree(self): 
+        #if self.mat_class=='Bulk Material': 
+            #return self.modeltree 
+        #if self.mat_class=='Mixed Bulk Materials':
+            #return self.compositetree
+        #if self.mat_class=='Nanoparticle Objects': 
+            #return self.nanotree
         
 
     def _remove_fired(self): 
@@ -179,24 +199,26 @@ class LayerEditor(HasTraits):
 
             else:
 
-                if self.layer_type=='Mixed Bulk Materials':
+                if self.mat_class=='Mixed Bulk Materials':
                     newlayer=Composite(material=newmat, 
                                        d = self.selected_d) 
                
-                elif self.layer_type=='Bulk Material':
+                elif self.mat_class=='Bulk Material':
                     print 'entering basic layerl'
                     newlayer=BasicLayer(material=newmat, 
                                         d = self.selected_d)
 
-                elif self.layer_type=='Nanoparticle Objects':
+                elif self.mat_class=='Nanoparticle Objects':
                     newlayer=Nanoparticle(material=newmat, 
                                           d = self.selected_d)
 
             self.stack[self.selected_index] = newlayer
             self.selected_layer = self.stack[self.selected_index]
 
-            self.sync_trait('modeltree', newlayer, 'modeltree')    #AGAIN NOT SURE IF NECESSARY, if i can just initialize 
+     #       self.sync_trait('modeltree', newlayer, 'modeltree')    #AGAIN NOT SURE IF NECESSARY, if i can just initialize 
             self.sync_trait('specparms', newlayer, 'specparms')
+            self.sync_trait('selectedtree', newlayer, 'selectedtree', mutual=True)
+            
 
         except (TypeError, AttributeError) as exc:  #If user selects none, or selects a folder object, not an actual selection
             print 'in exception in layereditor change materal', self.stack[self.selected_index], self.selected_layer
@@ -212,8 +234,10 @@ class LayerEditor(HasTraits):
 #		mats=[substrate, Composite(d=24.0), solvent]     #Default layer is composite material
 #		mats=[substrate, BasicLayer(d=24.0), solvent]    #Default layer is basic layer
         for mat in mats:
-            self.sync_trait('modeltree', mat, 'modeltree')  
+      #      self.sync_trait('modeltree', mat, 'modeltree')  
             self.sync_trait('specparms', mat, 'specparms')
+            self.sync_trait('selectedtree', mat, 'selectedtree', mutual=True)
+            
         return mats
 
     #  Important to declare these here instead of on the delcaration of the stack; otherwise tableeditor trips ###
@@ -252,24 +276,26 @@ class LayerEditor(HasTraits):
                 if layer.sync_status==True:	
                     layer.sync_solvent(self.solvent.material)
 
-    def __getattr__(self, attr):
-        """ Simulation needs to access stack by integer sometimes, IE
-        layer1, layer2 so can do self.layer1 akin to self.selected_layer.
-        """
-        # Layer1, layer2, Layer_3
-        if attr.lower().startswith('layer'):
-            layer_int = int(attr.lstrip('layer_')) #Works with _ or no _
-            if layer_int not in range(len(self.stack)):
-                raise StackError("Invalid layer index %s on stack of length %s" 
-                                 % (layer_int, len(self.stack)))
-            return self.stack[layer_int]
+    #def __getattr__(self, attr):
+        #""" Simulation needs to access stack by integer sometimes, IE
+        #layer1, layer2 so can do self.layer1 akin to self.selected_layer.
+        #"""
+        #print attr, self
+        ## Layer1, layer2, Layer_3
+        #if attr.lower().startswith('layer'):
+            #layer_int = int(attr.lstrip('layer_')) #Works with _ or no _
+            #if layer_int not in range(len(self.stack)):
+                #raise StackError("Invalid layer index %s on stack of length %s" 
+                                 #% (layer_int, len(self.stack)))
+            #return self.stack[layer_int]
             
-        super(LayerEditor, self).__getattr__(attr)
+        #super(LayerEditor, self).__getattr__(attr)
         
         
 
 
 
 if __name__ == '__main__':
-    LayerEditor().configure_traits()
+    MaterialChooser().configure_traits()
+#    LayerEditor().configure_traits()
 
