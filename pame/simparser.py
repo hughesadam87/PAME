@@ -116,11 +116,16 @@ class LayerSimParser(HasTraits):
                 keywords.   Called like Panel['A_avg'] and Panel passed in, and 
                 'A_avg' becomes attr/varunit.
                 """
+                from skspec.units.specunits import _specunits
+                SPECUNITS = dict((obj.short, obj.full) for obj in _specunits)
+
                 panel, attr = args
+                x_short = self.static[globalparms.spectralparameters]['x_unit'].lower()
+
                 out = skspec_getitem(panel, 
                                      attr, 
                                      name = self.about['Simulation Name'],
-                                     specunit = self.static[globalparms.spectralparameters]['x_unit']
+                                     specunit = SPECDICT[x_short]
                                      )
                 return out
             

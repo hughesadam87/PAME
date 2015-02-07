@@ -29,7 +29,7 @@ USESOPRA = True
 USERIINFO = True #slows performance
 
 # Spectral parameters
-xstart = 400 
+xstart = 300 
 xend = 700
 xpoints = 100
 xunit = 'Nanometers'
