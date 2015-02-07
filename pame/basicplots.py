@@ -627,13 +627,14 @@ class ScatterView(HasTraits):
             self.exarea=self.compute_area(self.extarray)
             self.absarea=self.compute_area(self.absarray)
             self.scatarea=self.compute_area(self.scatarray)
+            
             try:
                 self.exmax=self.compute_max_xy(self.extarray)
                 self.absmax=self.compute_max_xy(self.absarray)
                 self.scatmax=self.compute_max_xy(self.scatarray)
 
             except TypeError:  #Sometimes these inexplicably mess up, especially when loading in strange materials
-                print 'Had to pass in finding max_xy values'
+                print 'Cannot find max xy values in ext,abs,scattering cross sections'
                 pass
 
 

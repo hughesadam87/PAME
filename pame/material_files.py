@@ -6,6 +6,7 @@ from numpy import empty, interp, linspace
 from converter import SpectralConverter
 import os
 import logging
+from pame.utils import complex_n_to_e
 
 class MaterialFileError(Exception):
     """ """
@@ -18,9 +19,13 @@ class ABCExternal(BasicMaterial):
     xpoints = Property(Int)
     file_spec_unit = Str()        
 
-    # Store the real data in the file
+    # Store the real data in the file; should be visualized on mview later
     file_x = Array()       
     file_n = CArray() #Complex array nr, ni  
+    file_e = Property(CArray, depends_on='file_n')
+    
+    def _get_file_e(self):
+        return complex_n_to_e(self.file_n)
 
     def _get_xstart(self):
         return self.file_x[0]
@@ -30,10 +35,19 @@ class ABCExternal(BasicMaterial):
     
     def _get_xpoints(self):
         return len(self.file_x)
+    
+    # Called on lambdas_changed
+    def update_all(self):
+        """ Update data, interpolation, view all"""
+        self.update_data()
+        self.update_interp() #<---- IMPOIRTANT
+        self.update_mview()
+
 
     def update_interp(self):
         """Interpolates complex arrays from file data and sets self.narray (real and imaginary),
         could also set dielectric function, since BasicMaterial updates when either is changed."""
+
 #        if len(self.file_x) != 0:  #If array populated
 
         nps = self.file_n
@@ -47,8 +61,10 @@ class ABCExternal(BasicMaterial):
             print "Had to sort values in material_files.update_interp\n"
             print 'nps.shape, xps.shape:', nps.shape, xps.shape
 
-        n = interp(self.lambdas, xps, nps.real, left=0, right=0)
-        k = interp(self.lambdas, xps, nps.imag, left=0, right=0)
+        # INTERPOLATION WILL JUST EXTEND CONSTANT VALUE ON LEFT OR RIGHT EQUAL TO LAST VALUE IN DATSET
+        # http://docs.scipy.org/doc/numpy/reference/generated/numpy.interp.html
+        n = interp(self.lambdas, xps, nps.real)#, left=0, right=0)
+        k = interp(self.lambdas, xps, nps.imag)#, left=0, right=0)
 
         # Create complex array from two real arrays        
         self.narray = n + 1j*k
@@ -66,6 +82,7 @@ class ABCExternal(BasicMaterial):
     def update_data(self):
         """ Must set header, set file_x, set file_n and call updated_interp() """
         pass
+    
 
 class ABCFile(ABCExternal):
     """ General model to store data from file.  
@@ -99,9 +116,7 @@ class ABCFile(ABCExternal):
            1. Read file Data 
            2. Convert Unit 
            3. Interpolate"""
-        self.update_data()
-        self.update_interp()
-        self.update_mview()
+        self.update_all()
     
     
     # Unit Conversions
@@ -152,6 +167,7 @@ class XNKFile(ABCFile):
     traits_view=View(Item('header', style='readonly'),
                      Item('mviewbutton'),
                      Item('file_path') )
+    
 
 class XNKFileCSV(XNKFile):
     """ Wavelength, N, K delimited, 3-column file but comma-separated."""

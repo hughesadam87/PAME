@@ -1,6 +1,25 @@
 # DynamicRange Imports:
 from traits.api import HasPrivateTraits, Int, Range, Int
 from traitsui.api import View, Group, Item, Label, RangeEditor
+from numpy.lib import scimath as SM
+import numpy as np
+
+
+# MATH UTILITIES
+# --------------
+def complex_n_to_e(narray): 	
+    """ Return complex dielectric given index of refraction given. """    
+    earray = np.empty(narray.shape, dtype='complex')  
+    nr = narray.real
+    nk = narray.imag          
+    earray.real = nr**2 -nk**2
+    earray.imag = 2.0*nr*nk
+    return earray
+
+def complex_e_to_n(earray): 
+    """ Return complex index of refraction given complex dielectric"""
+    return SM.sqrt(earray)  
+
  
 #https://github.com/enthought/traitsui/blob/master/examples/demo/Dynamic_Forms/dynamic_range_editor.py   
 #http://stackoverflow.com/questions/9956167/change-property-parameter-from-within-class-constructor-python-traits/28286878#28286878
