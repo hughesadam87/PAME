@@ -16,6 +16,9 @@ from collections import OrderedDict
 from composite_materials_v2 import SphericalInclusions_Disk   #For testing purposes, once tree editors are built for this, discard
 from advanced_objects_v2 import NanoSphereShell
 
+class StackError(Exception):
+    """ """
+
 class LayerEditor(HasTraits):
     modeltree=Instance(Model,())
     compositetree=Instance(CompositeMain,())
@@ -92,11 +95,13 @@ class LayerEditor(HasTraits):
         If materials_only, {layer_0} : {material_0}, and layermetadata like
         layer_d, layer_designatore are lost.  Option is selected by gensim.
         """
-        out = OrderedDict(('layer_%s' % idx, layer.simulation_requested()) 
+        # No underscore!   Be consistent with how users enter in inputs of sim
+        out = OrderedDict(('layer%s' % idx, layer.simulation_requested()) 
                     for idx, layer in enumerate(self.stack))        
 
         if materials_only:
-            out = OrderedDict((k, v.material) for k,v in out.items())
+            out = OrderedDict(('layer%s' % idx, layer.material.simulation_requested()) 
+                        for idx, layer in enumerate(self.stack))  
 
         return out          
 
@@ -139,7 +144,7 @@ class LayerEditor(HasTraits):
 
     def _get_selectedtree(self): 
         if self.layer_type=='Bulk Material': 
-            return self.modeltree
+            return self.modeltree 
         if self.layer_type=='Mixed Bulk Materials':
             return self.compositetree
         if self.layer_type=='Nanoparticle Objects': 
@@ -246,6 +251,22 @@ class LayerEditor(HasTraits):
             if layer.designator !='basic':
                 if layer.sync_status==True:	
                     layer.sync_solvent(self.solvent.material)
+
+    def __getattr__(self, attr):
+        """ Simulation needs to access stack by integer sometimes, IE
+        layer1, layer2 so can do self.layer1 akin to self.selected_layer.
+        """
+        # Layer1, layer2, Layer_3
+        if attr.lower().startswith('layer'):
+            layer_int = int(attr.lstrip('layer_')) #Works with _ or no _
+            if layer_int not in range(len(self.stack)):
+                raise StackError("Invalid layer index %s on stack of length %s" 
+                                 % (layer_int, len(self.stack)))
+            return self.stack[layer_int]
+            
+        super(LayerEditor, self).__getattr__(attr)
+        
+        
 
 
 

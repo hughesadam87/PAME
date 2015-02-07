@@ -211,6 +211,9 @@ class GlobalScene(HasTraits):
                      #       Item('save'), Item('load'),  #FOR SAVING ENTIRE STATE OF SIMULATION
                      menubar=mainmenu,
                      resizable=True, 
+#                                   group_theme = '@G',
+                                  item_theme  = '@B0B',
+                                   label_theme = '@BEA',                      
                      buttons=['Undo'], 
                      title='Plasmonic Assay Modeling Environment')
 

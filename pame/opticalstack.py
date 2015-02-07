@@ -60,7 +60,8 @@ class DielectricSlab(HasTraits):
 
     #@cached_property
     def _get_ns(self): 
-        rows=len(self.stack) ; cols=self.lambdas.shape[0]
+        rows=len(self.stack) 
+        cols=self.lambdas.shape[0]
         ns=empty( (rows, cols), dtype=complex )
         for i in range(rows):	
             layer=self.stack[i]

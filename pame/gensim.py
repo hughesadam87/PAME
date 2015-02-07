@@ -24,18 +24,66 @@ from handlers import FileOverwriteDialog, BasicDialog
 from simulationplots import ReflectanceStorage, ScattStorage, MaterialStorage
 from main_parms import SpecParms
 from interfaces import IMaterial, ISim
-from layer_editor import LayerEditor
+from layer_editor import LayerEditor, StackError
 import config
 import hackedvtree
 import customjson
 import utils
 from simparser import LayerSimParser
 
+WRAPWIDTH = 100 # Text characters for wrapping lines
 
 class SimError(Exception):
     """ """
 
-WRAPWIDTH = 100 # Text characters for wrapping lines
+class SimAdapter(HasTraits):
+    """Shows selected simulation in table on main view.  Maps name shortcuts
+    like layer1.material to actual storage of 'b_app.stack[1]'
+    """
+    trait_name = Str('add trait name')
+    trait_name_full = Property(Str, depends_on = 'trait_name')
+    trait_array=Property(Array, depends_on='start, end, inc')
+    # THESE VALUES ARE SET WHEN BY CLASSES THAT CONTROL THE SIMS
+    inc=Int() 
+    start=Float()
+    end=Float()
+    
+    def _get_trait_name_full(self):
+        """ Given a name like layer1.material, maps it to the true dept of
+        b_app object like b_app.stack[1].material.  Intended to be used by
+        ABCSim, which will call this on b_app, so relative to base_app.
+        """
+        prefix = self.trait_name.split('.')[0].lower()
+        #substrate, solvent or layer_1, Layer2 etc... go to layereditor
+        if prefix in ['substrate', 'solvent'] or prefix.startswith('layer'):
+            return 'layereditor.%s' % self.trait_name
+     
+        elif prefix.startswith('material'):
+            # material1 ---> layereditor.layer1.material
+            mat_index = prefix.lstrip('material_') #Works with _ or no _
+            
+            # This will update in real time as user types, so if user type
+            # material but doesn't have time to type integer, prevents a 
+            # crash.  
+            try:
+                mat_index = int(mat_index)
+            except ValueError:
+                pass # return self.trait_name
+            else:
+                suffix = '.'.join(self.trait_name.split('.')[1::]) #ie .Vfrac
+                return 'layereditor.layer%s.material.%s' % (mat_index, suffix)
+
+        return self.trait_name
+            
+
+    def _get_trait_array(self): 
+        """ Reserves an array large enough to store all the values that the
+        traits will take on when incremented.  For example,
+        if iterating between 1,10 by steps of 1, it will store 10 slots """
+        try:
+            return linspace(self.start, self.end, self.inc)
+        except TypeError:  #Caused by unicode input which seems to happen spontaneously for an unknown reason
+            return
 
 # ADD SAVE/LOAD UBTTONS
 class SimConfigure(HasTraits):
@@ -62,7 +110,7 @@ class SimConfigure(HasTraits):
     #https://github.com/enthought/traitsui/blob/master/examples/demo/Standard_Editors/CheckListEditor_simple_demo.py
     #http://stackoverflow.com/questions/23650049/traitsui-checklisteditor-changing-the-case-of-values?rq=1 
     choose_optics = List(editor=CheckListEditor(values = globalparms.header.keys(),  
-                                                cols=3), 
+                                                cols=5), 
                          #format_func=lambda x: x.lower(), #<-- no works
                          value=globalparms.selected)
     _ignoreme = Property(List, depends_on='choose_optics')
@@ -101,7 +149,7 @@ class SimConfigure(HasTraits):
                 Item('_layermessage_p2', show_label=False, style='readonly'), 
                 HGroup(
                     Item('choose_layers', style='custom', show_label=False, label='Deep Copy'),
-                    Item('mater_only', label='Store', visible_when='choose_layers == "All Layers"')
+                    Item('mater_only', label='Store', visible_when='choose_layers != "None"')
                     ),
                 label='Dielectric Slab'              
 
@@ -197,25 +245,6 @@ class SimConfigure(HasTraits):
     def _get_translist(self): 
         return self.translator.keys()      
 
-
-
-class SimAdapter(HasTraits):
-    """Shows selected simulation in table on main view """
-    trait_name = Str('add trait name')
-    # THESE VALUES ARE SET WHEN BY CLASSES THAT CONTROL THE SIMS
-    inc=Int() 
-    start=Float()
-    end=Float()
-    trait_array=Property(Array, depends_on='start, end, inc')
-
-    @cached_property
-    def _get_trait_array(self): 
-        """ Reserves an array large enough to store all the values that the traits will take on when incremented.  For example,
-            if iterating between 1,10 by steps of 1, it will store 10 slots """
-        try:
-            return linspace(self.start, self.end, self.inc)
-        except TypeError:  #Caused by unicode input which seems to happen spontaneously for an unknown reason
-            return
 
 class ABCSim(HasTraits):
     """Basic simulation for iterating over sets of variables that can be incremented over a shared increment.
@@ -374,6 +403,11 @@ class ABCSim(HasTraits):
 
     def _sim_variables_default(self): 
         return []
+    
+    @on_trait_change('selected_traits.selected_sim, \
+                      base_app.layereditor.selected_layer')
+    def _checksim(self):
+        self.check_sim_ready()
 
     def check_sim_ready(self):
         """Method to update various storage mechanisms for holding trait values for simulations.  
@@ -385,17 +419,24 @@ class ABCSim(HasTraits):
         originals = {}
         missing = []
         status_message = ''
-
+        
+        # Retain a mapping between shortnames (layer1.material) and attr path
+        # from base_app (layereditor.layer1) etc...
+        _trait_name_map = dict((s.trait_name, s.trait_name_full) 
+                                           for s in self.sim_variables)       
+                
         for obj in self.sim_variables:
             obj.inc=self.inc  #Ensures proper increments whether adding new objects to the table or just changing global inc
 
         for obj in self.sim_variables:
-            sim_traits[obj.trait_name]=obj.trait_array        #Simulation traits
+            sim_traits[str(obj.trait_name)]=obj.trait_array        #Simulation traits
+                       #^^^ Remove unicode
 
         for key in sim_traits.keys():
+            _true_trait_val = _trait_name_map[key]
             try:
-                originals[key]=xgetattr(self.base_app, key)  #If trait found, store its original values
-            except AttributeError:
+                originals[key]=xgetattr(self.base_app, _true_trait_val)  #If trait found, store its original values
+            except (AttributeError, StackError):
                 missing.append(key)  #If not, put it in missing
 
         ready = True
@@ -422,13 +463,19 @@ class ABCSim(HasTraits):
 
         self.ready = ready
         self.status_message = status_message.rstrip(',') #<-- trialling commas for list of one element string
-        self.simulation_traits = sim_traits
+        self.simulation_traits = sim_traits# Remove unicode
         self.missing_traits = missing
         self.original_values = originals
+        
+        self._trait_namemap = _trait_name_map
+        
 
     def restore_original_values(self): 
-        for trait in self.simulation_traits.keys():
-            xsetattr(self.base_app, trait, self.original_values[trait]) #Restore all traits to original values
+        """ Restore all traits to original values """
+        for trait in self.simulation_traits:
+            xsetattr(self.base_app, 
+                     self._trait_namemap[trait], #<--- Use actual variable name
+                     self.original_values[trait])  
 
     def runsim(self): 
         """ ABC METHOD """
@@ -477,7 +524,8 @@ class LayerSimulation(ABCSim):
         VGroup(
             HGroup( 
                 Item('status_message', style='readonly', label='Status'),           
-                Item('start', show_label=False, enabled_when='ready == True'),   
+                Item('start', show_label=False), #, enabled_when='ready == True'),   
+                # Making start invisible is bad, because clicking chart enforces stat
                 ),
             Include('maingroup'),
         )
@@ -547,7 +595,7 @@ class LayerSimulation(ABCSim):
         # at simulation inputs.  Later sims may want to simulate over fiber traits (ie fiber diameter changes)
         # so would migrate these into resultsdict instead
         staticdict = OrderedDict()
-        staticdict['Layers in Slab'] = len(self.b_app.stack)
+        staticdict['Layers in Slab'] = len(b_app.stack)
         staticdict[globalparms.spectralparameters] = b_app.specparms.simulation_requested()         
         staticdict[globalparms.strataname] = b_app.fiberparms.simulation_requested()
 
@@ -555,8 +603,8 @@ class LayerSimulation(ABCSim):
         sorted_keys = []
         for i in range(self.inc):
             for trait in self.simulation_traits.keys():
-                trait = str(trait) # <--- get rid of damn unicode if user entered it
-                xsetattr(b_app, trait, self.simulation_traits[trait][i]) #Object, traitname, traitvalue
+                _true_trait = self._trait_namemap[trait]#<--- Trait stored in memory (ie b_app.layereditor.layer1...)
+                xsetattr(b_app, _true_trait, self.simulation_traits[trait][i]) #Object, traitname, traitvalue
 
             stepname = 'step_%s' % i
 
@@ -620,7 +668,7 @@ class LayerSimulation(ABCSim):
 
             # Save layer/material traits.  If None selected, it just skips
             if sconfig.choose_layers == 'Selected Layer':
-                key = 'Layer_%s' % (b_app.stack.selected_index) #<-- index of selected layer
+                key = 'Layer%s' % (b_app.layereditor.selected_index) #<-- index of selected layer
                 results_increment[key] = self.selected_layer.simulation_requested()
 
             elif sconfig.choose_layers == 'All Layers':
