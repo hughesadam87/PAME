@@ -25,8 +25,8 @@ class Mie(HasTraits):
     implements(IMie)     
 
     base_app = Any
+    specparms = DelegatesTo('base_app')
 
-    specparms = DelegatesTo('specparms')
     lambdas=DelegatesTo('specparms')	
     x_unit=DelegatesTo('specparms')         
     valid_units = DelegatesTo('specparms')
@@ -227,7 +227,6 @@ class bare_sphere(ABCsphere):
     
     traits_view=View(VGroup(
         Include('bare_sphere_group'), 
-        #      Item('specparms', style='custom'), 
         HGroup(
             Item('MediumMaterial', editor=InstanceEditor(), style='simple', show_label=False),
             Item('CoreMaterial', editor=InstanceEditor(), style='simple', show_label=False),
