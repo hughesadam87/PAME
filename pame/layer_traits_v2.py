@@ -17,7 +17,10 @@ import globalparms
 class BasicLayer(HasTraits):
     '''Class used to store layer in an interactive tabular environment'''
 
-    specparms=Instance(SpecParms,())  #Passed through to the material; not necessarily used in layers
+    base_app = Any
+    specparms = DelegatesTo('base_app')
+
+  #  specparms=Instance(SpecParms,())  #Passed through to the material; not necessarily used in layers
 
     implements(ILayer)     
     name=Str('Single Bulk Material')
@@ -25,7 +28,6 @@ class BasicLayer(HasTraits):
     d = Float(10.0)  
     designator=Enum('basic', 'composite', 'nanoparticle')  #Used to determine special properties like how to sync
 
-    ### Do i need synching and delegation???   
     mat_name=DelegatesTo('material')  #Useful so user can change through editor
 
     modeltree=Instance(Model)#,())  #Although defined here, it's not really used until composite, nanoparticle layers
@@ -37,17 +39,14 @@ class BasicLayer(HasTraits):
         self.d = float(self.d) #<--- Unicode bug user enters it gets unicode-converted
 
     def __init__(self, *args, **kwargs):
+        self.base_app = kwargs.pop('base_app')
         super(BasicLayer, self).__init__(*args, **kwargs)
-        self.sync_trait('specparms', self.material, 'specparms')
-        self.sync_trait('mat_name', self.material, 'mat_name', mutual=True)
         self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)
 
     def _material_default(self): 
-        return Dispwater() 
+        return Dispwater(base_app=self.base_app) 
 
     def _material_changed(self): 
-        self.sync_trait('specparms', self.material, 'specparms', mutual=True)  	  #This is necessary because syncing is only done for the obje
-        self.sync_trait('mat_name', self.material, 'mat_name', mutual=True)
         self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)        
 
     def simulation_requested(self):
@@ -71,11 +70,7 @@ class Composite(BasicLayer):
     oldsolvent=Instance(IMaterial)  #Used for syncing layers, called by layer_editor
 
     def _material_default(self): 
-        return self.SphericalInclusions_Disk()
-
-    #def __init__(self, *args, **kwargs):
-        #super(Composite, self).__init__(*args, **kwargs)
-        #self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)  #Syncs basic materials tree
+        return self.SphericalInclusions_Disk(base_app=self.base_app)
 
     def sync_solvent(self, solvent):
         '''Used to override materials from layereditor'''
@@ -91,7 +86,6 @@ class Composite(BasicLayer):
 
     def _material_changed(self): 
         self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)
-        self.sync_trait('specparms', self.material, 'specparms', mutual=True)  	  #This is necessary because syncing is only done for the obje
 
 class Nanoparticle(Composite):
     ''' Layer of nanoparticle inclusions'''
@@ -101,7 +95,8 @@ class Nanoparticle(Composite):
     designator=Str('nanoparticle')
     sync_rad_selection=Enum('rcore', 'rcore+rshell')
 
-    def _material_default(self): return self.NanoSphereShell()
+    def _material_default(self):
+        return self.NanoSphereShell(base_app=self.base_app)
 
     def sync_solvent(self, solvent):
         '''Used to override materials from layereditor'''
@@ -126,23 +121,15 @@ class Substrate(Boundary):             #THESE ARE NOT IMPLEMENTED IN SUPERMODEL 
     from material_models import Sellmeir
 
     def _material_default(self): 
-        return self.Sellmeir()
+        return self.Sellmeir(base_app=self.base_app)
 
 class Solvent(Boundary):
     name=Str('Solvent')
 
     def _material_default(self): 
-        return Dispwater()
+        print 'defaulting material with', self.base_app
+        return Dispwater(base_app=self.base_app)
 
-if __name__ == '__main__':
-    number=100
-    x=linspace(300, 800, num=number)	
-
-    f=dynamic_shell()
-    f.layer_initial.material=CompositeNanosphere() ; f.layer_final.material=CompositeNanosphere()
-    f.layer_initial.material.lambdas=x ; f.layer_final.material.lambdas=x
-
-    f.configure_traits()
 
 
 

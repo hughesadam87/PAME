@@ -15,7 +15,6 @@ from layer_editor import LayerEditor
 from main_parms import FiberParms, SpecParms, EllipsometryParms, AngleParms
 from interfaces import IOptic, ILayer, IMaterial, IStorage, ISim
 from fiberview import ViewMlab, FiberView, EllispometryView
-from modeltree_v2 import Model
 from plotselector import PlotSelector
 from gensim import LayerSimulation, ABCSim, SimConfigure
 from handlers import WarningDialog
@@ -69,7 +68,6 @@ class GlobalScene(HasTraits):
      specparms=Instance(SpecParms,())
      fiberparms=Instance(AngleParms)
     
-     modeltree=Instance(Model,())
      lambdas=DelegatesTo('specparms')  #Actually not used except for making it easy to run sims
      plot_selector = Instance(PlotSelector)
 
@@ -177,9 +175,6 @@ class GlobalScene(HasTraits):
           HSplit(
                VGroup(
                     Item('plot_selector', show_label=False, style='custom'),
-#                    Item('specparms',show_label=False, style='custom'),
-#                    Item('sim_outdir', label='Output Directory', show_label=False),
-#                    Include('choosesimgroup'), #simulation and summary
 ),
                # PLOT
                VGroup(
@@ -199,42 +194,21 @@ class GlobalScene(HasTraits):
      )
 
 
-#     from traitsui.value_tree import ValueTree, value_tree_editor, TreeEditor, _ValueTree, value_tree_nodes, value_tree_editor_with_root
-#     from traitsui.editors.value_editor import _ValueEditor, ValueEditor
      Mainview = View(
-                     #Item(name='stack', editor=TreeEditor(auto_open=2, 
-                                                          #hide_root=False,
-                                                          #editable=True,
-                                                          #nodes=value_tree_nodes)
-                                                          #), 
                      Include('fullgroup'), 
-                     #       Item('save'), Item('load'),  #FOR SAVING ENTIRE STATE OF SIMULATION
                      menubar=mainmenu,
-                     resizable=True, 
-#                                   group_theme = '@G',
-                                  item_theme  = '@B0B',
-                                   label_theme = '@BEA',                      
+                     resizable=True,                 
                      buttons=['Undo'], 
-                     title='Plasmonic Assay Modeling Environment')
+                     title='Plasmonic Assay Modeling Environment'
+     )
 
      def __init__(self, *args, **kwargs):
           super(GlobalScene, self).__init__(*args, **kwargs)
-          self.layereditor=LayerEditor()
-          self.sync_trait('specparms', self.layereditor, 'specparms')
-          self.sync_trait('modeltree', self.layereditor, 'modeltree')
           
+          # Sync self to base_app in several objects          
+          self.layereditor = LayerEditor(base_app = self)
+          self.opticstate = DielectricSlab(base_app = self)
 
-          # NEED TO RENAME AND REWRITE THIS... ITS NOT "opticstate"
-          self.opticstate=DielectricSlab()
-          self.sync_trait('specparms', self.opticstate, 'specparms')
-          self.sync_trait('layereditor', self.opticstate, 'layereditor')
-
-          # This will change with stratastyle, so sets in handler
-#          self.opticstate.fiberparms = self.fiberparms
-          self.sync_trait('fiberparms', self.opticstate, 'fiberparms')
-
-
-     #self.simulations.append(LayerSimulationEpsilon(base_app=self))   #Pass self to a simulation environment
           self.simulations.append(
                LayerSimulation(base_app=self, outname=config.SIMPREFIX+'0')
                                   )  

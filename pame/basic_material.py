@@ -15,11 +15,13 @@ from pame.utils import complex_e_to_n, complex_n_to_e
 
 class BasicMaterial(HasTraits):
     
+    base_app = Any 
+    specparms = DelegatesTo('base_app')
+    
     test = Any
 
     implements(IMaterial)
 
-    specparms=Instance(SpecParms,())
     lambdas=DelegatesTo('specparms')	
     x_unit=DelegatesTo('specparms')   
     valid_units=DelegatesTo('specparms') #ONLY NEEDED IF YOU WANT X-UNITS IN VIEW SINCE THESE ARE LINKED VIA METADATA
@@ -46,6 +48,7 @@ class BasicMaterial(HasTraits):
     )
 
     def __init__(self, *args, **kwargs):
+        self.base_app = kwargs.pop('base_app')
         super(BasicMaterial, self).__init__(*args, **kwargs)
         self.update_data()
         self.update_mview()  

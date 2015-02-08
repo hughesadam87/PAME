@@ -6,7 +6,8 @@ class CompositeAdapter(BasicAdapter):
 	source='N/A'
 	notes='Takes in two basic materials and mixes them according to effective medium approximations'
 
-	def populate_object(self): self.matobject=self.CompositeMaterial()
+	def populate_object(self):
+		self.matobject=self.CompositeMaterial()
 
 class CompositeMaterial_EquivAdapter(BasicAdapter):
 	from composite_materials_v2 import CompositeMaterial_Equiv
@@ -14,7 +15,8 @@ class CompositeMaterial_EquivAdapter(BasicAdapter):
 	source='NEED TO UPDATE'
 	notes='This is the basis for several other objects such as nanoparticles'
 
-	def populate_object(self): self.matobject=self.CompositeMaterial_Equiv()
+	def populate_object(self): 
+		self.matobject=self.CompositeMaterial_Equiv()
 
 class SphericalInclusions_DiskAdapter(BasicAdapter):
 	from composite_materials_v2 import SphericalInclusions_Disk
@@ -22,5 +24,6 @@ class SphericalInclusions_DiskAdapter(BasicAdapter):
 	source='None: Uses basic counting'
 	notes='This is the base class for NanoSpheres on a disk or other surface'
 
-	def populate_object(self): self.matobject=self.SphericalInclusions_Disk()
+	def populate_object(self): 
+		self.matobject=self.SphericalInclusions_Disk()
 
