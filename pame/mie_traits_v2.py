@@ -19,17 +19,16 @@ from material_models import DrudeBulk, Sellmeir, Dispwater
 from pame import XNK_dir
 from material_files import XNKFile
 import os.path as op
+from pame.main_parms import SHARED_SPECPARMS
 
 class Mie(HasTraits):
     '''Class to compute scattering coefficients given an input of a dielectric array'''
     implements(IMie)     
 
-    base_app = Any
-    specparms = DelegatesTo('base_app')
+    specparms=Instance(HasTraits, SHARED_SPECPARMS)    
 
     lambdas=DelegatesTo('specparms')	
     x_unit=DelegatesTo('specparms')         
-    valid_units = DelegatesTo('specparms')
 
     CoreMaterial=Instance(IMaterial)
     MediumMaterial=Instance(IMaterial)

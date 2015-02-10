@@ -24,7 +24,7 @@ from handlers import FileOverwriteDialog, BasicDialog
 from simulationplots import ReflectanceStorage, ScattStorage, MaterialStorage
 from main_parms import SpecParms
 from interfaces import IMaterial, ISim
-from layer_editor import LayerEditor, StackError
+#from layer_editor import StackError
 import config
 import hackedvtree
 import customjson
@@ -32,6 +32,9 @@ import utils
 from simparser import LayerSimParser
 
 WRAPWIDTH = 100 # Text characters for wrapping lines
+
+class StackError(Exception):
+    """ """
 
 class SimError(Exception):
     """ """

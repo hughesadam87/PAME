@@ -59,8 +59,6 @@ class CompositeMaterial(BasicMaterial):
 
     def __init__(self, *args, **kwargs):
         super(CompositeMaterial, self).__init__(*args, **kwargs)
-#        self.sync_trait('specparms', self.Material1, 'specparms', mutual=True)  	 
-#        self.sync_trait('specparms', self.Material2, 'specparms', mutual=True)  
         self.sync_trait('Material1', self.Mix, 'solutematerial')	
         self.sync_trait('Material2', self.Mix, 'solventmaterial') 
 
@@ -75,12 +73,12 @@ class CompositeMaterial(BasicMaterial):
         return out
 
     def _Material1_default(self): 
-        mat1def=Sellmeir(base_app = self.base_app)
+        mat1def=Sellmeir()
         self.Mat1History.append(mat1def)
         return mat1def
 
     def _Material2_default(self): 	
-        mat2def=Dispwater(base_app = self.base_app)
+        mat2def=Dispwater()
         self.Mat2History.append(mat2def)
         return mat2def
 
@@ -97,13 +95,11 @@ class CompositeMaterial(BasicMaterial):
         self.update_mview()
 
     def _Material1_changed(self): 
-#        self.sync_trait('specparms', self.Material1, 'specparms', mutual=True)  	  #This is necessary because syncing is only done for the object
         self.sync_trait('Material1', self.Mix, 'solutematerial')
         self.Mat1History.append(self.Material1)
 
 
     def _Material2_changed(self): 
- #       self.sync_trait('specparms', self.Material2, 'specparms', mutual=True)  	  #This is necessary because syncing is only done for the object
         self.sync_trait('Material2', self.Mix, 'solventmaterial')
         self.Mat2History.append(self.Material2)
 

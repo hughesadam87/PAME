@@ -96,7 +96,7 @@ def plot_line_points(*args, **kwargs):
 
 class OpticalView(HasTraits):
     """ Plot reflectance, transmission etc... from dielectric slab."""
-    optic_model = Any # DielectricSlab object, must be initialized with this by calling fcn        
+    optic_model = Instance(HasTraits) # DielectricSlab object, must be initialized with this by calling fcn        
     optical_stack = Property()
     x_unit = Property()
 
@@ -489,7 +489,11 @@ class MaterialView(HasTraits):
         self.narray=narray
         
         if self.data == None:
-            self.data = ArrayPlotData(x=self.xarray, er=self.ereal, nr=self.nreal, ei=self.eimag, ni=self.nimag)
+            self.data = ArrayPlotData(x=self.xarray, 
+                                      er=self.ereal, 
+                                      nr=self.nreal,
+                                      ei=self.eimag,
+                                      ni=self.nimag)
             self.create_plots()
         else:
             self.update_data()
@@ -500,28 +504,9 @@ class MaterialView(HasTraits):
         self.data.set_data('nr', self.nreal) 
         self.data.set_data('ei', self.eimag)
         self.data.set_data('ni', self.nimag)
-        self.eplot.request_redraw() ; self.nplot.request_redraw()
+        self.eplot.request_redraw() 
+        self.nplot.request_redraw()
 
-    ####### USED FOR SIMULATION STORAGE MOSTLY #####
-
-    def get_sexy_data(self):
-        '''Returns the data in a list that can be immediately read back in another instance of opticview.  
-        Note this is not the same as the arrayplotdata getdata() function'''
-        return [self.xarray, self.ereal, self.nreal, self.eimag, self.nimag]
-
-    def set_sexy_data(self, data_list):
-        '''Takes in data formatted deliberately from "get_sexy_data" and forces an update'''
-        self.update(data_list[0], data_list[1], data_list[2], data_list[3])
-
-    # Migrate to model!!
-    def get_dataframe(self):
-        ''' Returns dataframe of data for easier concatenation into a runpanel dataframe used by
-        simulations'''
-        d = {'er' : self.ereal, 
-             'nr':self.nreal,
-             'ei':self.eimag,
-             'ni':self.nimag}   
-        return DataFrame(d, index=self.xarray)
 
 class ScatterView(HasTraits):
     '''Used to view scattering cross sections and other relevant parameters from mie scattering program'''
@@ -639,21 +624,9 @@ class ScatterView(HasTraits):
 
 
     def update_data(self):
-        ### Don't alter these keys 'x', 'sig' etc... as they are called in the composit_plot Double Sview object
-        self.data.set_data('x', self.xarray) ; self.data.set_data('Scattering', self.scatarray)
-        self.data.set_data('Absorbance', self.absarray) ; self.data.set_data('Extinction', self.extarray)
+        #Don't alter these keys 'x', 'sig' etc... as they are called in the composit_plot Double Sview object
+        self.data.set_data('x', self.xarray) 
+        self.data.set_data('Scattering', self.scatarray)
+        self.data.set_data('Absorbance', self.absarray) 
+        self.data.set_data('Extinction', self.extarray)
         self.sigplot.request_redraw()
-
-    def get_sexy_data(self):
-        '''Returns the data in a list that can be immediately read back in another instance of opticview.  Note this is not the same as the arrayplotdata getdata() function'''
-        return [self.xarray, self.scatarray, self.absarray, self.extarray]
-
-    def set_sexy_data(self, data_list):
-        '''Takes in data formatted deliberately from "get_sexy_data" and forces an update'''
-        self.update(data_list[0], data_list[1], data_list[2], data_list[3])
-
-    def get_dataframe(self):
-        ''' Returns dataframe of data for easier concatenation into a runpanel dataframe used by
-        simulations'''
-        d = {'ext' : self.extarray, 'scatt':self.scatarray, 'abs':self.absarray}   
-        return DataFrame(d, index=self.xarray)

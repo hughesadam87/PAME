@@ -9,10 +9,10 @@ from enable.component_editor import ComponentEditor
 
 # Local imports
 import globalparms
+from main_parms import SHARED_SPECPARMS, FiberParms, EllipsometryParms, AngleParms
+from layer_editor import SHARED_LAYEREDITOR
 from opticalstack import DielectricSlab
 from basicplots import OpticalView
-from layer_editor import LayerEditor
-from main_parms import FiberParms, SpecParms, EllipsometryParms, AngleParms
 from interfaces import IOptic, ILayer, IMaterial, IStorage, ISim
 from fiberview import ViewMlab, FiberView, EllispometryView
 from plotselector import PlotSelector
@@ -65,7 +65,7 @@ sims_editor=\
 class GlobalScene(HasTraits):
      '''Global class to define all view-based stuff'''
 
-     specparms=Instance(SpecParms,())
+     specparms=Instance(HasTraits, SHARED_SPECPARMS)
      fiberparms=Instance(AngleParms)
     
      lambdas=DelegatesTo('specparms')  #Actually not used except for making it easy to run sims
@@ -88,7 +88,7 @@ class GlobalScene(HasTraits):
      configure_storage = Instance(SimConfigure)   #<--- Want all sims to share this, right?
 
      #Editors##
-     layereditor=Instance(LayerEditor)
+     layereditor=Instance(HasTraits, SHARED_LAYEREDITOR)
      stack= DelegatesTo('layereditor')               #Variables are stored here just because they can be useful for future implementations
      selected_layer = DelegatesTo('layereditor')
      selected_material=DelegatesTo('layereditor')
@@ -175,7 +175,7 @@ class GlobalScene(HasTraits):
           HSplit(
                VGroup(
                     Item('plot_selector', show_label=False, style='custom'),
-),
+                    ),
                # PLOT
                VGroup(
                     Item('opticview', 
@@ -206,7 +206,6 @@ class GlobalScene(HasTraits):
           super(GlobalScene, self).__init__(*args, **kwargs)
           
           # Sync self to base_app in several objects          
-          self.layereditor = LayerEditor(base_app = self)
           self.opticstate = DielectricSlab(base_app = self)
 
           self.simulations.append(
@@ -221,7 +220,7 @@ class GlobalScene(HasTraits):
           pickle.dump(self.simulations , open( "test.p", "wb" ) )
 
      def _plot_selector_default(self):
-          return PlotSelector(layereditor = self.layereditor)
+          return PlotSelector()
 
      def _configure_storage_default(self):
           return SimConfigure(b_app=self)
@@ -314,7 +313,7 @@ def main():
      popup.selected_layer = popup.layereditor.stack[1]
      popup.selected_sim = popup.simulations[0]
      
-     popup.opticstate.update_opticview()     
+#     popup.opticstate.update_opticview()     
      popup.configure_traits()    
 
 

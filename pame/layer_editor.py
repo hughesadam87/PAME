@@ -2,7 +2,7 @@ from traitsui.api import TableEditor, ObjectColumn, ExpressionColumn,InstanceEdi
      View, Item, HGroup
 from traits.api import HasTraits, Instance, List, Button, Int, Property, Float, Any,\
      on_trait_change
-from main_parms import SpecParms
+from main_parms import SHARED_SPECPARMS
 from layer_traits_v2 import * 
 from interfaces import ILayer, IMaterial
 from traitsui.table_filter \
@@ -17,9 +17,7 @@ class StackError(Exception):
 
 class LayerEditor(HasTraits):
     
-    
-    base_app = Any 
-    specparms = DelegatesTo('base_app')
+    specparms = Instance(HasTraits, SHARED_SPECPARMS)
     
     materialchooser = Instance(MaterialChooser,())    
     selectedtree = DelegatesTo('materialchooser')
@@ -129,7 +127,7 @@ class LayerEditor(HasTraits):
         self.selected_layer.d=d
 
     def _add_basic_fired(self): 
-        layer=BasicLayer(base_app=self.base_app)
+        layer=BasicLayer()
         position=self.selected_index
         if position==0:  #Glitch where it adds before substrate
             position=1
@@ -157,11 +155,11 @@ class LayerEditor(HasTraits):
             # If changing substrate or solvent
             if self.stack[self.selected_index] == self.solvent:
                 newlayer = Solvent(material=newmat, 
-                                   base_app=self.base_app)
+                                   )
                 self.solvent=newlayer
             elif self.stack[self.selected_index] == self.substrate:
                 newlayer = Substrate(material=newmat,
-                                     base_app=self.base_app)		
+                                     )		
                 self.substrate=newlayer
 
             ### If changing layer ###
@@ -171,18 +169,18 @@ class LayerEditor(HasTraits):
                 if self.mat_class=='Mixed Bulk Materials':
                     newlayer=Composite(material=newmat, 
                                        d = self.selected_d,
-                                       base_app=self.base_app) 
+                                       ) 
                
                 elif self.mat_class=='Bulk Material':
                     print 'entering basic layerl'
                     newlayer=BasicLayer(material=newmat, 
                                         d = self.selected_d,
-                                        base_app=self.base_app)
+                                        )
 
                 elif self.mat_class=='Nanoparticle Objects':
                     newlayer=Nanoparticle(material=newmat, 
                                           d = self.selected_d,
-                                          base_app=self.base_app)
+                                          )
 
             self.stack[self.selected_index] = newlayer
             self.selected_layer = self.stack[self.selected_index]
@@ -196,11 +194,10 @@ class LayerEditor(HasTraits):
 
     def _stack_default(self):
         '''Initialize the stack with some layers'''
-        solvent=Solvent(base_app=self.base_app) 
-        substrate=Substrate(base_app=self.base_app)
+        solvent=Solvent() 
+        substrate=Substrate()
         mats=[substrate,
-              Nanoparticle(base_app=self.base_app,
-                           d=24.0), 
+              Nanoparticle(d=24.0), 
               solvent]  #Default layer is nanoparticle with shell
 
         return mats
@@ -241,23 +238,25 @@ class LayerEditor(HasTraits):
                 if layer.sync_status==True:	
                     layer.sync_solvent(self.solvent.material)
 
-    #def __getattr__(self, attr):
-        #""" Simulation needs to access stack by integer sometimes, IE
-        #layer1, layer2 so can do self.layer1 akin to self.selected_layer.
-        #"""
-        #print attr, self
-        ## Layer1, layer2, Layer_3
-        #if attr.lower().startswith('layer'):
-            #layer_int = int(attr.lstrip('layer_')) #Works with _ or no _
-            #if layer_int not in range(len(self.stack)):
-                #raise StackError("Invalid layer index %s on stack of length %s" 
-                                 #% (layer_int, len(self.stack)))
-            #return self.stack[layer_int]
+    def __getattr__(self, attr):
+        """ Simulation needs to access stack by integer sometimes, IE
+        layer1, layer2 so can do self.layer1 akin to self.selected_layer.
+        """
+        # Layer1, layer2, Layer_3
+        if attr.lower().startswith('layer'):
+            layer_int = int(attr.lstrip('layer_')) #Works with _ or no _
+            if layer_int not in range(len(self.stack)):
+                raise StackError("Invalid layer index %s on stack of length %s" 
+                                 % (layer_int, len(self.stack)))
+            return self.stack[layer_int]
             
-        #super(LayerEditor, self).__getattr__(attr)
+        super(LayerEditor, self).__getattr__(attr)
         
         
 
+# Basically a global
+# ------------------
+SHARED_LAYEREDITOR = LayerEditor()
 
 
 if __name__ == '__main__':

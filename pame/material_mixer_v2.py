@@ -30,11 +30,10 @@ class DoubleMixer(HasTraits):
 
     implements(IMixer)   #Inherited by subclasses
 
+    # LEAVE AS IS, NECESSARY
     def __init__(self, *args, **kwargs):
         super(DoubleMixer, self).__init__(*args, **kwargs)
         self.on_trait_change(self.update_mix, 'solutematerial, solventmaterial, esolvent, esolute, Vfrac') 
-        #Even though it looks redundant, solutematerial and esolute triggering same event, the program does not understand
-        #that esolute changes from solutematerial changing so this is necessary
 
     def _solutematerial_default(self): 
         return Sellmeir()

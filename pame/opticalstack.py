@@ -6,7 +6,6 @@ from numpy import empty, array, conj, inf
 from basicplots import OpticalView
 from main_parms import SpecParms, AngleParms
 from interfaces import IOptic, ILayer
-from layer_editor import LayerEditor
 from scipy.integrate import simps
 import logging
 from tmm_mod import vector_com_tmm
@@ -21,14 +20,11 @@ class OpticalModelError(Exception):
 class DielectricSlab(HasTraits):
     '''Class used to store data in an interactive tabular environment'''
     
+    # Need base_app to delegate fiberparms, so find that delegate the rest
     base_app = Any
-    
     specparms = DelegatesTo('base_app')
     fiberparms = DelegatesTo('base_app')
     layereditor = DelegatesTo('base_app')
-
-#    specparms = Instance(SpecParms,())
-#    fiberparms = Instance(AngleParms)
 
     x_unit = DelegatesTo('specparms') #<-- Required by optic_view for xaxis, wish easier to acess these globally
     lambdas = DelegatesTo('specparms')	

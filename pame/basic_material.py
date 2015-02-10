@@ -12,19 +12,17 @@ from interfaces import IMaterial, IMie
 from chaco.api import Plot
 import copy
 from pame.utils import complex_e_to_n, complex_n_to_e
+from pame.main_parms import SHARED_SPECPARMS
 
 class BasicMaterial(HasTraits):
     
-    base_app = Any 
-    specparms = DelegatesTo('base_app')
-    
-    test = Any
-
     implements(IMaterial)
-
+    
+    specparms=Instance(HasTraits, SHARED_SPECPARMS)    
     lambdas=DelegatesTo('specparms')	
+
+    # For mview only
     x_unit=DelegatesTo('specparms')   
-    valid_units=DelegatesTo('specparms') #ONLY NEEDED IF YOU WANT X-UNITS IN VIEW SINCE THESE ARE LINKED VIA METADATA
 
     earray=CArray()  
     narray=Property(CArray, depends_on=['earray'])
@@ -37,8 +35,7 @@ class BasicMaterial(HasTraits):
     mview=Instance(MaterialView,())  
     mviewbutton=Button 
 
-    basic_group=HGroup(Item('test'),
-                       Item('mviewbutton', label='Show Material', show_label=False), 
+    basic_group=HGroup(Item('mviewbutton', label='Show Material', show_label=False), 
                        Item('mat_name', label='Material Name', style='simple')
                        )
 
@@ -48,7 +45,6 @@ class BasicMaterial(HasTraits):
     )
 
     def __init__(self, *args, **kwargs):
-        self.base_app = kwargs.pop('base_app')
         super(BasicMaterial, self).__init__(*args, **kwargs)
         self.update_data()
         self.update_mview()  
@@ -67,9 +63,6 @@ class BasicMaterial(HasTraits):
         self.update_all()
         
     def _earray_changed(self): 
-        self.update_mview()
-
-    def _x_unit_changed(self): 
         self.update_mview()
 
     # ABC METHOD

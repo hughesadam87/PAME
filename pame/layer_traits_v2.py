@@ -12,15 +12,13 @@ from main_parms import FiberParms, SpecParms
 from modeltree_v2 import Model
 from material_models import Dispwater
 import globalparms
+from main_parms import SHARED_SPECPARMS
 
 
 class BasicLayer(HasTraits):
     '''Class used to store layer in an interactive tabular environment'''
 
-    base_app = Any
-    specparms = DelegatesTo('base_app')
-
-  #  specparms=Instance(SpecParms,())  #Passed through to the material; not necessarily used in layers
+    specparms=Instance(HasTraits, SHARED_SPECPARMS)
 
     implements(ILayer)     
     name=Str('Single Bulk Material')
@@ -39,12 +37,11 @@ class BasicLayer(HasTraits):
         self.d = float(self.d) #<--- Unicode bug user enters it gets unicode-converted
 
     def __init__(self, *args, **kwargs):
-        self.base_app = kwargs.pop('base_app')
         super(BasicLayer, self).__init__(*args, **kwargs)
         self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)
 
     def _material_default(self): 
-        return Dispwater(base_app=self.base_app) 
+        return Dispwater() 
 
     def _material_changed(self): 
         self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)        
@@ -70,7 +67,7 @@ class Composite(BasicLayer):
     oldsolvent=Instance(IMaterial)  #Used for syncing layers, called by layer_editor
 
     def _material_default(self): 
-        return self.SphericalInclusions_Disk(base_app=self.base_app)
+        return self.SphericalInclusions_Disk()
 
     def sync_solvent(self, solvent):
         '''Used to override materials from layereditor'''
@@ -96,7 +93,7 @@ class Nanoparticle(Composite):
     sync_rad_selection=Enum('rcore', 'rcore+rshell')
 
     def _material_default(self):
-        return self.NanoSphereShell(base_app=self.base_app)
+        return self.NanoSphereShell()
 
     def sync_solvent(self, solvent):
         '''Used to override materials from layereditor'''
@@ -121,14 +118,13 @@ class Substrate(Boundary):             #THESE ARE NOT IMPLEMENTED IN SUPERMODEL 
     from material_models import Sellmeir
 
     def _material_default(self): 
-        return self.Sellmeir(base_app=self.base_app)
+        return self.Sellmeir()
 
 class Solvent(Boundary):
     name=Str('Solvent')
 
     def _material_default(self): 
-        print 'defaulting material with', self.base_app
-        return Dispwater(base_app=self.base_app)
+        return Dispwater()
 
 
 
