@@ -137,6 +137,7 @@ class LayerEditor(HasTraits):
 
     def _remove_fired(self): 
         self.stack.remove(self.selected_layer)
+        #        self.selected_layer.material.remove_trait('lambdas')        
         self.selected_layer=self.stack[self.selected_index-1]   #Simply moves the selected layer one down from the one deleted
 
 

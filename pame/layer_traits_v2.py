@@ -12,13 +12,9 @@ from main_parms import FiberParms, SpecParms
 from modeltree_v2 import Model
 from material_models import Dispwater
 import globalparms
-from main_parms import SHARED_SPECPARMS
-
 
 class BasicLayer(HasTraits):
     '''Class used to store layer in an interactive tabular environment'''
-
-    specparms=Instance(HasTraits, SHARED_SPECPARMS)
 
     implements(ILayer)     
     name=Str('Single Bulk Material')

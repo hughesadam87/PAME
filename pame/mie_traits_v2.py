@@ -101,8 +101,12 @@ class Mie(HasTraits):
 
     #For generating ricatti bessel functions of arbitrary argument and order###
     def bessy(self, order, argument):
-        """Given order, n, and argument, z, computes mad bessel related junk"""
-        n=order; z=argument
+        """Given order, n, and argument, z, computes mad bessel related junk.
+        Argument can be a scalar or vector numeric.
+        """
+        n=order
+        z=argument
+        
         jns=(special.sph_jn(n, z))   #comptues jn and jn derivative in a tuple
         yns=(special.sph_yn(n, z))   #Return all the way up to nth order
         yn=yns[0]

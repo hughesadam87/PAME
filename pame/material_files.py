@@ -59,7 +59,7 @@ class ABCExternal(BasicMaterial):
             nps=nps[::-1] 
             xps=xps[::-1]    #Syntax to reverse an array 
             print "Had to sort values in material_files.update_interp\n"
-            print 'nps.shape, xps.shape:', nps.shape, xps.shape
+            print 'ns.shape, xs.shape:', nps.shape, xps.shape,  'woot', self.mat_name, self.short_name
 
         # INTERPOLATION WILL JUST EXTEND CONSTANT VALUE ON LEFT OR RIGHT EQUAL TO LAST VALUE IN DATSET
         # http://docs.scipy.org/doc/numpy/reference/generated/numpy.interp.html
