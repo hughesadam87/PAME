@@ -210,7 +210,9 @@ class LayerSimParser(HasTraits):
         return '\n\n'.join([input_printout,
                             panel_printout, 
                             about_printout,
-                            static_printout])
+                            static_printout,
+                            'plotting backend: %s' % self.backend
+                            ])
             
     def promote(self, attr, alias=None):
         """ Takes results attribute of form 'a.b.c' corresponding to 

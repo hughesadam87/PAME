@@ -4,16 +4,19 @@ from traits.api import *
 from traitsui.api import *	
 from interfaces import IMixer, IStorage, IMaterial
 import math
-from modeltree_v2 import Model
 from material_mixer_v2 import MG_Mod, Bruggeman, QCACP, MG
+from pame.material_chooser import MaterialChooser
+
 
 class CompositeMaterial(BasicMaterial):
     '''Still inherits basic traits like earray, narray and how they are interrelated'''
 
-    modeltree = Instance(Model)#,())
+    materialchooser = Instance(MaterialChooser,())    
+    selectedtree = DelegatesTo('materialchooser')
 
     Material1=Instance(IMaterial)
     Material2=Instance(IMaterial)   #Make these classes later
+    mat_class = Enum('Bulk Material', 'Mixed Bulk Materials', 'Nanoparticle Objects')
 
     Mat1History=List(IMaterial)  #When the materials change, this logs them.  Useful for advanced stuff
     Mat2History=List(IMaterial)
@@ -44,6 +47,7 @@ class CompositeMaterial(BasicMaterial):
                        HGroup(		
                            Item('selectmat1', label='Change Solute', show_label=False), 
                            Item('selectmat2', label='Change Solvent', show_label=False),
+                           Item('mat_class', label='Material Class')
                            ),
                        label='Materials')
 
@@ -55,8 +59,6 @@ class CompositeMaterial(BasicMaterial):
 
     def __init__(self, *args, **kwargs):
         super(CompositeMaterial, self).__init__(*args, **kwargs)
-        self.sync_trait('specparms', self.Material1, 'specparms', mutual=True)  	 
-        self.sync_trait('specparms', self.Material2, 'specparms', mutual=True)  
         self.sync_trait('Material1', self.Mix, 'solutematerial')	
         self.sync_trait('Material2', self.Mix, 'solventmaterial') 
 
@@ -93,13 +95,11 @@ class CompositeMaterial(BasicMaterial):
         self.update_mview()
 
     def _Material1_changed(self): 
-        self.sync_trait('specparms', self.Material1, 'specparms', mutual=True)  	  #This is necessary because syncing is only done for the object
         self.sync_trait('Material1', self.Mix, 'solutematerial')
         self.Mat1History.append(self.Material1)
 
 
     def _Material2_changed(self): 
-        self.sync_trait('specparms', self.Material2, 'specparms', mutual=True)  	  #This is necessary because syncing is only done for the object
         self.sync_trait('Material2', self.Mix, 'solventmaterial')
         self.Mat2History.append(self.Material2)
 
@@ -123,21 +123,33 @@ class CompositeMaterial(BasicMaterial):
         elif self.MixingStyle=='MGMOD':
             self.Mix=MG_Mod(Vfrac=self.Vfrac)
 
+    def _get_selectedtree(self): 
+        if self.mat_class=='Bulk Material': 
+            return self.selectedtree 
 
+        if self.mat_class=='Mixed Bulk Materials':
+            return self.compositetree
+
+        if self.mat_class=='Nanoparticle Objects': 
+            return self.nanotree
+
+    # Change Solute
     def _selectmat1_fired(self): 
         '''Used to select material.  The exceptions are if the user returns nothing or selects a folder rather than an object for example'''
-        self.modeltree.configure_traits(kind='modal') #Leave as configure traits not edit traits
+        self.selectedtree.configure_traits(kind='modal') #Leave as configure traits not edit traits
+
         try:
-            selected_adapter=self.modeltree.current_selection
+            selected_adapter=self.selectedtree.current_selection
             selected_adapter.populate_object()
             self.Material1=selected_adapter.matobject	
         except (TypeError, AttributeError):  #If user selects none, or selects a folder object, not an actual selection
             pass
 
+    # Change Solvent
     def _selectmat2_fired(self): 
-        self.modeltree.configure_traits(kind='modal')
+        self.selectedtree.configure_traits(kind='modal')
         try:
-            selected_adapter=self.modeltree.current_selection
+            selected_adapter=self.selectedtree.current_selection
             selected_adapter.populate_object()
             self.Material2=selected_adapter.matobject
         except (TypeError, AttributeError):  
@@ -301,10 +313,6 @@ class SphericalInclusions_Shell(SphericalInclusions):
         Include('compmatgroup'), Include('inclusionsgroup')
     )
 
-    def __init__(self, *args, **kwargs):
-        super(SphericalInclusions_Shell, self).__init__(*args, **kwargs)
-
-
     def _get_VT(self): 
         return round ( 
             ((4.0*math.pi/3.0) * (  (self.r_platform+2.0*self.r_particle)**3 - self.r_platform**3 )) 
@@ -392,10 +400,6 @@ class TriangularInclusions(CompositeMaterial):
 
     coverage=Property(Float, depends_on='N_occ, N_tot')
 
-    def __init__(self, *args, **kwargs):
-        super(TriangularInclusions, self).__init__(*args, **kwargs)
-
-
     def _get_vbox(self):
         return (self.l_particle**2)*self.h_particle         #Square boxes of volumes
 
@@ -422,7 +426,8 @@ class TriangularInclusions(CompositeMaterial):
         return round ( (float(self.N_occ) / float(self.N_tot) )*100.0 , 4)	
     
     def _set_coverage(self, coverage):
-        self.N_occ=int( (coverage * self.N_tot) / 100.0	)
+        self.N_occ = int( (coverage * self.N_tot) / 100.0	)
+
 
 class TriangularInclusions_Shell_case1(TriangularInclusions):
     '''Used for sphere/shell nanoparticles; shell thickness is determined by l_particle (edge length of the triangular cylinder)'''
@@ -444,12 +449,13 @@ class TriangularInclusions_Shell_case1(TriangularInclusions):
     traits_view=View(
         Include('compmatgroup'), Include('inclusionsgroup')
     )
+    
+    def _get_shell_width(self): 
+        return self.l_particle
 
-    #@cached_property
-    def _get_shell_width(self): return self.l_particle
+    def _get_VT(self):
+        return round ( (4.0*math.pi/3.0) * (  (self.r_platform+2.0*self.l_particle)**3 - self.r_platform**3 ) , 2)
 
-    #@cached_property
-    def _get_VT(self): return round ( (4.0*math.pi/3.0) * (  (self.r_platform+2.0*self.l_particle)**3 - self.r_platform**3 ) , 2)
 
 class TriangularInclusions_Shell_case2(TriangularInclusions):
     '''Used for sphere/shell nanoparticles; shell thickness is determined by h_particle (height of the triangular cylinder)'''
@@ -471,16 +477,18 @@ class TriangularInclusions_Shell_case2(TriangularInclusions):
         Include('compmatgroup'), Include('inclusionsgroup')
     )
 
-    #@cached_property
-    def _get_shell_width(self): return self.h_particle
+    
+    def _get_shell_width(self): 
+        return self.h_particle
 
-    #@cached_property
-    def _get_VT(self): return round ( (4.0*math.pi/3.0) * (  (self.r_platform+2.0*self.h_particle)**3 - self.r_platform**3 ) , 2)
+    
+    def _get_VT(self):
+        return round ( (4.0*math.pi/3.0) * (  (self.r_platform+2.0*self.h_particle)**3 - self.r_platform**3 ) , 2)
 
 
 
 if __name__ == '__main__':
 #	f=CompositeMaterial_Equiv()
-    f=TriangularInclusions_Shell_case1()
+    f = CompositeMaterial()
 #	f=SphericalInclusions_Disk()
     f.configure_traits()

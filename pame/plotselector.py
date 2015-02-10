@@ -3,13 +3,14 @@ from traits.api import Any, Enum, Dict, List, DelegatesTo, HasTraits, \
 from traitsui.api import Item, View, HGroup, VGroup
 from interfaces import IView, ICompositeView
 import utils as pamutils
+from layer_editor import SHARED_LAYEREDITOR
 
 class PlotSelector(HasTraits):
    """ Scans selected layer material for instances of IView and enumerates
    them with dropdown selection.  Allows users to choose which views of a 
    selected material they want to observe.
    """
-   layereditor = Any #DelegatesTo('b_app')
+   layereditor = Instance(HasTraits, SHARED_LAYEREDITOR) #DelegatesTo('b_app')
    stack = DelegatesTo('layereditor')
    selected_layer = Enum(values='stack') #<-- make shortname
    sync = Bool(True)

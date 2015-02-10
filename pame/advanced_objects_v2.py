@@ -43,7 +43,6 @@ class NanoSphere(SphericalInclusions_Disk):
 
         self.sync_trait('CoreMaterial', self.FullMie, 'CoreMaterial')
         self.sync_trait('MediumMaterial', self.FullMie, 'MediumMaterial')
-        self.sync_trait('specparms', self.FullMie, 'specparms')
         self.sync_trait('r_core', self.FullMie, 'r_core')
 
     traits_view=View(	
@@ -73,10 +72,11 @@ class NanoSphere(SphericalInclusions_Disk):
         return bare_sphere()			
 
     def _CoreMaterial_default(self):  # Overwrite as package data eventually
-        return XNKFile(file_path = op.join(XNK_dir, 'JC_Gold.nk'))
+        return XNKFile(file_path = op.join(XNK_dir, 'JC_Gold.nk'),
+                       )
 
     def _MediumMaterial_default(self): 
-        return self.Dispwater()#specparms=self.specparms)
+        return self.Dispwater()
     
     def simulation_requested(self):
         out = super(NanoSphere, self).simulation_requested()
@@ -108,9 +108,6 @@ class DrudeNew(ABCMetalModel, NanoSphere):
                       Item('r_core', show_label=True, style='simple', label='NP Radius'),
                       Item('FullMie')
                       )
-
-    def __init__(self, *args, **kwargs):
-        super(DrudeNew, self).__init__(*args, **kwargs)
 
     def _wplasma_default(self): 
         return 2.0*math.pi*self.c/(self.lamp * self.nm_conv)
@@ -147,9 +144,9 @@ class DrudeNew(ABCMetalModel, NanoSphere):
             fi=final.imag
             omega=(2.0*math.pi*self.c)/(self.nm_conv*entry)
             fi=fi+(self.wplasma**2/omega**3)*(self.v_fermi/(self.r_core*self.nm_conv))  
-            eeff[i]=complex(fr, fi)	
-        self.earray=eeff
-        self.CoreMaterial=self
+            eeff[i] = complex(fr, fi)	
+        self.earray = eeff
+        self.CoreMaterial = self
 
 
 class DrudeNP_corrected(DrudeBulk, NanoSphere):
@@ -158,10 +155,6 @@ class DrudeNP_corrected(DrudeBulk, NanoSphere):
     valid_metals=Enum('gold','silver')  #Need fermi velocity for copper and aluminum
     apply_correction=Bool(True)
 
-    def __init__(self, *args, **kwargs):
-        super(DrudeNP_corrected, self).__init__(*args, **kwargs)
-
-    #USES VF IN NM/S SO THAT L CAN BE IN NM AS WELL SO THIS OBJECT IS DEPENDENT ON UNITS#
 
     def _valid_metals_changed(self): 
         self.update_data()
@@ -191,6 +184,7 @@ class DrudeNP_corrected(DrudeBulk, NanoSphere):
         unity= array([complex(0.0,1.0)], dtype=complex)  #Gupta requries i * lambda, so this gets complex value of the xarray
         self.earray = 1.0 - ( (m_xarray**2 * self.lam_collis) / (self.lam_plasma**2 * ( self.lam_collis + m_xarray*unity)  ) )
 
+        # WTF IS THIS
         self.CoreMaterial=self
 
     traits_view=View(Item('r_core'), Item('valid_metals'),
@@ -276,22 +270,20 @@ class NanoSphereShell(NanoSphere):
     )
 
 
-    traits_view=View(
-                     Include('compnpgroup'), title='Composite Nanoparticle with Shell', resizable=True )
+    traits_view=View(Include('compnpgroup'), 
+                     title='Composite Nanoparticle with Shell', 
+                     resizable=True )
 
     def __init__(self, *args, **kwds):
         super(NanoSphereShell, self).__init__(*args, **kwds)
         # sync syntx ('Trait name here', Object to sync with, 'trait name there'##
 
-        self.sync_trait('specparms', self.CoreShellComposite, 'specparms')
         
         self.sync_trait('CoreMaterial', self.CoreShellComposite, 'Material1')
         self.sync_trait('ShellMaterial', self.CoreShellComposite, 'Material2')  
         
         # Sync my solvent to shellmaterial solvent
         self.sync_trait('MediumMaterial', self.ShellMaterial, 'Material2')
-        
-        
 
         # Material 2 is set in CoreShellComposite itself (ie the inclusion matera
         self.sync_trait('r_core', self.CoreShellComposite, 'r_particle')
@@ -300,16 +292,13 @@ class NanoSphereShell(NanoSphere):
         self.sync_trait('r_core', self.ShellMaterial, 'r_platform')
         self.sync_trait('shell_width', self.ShellMaterial, 'shell_width') # <---- Will set r_inclusion, confirmed        
         
-        self.sync_trait('modeltree', self.CoreShellComposite, 'modeltree')
-        self.sync_trait('modeltree', self.ShellMaterial, 'modeltree')        
+        self.sync_trait('selectedtree', self.CoreShellComposite, 'selectedtree')
+        self.sync_trait('selectedtree', self.ShellMaterial, 'selectedtree')        
 
         # Mixes the Complex Particle and Medium (SHOULD SYNC R_EFFECTIVE, NO?)
         self.sync_trait('CoreShellComposite', self.TotalMix, 'Material1')
         self.sync_trait('MediumMaterial', self.TotalMix, 'Material2')
-        self.sync_trait('r_core', self.TotalMix, 'r_particle', mutual=False) #<-- USES RCORE NOT R_EFF
-
-        self.sync_trait('specparms', self.CompositeMie, 'specparms')
-        self.sync_trait('specparms', self.FullMie, 'specparms')      
+        self.sync_trait('r_core', self.TotalMix, 'r_particle', mutual=False) #<-- USES RCORE NOT R_EFF   
         
         # Sync materials to composite mie, including shell!
         self.sync_trait('CoreShellComposite', self.CompositeMie, 'CoreMaterial') #<-- IMPORTANT
@@ -341,7 +330,8 @@ class NanoSphereShell(NanoSphere):
     
     # Just a sphere BUT CORE RADIUS IS EFFECTIVE RADIUS!!!
     def _CompositeMie_default(self): 
-        return effective_sphere(r_core = self.r_core + self.shell_width, label='EFFECTIVE Radius')
+        return effective_sphere(r_core = self.r_core + self.shell_width, 
+                                label='EFFECTIVE Radius')
     
     @on_trait_change('r_core, shell_width, ShellMaterial.Material1, ShellMaterial.Material2')
     def r_eff(self):
@@ -354,9 +344,6 @@ class NanoSphereShell(NanoSphere):
         return self.DoubleSview(scatt1=self.FullMie.sview, 
                                 scatt2=self.CompositeMie.sview)
 
-#	def update_allplots(self): 
-#		''' I replaced this with np_plots anyway'''
-#		self.allplots={'full':self.FullMie.sview, 'comp':self.CompositeMie.sview}
 
     def simulation_requested(self):
         """ Method to return dictionary of traits that may be useful as output for paramters and or this and that"""

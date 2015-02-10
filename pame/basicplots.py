@@ -29,6 +29,7 @@ import matplotlib.cm as cm
 # pame imports
 import config
 import globalparms
+from main_parms import SHARED_SPECPARMS
 
 class PlotError(Exception):
     """ """
@@ -96,7 +97,7 @@ def plot_line_points(*args, **kwargs):
 
 class OpticalView(HasTraits):
     """ Plot reflectance, transmission etc... from dielectric slab."""
-    optic_model = Any # DielectricSlab object, must be initialized with this by calling fcn        
+    optic_model = Instance(HasTraits) # DielectricSlab object, must be initialized by calling fcn        
     optical_stack = Property()
     x_unit = Property()
 
@@ -399,16 +400,21 @@ class OpticalView(HasTraits):
 class MaterialView(HasTraits):
 
     implements(IView)
+    
+    # Design choice to delegate to specparms, but listeners about when to
+    # redraw are set by materials (ie update_mview()); since material data needs 
+    # to update as well
+    specparms = Instance(HasTraits, SHARED_SPECPARMS)
+    lambdas = DelegatesTo('specparms')
+    x_unit = DelegatesTo('specparms')
 
     eplot = Instance(Plot)
     nplot = Instance(Plot)             #Traits are populated on update usually
 
     data = Instance(AbstractPlotData)
     
-    xarray=Array()
     earray=CArray()
     narray=CArray()
-    xunit=Str()
     ereal=Property(Array,depends_on=["earray"])     #Storing as traits just in case I want to have the array view     
     eimag=Property(Array,depends_on=["earray"])
     nreal=Property(Array,depends_on=["narray"])
@@ -458,7 +464,7 @@ class MaterialView(HasTraits):
         plot.legend.visible = True
 
         bottom_axis = PlotAxis(plot, orientation='bottom',
-                               title=self.xunit, 
+                               title=self.x_unit, 
                                label_color='red', 
                                label_font='Arial', 
                                tick_color='green',
@@ -481,58 +487,41 @@ class MaterialView(HasTraits):
     def togreal(self):
         print 'togimag not supported!!'
 
-    def update(self, xarray, earray, narray, xunit):    
+    def update(self, earray, narray):    
         '''Method to update plots; draws them if they don't exist; otherwise it simply updates the data'''     
-        self.xunit=xunit 
-        self.xarray=xarray
         self.earray=earray
         self.narray=narray
         
         if self.data == None:
-            self.data = ArrayPlotData(x=self.xarray, er=self.ereal, nr=self.nreal, ei=self.eimag, ni=self.nimag)
+            self.data = ArrayPlotData(x=self.lambdas, 
+                                      er=self.ereal, 
+                                      nr=self.nreal,
+                                      ei=self.eimag,
+                                      ni=self.nimag)
             self.create_plots()
         else:
             self.update_data()
 
     def update_data(self):
-        self.data.set_data('x',self.xarray) 
         self.data.set_data('er', self.ereal)
         self.data.set_data('nr', self.nreal) 
         self.data.set_data('ei', self.eimag)
         self.data.set_data('ni', self.nimag)
-        self.eplot.request_redraw() ; self.nplot.request_redraw()
+        self.eplot.request_redraw() 
+        self.nplot.request_redraw()
 
-    ####### USED FOR SIMULATION STORAGE MOSTLY #####
-
-    def get_sexy_data(self):
-        '''Returns the data in a list that can be immediately read back in another instance of opticview.  
-        Note this is not the same as the arrayplotdata getdata() function'''
-        return [self.xarray, self.ereal, self.nreal, self.eimag, self.nimag]
-
-    def set_sexy_data(self, data_list):
-        '''Takes in data formatted deliberately from "get_sexy_data" and forces an update'''
-        self.update(data_list[0], data_list[1], data_list[2], data_list[3])
-
-    # Migrate to model!!
-    def get_dataframe(self):
-        ''' Returns dataframe of data for easier concatenation into a runpanel dataframe used by
-        simulations'''
-        d = {'er' : self.ereal, 
-             'nr':self.nreal,
-             'ei':self.eimag,
-             'ni':self.nimag}   
-        return DataFrame(d, index=self.xarray)
 
 class ScatterView(HasTraits):
     '''Used to view scattering cross sections and other relevant parameters from mie scattering program'''
 
     implements(IView)
 
+    specparms = Instance(HasTraits, SHARED_SPECPARMS)
+    lambdas = DelegatesTo('specparms')
+    x_unit = DelegatesTo('specparms')
+
     sigplot = Instance(Plot)        #Scattering cross section
     data = Instance(AbstractPlotData)
-
-    xarray=Array()
-    xunit=Str()
 
     extarray=Array()    #Scattering, extinction, absorption
     scatarray=Array()
@@ -565,14 +554,14 @@ class ScatterView(HasTraits):
         rounding = 3  #Change for rounding of these 
         value = max(array)
         index = int(where(array==value)[0])  #'where' returns tuple since is can be used on n-dim arrays
-        x = self.xarray[index]
+        x = self.lambdas[index]
         return (round(x,rounding), round(value,rounding))
 
     def compute_area(self, array):
         ''' Get the area under a curve.  If I want to change integration style, should just make the integration 
             style an Enum variable and redo this on a trait change'''
         rounding=0
-        return round(simps(array, self.xarray, even='last'), rounding)
+        return round(simps(array, self.lambdas, even='last'), rounding)
 
     def create_plots(self):
         self.sigplot = ToolbarPlot(self.data)
@@ -593,7 +582,7 @@ class ScatterView(HasTraits):
         plot.legend.visible = True
 
         bottom_axis = PlotAxis(plot, orientation='bottom', 
-                               title=self.xunit, 
+                               title=self.x_unit, 
                                label_color='red',
                                label_font='Arial', 
                                tick_color='green', tick_weight=1)
@@ -609,15 +598,13 @@ class ScatterView(HasTraits):
         zoom = ZoomTool(component=plot, tool_mode="box", always_on=False)
         plot.overlays.append(zoom)
 
-    def update(self, xarray, extarray, scatarray, absarray, xunit):         
-        self.xunit=xunit 
-        self.xarray=xarray
+    def update(self, extarray, scatarray, absarray):         
         self.extarray=extarray 
         self.absarray=absarray 
         self.scatarray=scatarray
 
         if self.data == None:
-            self.data = ArrayPlotData(x=self.xarray, 
+            self.data = ArrayPlotData(x=self.lambdas, 
                                       Scattering=self.scatarray, 
                                       Absorbance=self.absarray , 
                                       Extinction=self.extarray)
@@ -639,21 +626,8 @@ class ScatterView(HasTraits):
 
 
     def update_data(self):
-        ### Don't alter these keys 'x', 'sig' etc... as they are called in the composit_plot Double Sview object
-        self.data.set_data('x', self.xarray) ; self.data.set_data('Scattering', self.scatarray)
-        self.data.set_data('Absorbance', self.absarray) ; self.data.set_data('Extinction', self.extarray)
+        #Don't alter these keys 'x', 'sig' etc... as they are called in the composit_plot Double Sview object
+        self.data.set_data('Scattering', self.scatarray)
+        self.data.set_data('Absorbance', self.absarray) 
+        self.data.set_data('Extinction', self.extarray)
         self.sigplot.request_redraw()
-
-    def get_sexy_data(self):
-        '''Returns the data in a list that can be immediately read back in another instance of opticview.  Note this is not the same as the arrayplotdata getdata() function'''
-        return [self.xarray, self.scatarray, self.absarray, self.extarray]
-
-    def set_sexy_data(self, data_list):
-        '''Takes in data formatted deliberately from "get_sexy_data" and forces an update'''
-        self.update(data_list[0], data_list[1], data_list[2], data_list[3])
-
-    def get_dataframe(self):
-        ''' Returns dataframe of data for easier concatenation into a runpanel dataframe used by
-        simulations'''
-        d = {'ext' : self.extarray, 'scatt':self.scatarray, 'abs':self.absarray}   
-        return DataFrame(d, index=self.xarray)

@@ -6,7 +6,6 @@ from numpy import empty, array, conj, inf
 from basicplots import OpticalView
 from main_parms import SpecParms, AngleParms
 from interfaces import IOptic, ILayer
-from layer_editor import LayerEditor
 from scipy.integrate import simps
 import logging
 from tmm_mod import vector_com_tmm
@@ -20,9 +19,12 @@ class OpticalModelError(Exception):
 
 class DielectricSlab(HasTraits):
     '''Class used to store data in an interactive tabular environment'''
-
-    specparms = Instance(SpecParms,())
-    fiberparms = Instance(AngleParms)
+    
+    # Need base_app to delegate fiberparms, so find that delegate the rest
+    base_app = Any
+    specparms = DelegatesTo('base_app')
+    fiberparms = DelegatesTo('base_app')
+    layereditor = DelegatesTo('base_app')
 
     x_unit = DelegatesTo('specparms') #<-- Required by optic_view for xaxis, wish easier to acess these globally
     lambdas = DelegatesTo('specparms')	
@@ -34,7 +36,7 @@ class DielectricSlab(HasTraits):
     angle_avg = DelegatesTo('fiberparms')
     N = DelegatesTo('fiberparms')
     
-    layereditor=Instance(LayerEditor,())            #Need to initialize this because properties depend on this instance
+#    layereditor=Instance(LayerEditor,())            #Need to initialize this because properties depend on this instance
     stack= DelegatesTo('layereditor')               #Variables are stored here just because they can be useful for future implementations
 
     # PRIMARY STORAGE OBJECT FROM TRANSFER MATRIX FORMALISM
@@ -47,6 +49,11 @@ class DielectricSlab(HasTraits):
 
     #sim_designator=Str('New Simulation') #<--- WHY
     implements(IOptic)
+    
+    # Need to initialize base_app first or Delegation Will not work
+    def __init__(self, *args, **kwargs):
+        self.base_app = kwargs.pop('base_app')
+        super(DielectricSlab, self).__init__(*args, **kwargs)
 
     def _opticview_default(self):
         return OpticalView(optic_model = self)

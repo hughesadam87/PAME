@@ -283,5 +283,10 @@ class FiberParms(AngleParms):
         return traitdic
 
 
+#GLOBALS
+# BAD PRACTICE< BUT SHARED_SPECPARMS IS BASICALLY A GLOBAL SO NEED AN INSTANCE READY
+# TO GO FOR SHARING
+SHARED_SPECPARMS = SpecParms()
+
 if __name__ == '__main__':
     SpecParms().configure_traits()

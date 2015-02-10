@@ -24,14 +24,18 @@ from handlers import FileOverwriteDialog, BasicDialog
 from simulationplots import ReflectanceStorage, ScattStorage, MaterialStorage
 from main_parms import SpecParms
 from interfaces import IMaterial, ISim
-from layer_editor import LayerEditor, StackError
+#from layer_editor import StackError
 import config
 import hackedvtree
 import customjson
 import utils
+from layer_editor import SHARED_LAYEREDITOR
 from simparser import LayerSimParser
 
 WRAPWIDTH = 100 # Text characters for wrapping lines
+
+class StackError(Exception):
+    """ """
 
 class SimError(Exception):
     """ """
@@ -89,7 +93,6 @@ class SimAdapter(HasTraits):
 class SimConfigure(HasTraits):
     """ Configuration what is stored/output in simulation."""
 
-    b_app = Any #<-- necessary for the grab viewer
     save = Button
     outpath = File
 
@@ -202,7 +205,7 @@ class SimConfigure(HasTraits):
 
     def __grabbutton_fired(self):
         """ Launch Browser to view traits """
-        browser = hackedvtree.ArrayBrowser(traits_tree=self.b_app.stack)
+        browser = hackedvtree.ArrayBrowser(traits_tree=SHARED_LAYEREDITOR.stack)
         browser.edit_traits()#kind='modal') #Modal may be necessary when select works
         #foo = browser.configure_traits(kind='modal')
         #common_traits.append(foo.selected)

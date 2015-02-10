@@ -12,12 +12,13 @@ from main_parms import FiberParms, SpecParms
 from modeltree_v2 import Model
 from material_models import Dispwater
 import globalparms
+from main_parms import SHARED_SPECPARMS
 
 
 class BasicLayer(HasTraits):
     '''Class used to store layer in an interactive tabular environment'''
 
-    specparms=Instance(SpecParms,())  #Passed through to the material; not necessarily used in layers
+    specparms=Instance(HasTraits, SHARED_SPECPARMS)
 
     implements(ILayer)     
     name=Str('Single Bulk Material')
@@ -25,7 +26,6 @@ class BasicLayer(HasTraits):
     d = Float(10.0)  
     designator=Enum('basic', 'composite', 'nanoparticle')  #Used to determine special properties like how to sync
 
-    ### Do i need synching and delegation???   
     mat_name=DelegatesTo('material')  #Useful so user can change through editor
 
     modeltree=Instance(Model)#,())  #Although defined here, it's not really used until composite, nanoparticle layers
@@ -38,16 +38,12 @@ class BasicLayer(HasTraits):
 
     def __init__(self, *args, **kwargs):
         super(BasicLayer, self).__init__(*args, **kwargs)
-        self.sync_trait('specparms', self.material, 'specparms')
-        self.sync_trait('mat_name', self.material, 'mat_name', mutual=True)
         self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)
 
     def _material_default(self): 
         return Dispwater() 
 
     def _material_changed(self): 
-        self.sync_trait('specparms', self.material, 'specparms', mutual=True)  	  #This is necessary because syncing is only done for the obje
-        self.sync_trait('mat_name', self.material, 'mat_name', mutual=True)
         self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)        
 
     def simulation_requested(self):
@@ -73,10 +69,6 @@ class Composite(BasicLayer):
     def _material_default(self): 
         return self.SphericalInclusions_Disk()
 
-    #def __init__(self, *args, **kwargs):
-        #super(Composite, self).__init__(*args, **kwargs)
-        #self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)  #Syncs basic materials tree
-
     def sync_solvent(self, solvent):
         '''Used to override materials from layereditor'''
         self.oldsolvent=self.material.Material2
@@ -91,7 +83,6 @@ class Composite(BasicLayer):
 
     def _material_changed(self): 
         self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)
-        self.sync_trait('specparms', self.material, 'specparms', mutual=True)  	  #This is necessary because syncing is only done for the obje
 
 class Nanoparticle(Composite):
     ''' Layer of nanoparticle inclusions'''
@@ -101,7 +92,8 @@ class Nanoparticle(Composite):
     designator=Str('nanoparticle')
     sync_rad_selection=Enum('rcore', 'rcore+rshell')
 
-    def _material_default(self): return self.NanoSphereShell()
+    def _material_default(self):
+        return self.NanoSphereShell()
 
     def sync_solvent(self, solvent):
         '''Used to override materials from layereditor'''
@@ -134,15 +126,6 @@ class Solvent(Boundary):
     def _material_default(self): 
         return Dispwater()
 
-if __name__ == '__main__':
-    number=100
-    x=linspace(300, 800, num=number)	
-
-    f=dynamic_shell()
-    f.layer_initial.material=CompositeNanosphere() ; f.layer_final.material=CompositeNanosphere()
-    f.layer_initial.material.lambdas=x ; f.layer_final.material.lambdas=x
-
-    f.configure_traits()
 
 
 
