@@ -22,13 +22,8 @@ import os.path as op
 from pame.main_parms import SHARED_SPECPARMS
 
 class Mie(HasTraits):
-    '''Class to compute scattering coefficients given an input of a dielectric array'''
-    implements(IMie)     
-
-    specparms=Instance(HasTraits, SHARED_SPECPARMS)    
-
-    lambdas=DelegatesTo('specparms')	
-    x_unit=DelegatesTo('specparms')         
+    """Class to compute scattering coefficients given an input of a dielectric array"""
+    implements(IMie)          
 
     CoreMaterial=Instance(IMaterial)
     MediumMaterial=Instance(IMaterial)
@@ -47,7 +42,6 @@ class Mie(HasTraits):
     cutoff=Bool(False)
     cutoff_criteria=Float(.000001)      
     bessmax=Int(10)                     
-
 
     #Buttons and view items for general use
     sview=Instance(ScatterView,())
@@ -77,50 +71,37 @@ class Mie(HasTraits):
     def _Cscatt_default(self):
         return empty(self.ecore.shape[0], dtype='float')
 
-    def _CoreMaterial_default(self):  ### Overwrite as package data eventually
+    # Overwrite as package data eventually
+    def _CoreMaterial_default(self):  
         return XNKFile(file_path = op.join(XNK_dir, 'JC_Gold.nk'))
 
     def _MediumMaterial_default(self): 
         return Dispwater()
 
-    def update_sview(self): #pass
-        self.sview.update(self.lambdas, self.Cext, self.Cscatt, self.Cabs, self.x_unit)
+    def update_sview(self): 
+        self.sview.update(self.Cext, self.Cscatt, self.Cabs)
 
     def _sviewbutton_fired(self): 
-        self.update_cross() #Autoupdates sview
-        self.sview.edit_traits()   #LOOK AT EMAIL FOR SOLUTION TO TELL IF WINDOW WAS CLOSED 
-
+        self.update_cross() 
+        self.sview.edit_traits()   
 
     def update_cross(self): 
-        ''' Always end this by updating sview'''
+        """ Always end this by updating sview"""
         self.update_sview()  #Function which computes cross section for each Mie object
 
-    ###Following methods are utilities to go between e/n represnetation of materials and also get wave vectors. Used as needed in inheriting objects belows###
-
-    def complex_e_to_n(self, earray): 
-        return SM.sqrt(earray)  #Sometimes book uses index of refraction so good to have the option to use it
-
-    def complex_n_to_e(self, narray): 		
-        earray=np.empty(narray.shape, dtype='complex')  #This is necessary if changing lambdas, so everything works
-        nr=narray.real; nk=narray.imag          #NEED TO VERIFY THESE WORK SEE PLOT VS OLD VALUES
-        earray.real = nr**2 -nk**2
-        earray.imag = 2.0*nr*nk
-        return earray
-
-
-    ###Utilities to do general looping and have a cutoff in place to truncate scattering coefficients.###
+    #Utilities to do general looping and have a cutoff in place to truncate scattering coefficients.###
     def cutoff_check(self, new, old):
-        '''Method used to test for cutoff'''	
+        """Method used to test for cutoff"""	
         if abs(new - old)/abs(new) <= self.cutoff_criteria:
             self.cutoff=True         #This flips the switch
 
     def cutoff_reset(self):
-        '''Resets cutoff if it is on, kind of like a switch reset'''
-        self.cutoff=False
+        """Resets cutoff if it is on, kind of like a switch reset"""
+        self.cutoff = False
 
-    ###For generating ricatti bessel functions of arbitrary argument and order###
+    #For generating ricatti bessel functions of arbitrary argument and order###
     def bessy(self, order, argument):
-        '''Given order, n, and argument, z, computes mad bessel related junk'''
+        """Given order, n, and argument, z, computes mad bessel related junk"""
         n=order; z=argument
         jns=(special.sph_jn(n, z))   #comptues jn and jn derivative in a tuple
         yns=(special.sph_yn(n, z))   #Return all the way up to nth order
@@ -163,7 +144,7 @@ class Mie(HasTraits):
             }
 
 class ABCsphere(Mie):
-    '''Scattering functions for a plain sphere'''
+    """Scattering functions for a plain sphere"""
     r_core=Float(12)
     basic_sphere_group=Group( Item('r_core') )
     k_medium=DelegatesTo('MediumMaterial', prefix='karray')
@@ -182,7 +163,7 @@ class ABCsphere(Mie):
 
 class shell(Mie):
     ### AS OF NOW THIS ONLY WORKS FOR SHELS OF REAL MATERIALS BECAUSE THE BESSEL FUNCTIONS TAKE IN THE WAVE VECTOR ###
-    '''Basic functions to handle operations on particles with shells'''
+    """Basic functions to handle operations on particles with shells"""
     ShellMaterial=Instance(IMaterial)
     eshell=DelegatesTo('ShellMaterial', prefix='earray')
     nshell=DelegatesTo('ShellMaterial', prefix='narray')
@@ -206,7 +187,7 @@ class shell(Mie):
         
 
 class sphere_electrostatics(ABCsphere):
-    '''Scattering cross section for a sphere using the conditions x<<1 and |m|x<<1 pg 136''' 
+    """Scattering cross section for a sphere using the conditions x<<1 and |m|x<<1 pg 136""" 
 
     def update_cross(self):
         x=self.k_medium* self.r_core
@@ -216,7 +197,7 @@ class sphere_electrostatics(ABCsphere):
 
 
 class bare_sphere(ABCsphere):
-    '''Full mie solution to plain sphere'''
+    """Full mie solution to plain sphere"""
     
     bare_sphere_group=Group(Include('basic_group'), 
                             HGroup(
@@ -233,7 +214,7 @@ class bare_sphere(ABCsphere):
             )
 
     def update_cross(self):
-        for i in range(self.ecore.shape[0]):   #Can't get rid of this because bessel functions can't generate with full arrays
+        for i in range(self.ecore.shape[0]):   #XX! Can't remove; bessel functions can't generate with full arrays
             ext_term=0.0  ; scatt_term=0.0 ; ext_old=50
             asum=0.0      ; bsum=0.0
             n=0
@@ -242,12 +223,9 @@ class bare_sphere(ABCsphere):
                 k=self.k_medium[i]
                 x=k*self.r_core         
                 m1=self.ncore[i]/self.nmedium[i]   #m1 is really just m in book 
-                arg=x
-                bess=self.bessy(n, arg)
-                Px=bess[0];dPx=bess[1];Xx=bess[2];dXx=bess[3]	 #Riccati bessel of X
-                arg=m1*x
-                bess=self.bessy(n, arg)
-                Pmx=bess[0];dPmx=bess[1];Xmx=bess[2]             #Ricatti bessel of MX
+                Px, dPx, Xx, dXx = self.bessy(n,x)[0:4]   #Riccati bessel of X
+                Pmx, dPmx, Xmx = self.bessy(n, m1*x)[0:3] #Ricatti bessel of MX
+                
 
                 f1=m1*Pmx*dPx  ; f2=Px*dPmx  ;  f3=m1*Pmx*dXx  ;  f4=Xx*dPmx
                 a=(f1-f2)/(f3-f4)
@@ -293,7 +271,7 @@ class effective_sphere(bare_sphere):
 
 
 class sphere_shell(bare_sphere, shell):
-    '''This is a sphere with a surrounding shell; inherits from basic sphere'''
+    """This is a sphere with a surrounding shell; inherits from basic sphere"""
     sphere_shell_group=Group(Include('bare_sphere_group') )
 
     traits_view=View(VGroup(

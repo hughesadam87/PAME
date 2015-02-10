@@ -223,7 +223,7 @@ class GlobalScene(HasTraits):
           return PlotSelector()
 
      def _configure_storage_default(self):
-          return SimConfigure(b_app=self)
+          return SimConfigure()
 
      # Where should this point?  WHAT IF DOESN"T EXIST
      def _sim_outdir_default(self):
@@ -313,7 +313,7 @@ def main():
      popup.selected_layer = popup.layereditor.stack[1]
      popup.selected_sim = popup.simulations[0]
      
-#     popup.opticstate.update_opticview()     
+     popup.opticstate.update_opticview()     
      popup.configure_traits()    
 
 

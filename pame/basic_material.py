@@ -71,8 +71,7 @@ class BasicMaterial(HasTraits):
         pass
 
     def update_mview(self): 
-        self.mview.update(self.lambdas, self.earray, self.narray, self.x_unit)	
-
+        self.mview.update(self.earray, self.narray)
 
     def _mviewbutton_fired(self): 
         self.mview.data=None  #This will force a redraw which forces resizing of the plot.  Remove if you can fix the "auto_size" axis reset issue
