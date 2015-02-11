@@ -1,4 +1,4 @@
-from traits.api import Interface, Array, Str, CArray, Instance
+from traits.api import Interface, Array, Str, CArray, Instance, HasTraits
 from chaco.api import ArrayPlotData
 
 class IView(Interface):
@@ -6,26 +6,16 @@ class IView(Interface):
     interface is really just serving as a reminder of how I design basic plots for future reference.  """
 
     data = Instance(ArrayPlotData)
+    model = Instance(HasTraits) #<-- Material object, must be initialized with    
 
     def create_plots(self):
-        """ Makes plots from data, standard"""
+        """ Makes plot(s) from data, standard"""
 
     def add_tools_title(self):
         """ Adds tools and title to plots """
-
-    def update(self):   
-        """ Method to be called by simulations which will create plots or update the data in plots """
-
+        
     def update_data(self):
-        """ Custom method which basically uses set_data() to set all the trait values at once """
-
-    ### Probably a smart way to change all of these update methods to a simplier dictionary notation ###
-
-    def get_sexy_data(self):
-        '''Returns the data in a list that is specfic to a plot and is really just used as an interface for simulations and output plots'''
-
-    def set_sexy_data(self, data_list):
-        ''' Same as above, used to restore trait values and things '''
+        """ """
 
 class ICompositeView(IView):
     '''Used mainly when simple plots are ported into more composite objects for better comparisons '''
@@ -69,6 +59,7 @@ class IMaterial(Interface):
     lambdas=Array
     earray=CArray
     mat_name=Str
+
 #	def update_data(self, na):
 #		'''Method generally called to make the material traits all dynamically intertwined'''
 

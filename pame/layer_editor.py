@@ -239,20 +239,18 @@ class LayerEditor(HasTraits):
                 if layer.sync_status==True:	
                     layer.sync_solvent(self.solvent.material)
 
-    def __getattr__(self, attr):
-        """ Simulation needs to access stack by integer sometimes, IE
-        layer1, layer2 so can do self.layer1 akin to self.selected_layer.
-        """
-        # Layer1, layer2, Layer_3
-        if attr.lower().startswith('layer'):
-            layer_int = int(attr.lstrip('layer_')) #Works with _ or no _
-            if layer_int not in range(len(self.stack)):
-                raise StackError("Invalid layer index %s on stack of length %s" 
-                                 % (layer_int, len(self.stack)))
-            return self.stack[layer_int]
-            
-        super(LayerEditor, self).__getattr__(attr)
-        
+    #def __getattr__(self, attr):
+        #""" Simulation needs to access stack by integer sometimes, IE
+        #layer1, layer2 so can do self.layer1 akin to self.selected_layer.
+        #"""
+        ## Layer1, layer2, Layer_3
+        #if attr.lower().startswith('layer'):
+            #layer_int = int(attr.lstrip('layer_')) #Works with _ or no _
+            #if layer_int not in range(len(self.stack)):
+                #raise StackError("Invalid layer index %s on stack of length %s" 
+                                 #% (layer_int, len(self.stack)))
+            #return self.stack[layer_int]
+                    
         
 
 # Basically a global

@@ -8,15 +8,6 @@ class ABCMaterialModel(BasicMaterial):
         super(ABCMaterialModel, self).__init__(*args, **kwargs)
 
     source='Model'
-
-    def update_data_view(self):
-        """ update_data() 
-            update_mview()
-            
-        Should this also update allplots?
-        """
-        self.update_data()
-        self.update_mview()
         
 
 class Constant(ABCMaterialModel):
@@ -25,11 +16,8 @@ class Constant(ABCMaterialModel):
     constant_index=Property(Complex,
                             depends_on='constant_dielectric')
 
-    def __init__(self, *args, **kwargs):
-        super(Constant, self).__init__(*args, **kwargs)
-
     def _constant_dielectric_changed(self):
-        self.update_data_view()
+        self.update_data()
 
     def _constant_dielectric_default(self):
         return complex(1.804535, 0.0)
@@ -96,7 +84,7 @@ class Cauchy(ABCMaterialModel):
         """ Update data and view.  For trait_change decorator, need to use a new
         method so I arbirarily named this "update_model()".
         """
-        self.update_data_view()
+        self.update_data()
 
 
     def update_data(self):		
@@ -151,7 +139,7 @@ class Sellmeir(ABCMaterialModel):
         """ Update data and view.  For trait_change decorator, need to use a new
         method so I arbirarily named this "update_model()".
         """
-        self.update_data_view()
+        self.update_data()
 
     def update_data(self):		
         um_xarray = self.specparms.specific_array('Micrometers')
@@ -168,9 +156,6 @@ class Dispwater(ABCMaterialModel):
     B=Float(5.111 * 10**7)  #WHAT UNITS
     model_id=Str('Dispwater')   
 
-    def __init__(self, *args, **kwargs):
-        super(Dispwater, self).__init__(*args, **kwargs)
-
     def _mat_name_default(self): 
         return 'Dispersive Water'	
     
@@ -180,7 +165,7 @@ class Dispwater(ABCMaterialModel):
     @on_trait_change('A, B')
     def update_model(self):
         """ Update data and plot on any of these attributes chaning. """
-        self.update_data_view()
+        self.update_data()
 
     traits_view=View (
         Group(Include('basic_group'),
@@ -218,11 +203,8 @@ class ABCMetalModel(ABCMaterialModel):
     freq_plasma=Float()
     freq_collis=Float()
 
-    def __init__(self, *args, **kwargs):
-        super(ABCMetalModel, self).__init__(*args, **kwargs)
-
     def _lam_plasma_changed(self): 
-        self.update_data_view()           
+        self.update_data()           
         
     def update_data(self): 
         pass

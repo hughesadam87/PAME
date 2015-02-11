@@ -1,6 +1,6 @@
-''' A set of plotting components for Fiber Reflectance, Dielectric material, scattering cross section.
+""" A set of plotting components for Fiber Reflectance, Dielectric material, scattering cross section.
 They each have special get/set methods for communicating with simulations in gensim and other
-getters and setter model components.'''
+getters and setter model components."""
 from __future__ import division
 
 from enable.api import Component, ComponentEditor
@@ -11,7 +11,7 @@ from traitsui.api import Item, Group, View, Tabbed, Action, HGroup, InstanceEdit
      VGroup, ListStrEditor
 
 # Chaco imports
-from chaco.api import ArrayPlotData, Plot, AbstractPlotData, PlotAxis, HPlotContainer, ToolbarPlot, Legend
+from chaco.api import ArrayPlotData, Plot, PlotAxis, HPlotContainer, ToolbarPlot, Legend
 from chaco.tools.api import *
 from numpy import where
 from interfaces import IView
@@ -397,70 +397,50 @@ class OpticalView(HasTraits):
 
 # MVIEW SHOULD HAVE A SECOND TYPE OF DIFFERENT Y-AXIS IE
 # https://github.com/enthought/chaco/blob/master/examples/demo/multiaxis.py
-class MaterialView(HasTraits):
-
-    implements(IView)
+class ABCView(HasTraits):
+    """ Interface for plots that are associated with a PameObject, either a
+    Material or Mie insance,  (stored in attr "model"), that updates in
+    real time when arrays on that object change (eg index of refraction array).  
     
-    # Design choice to delegate to specparms, but listeners about when to
-    # redraw are set by materials (ie update_mview()); since material data needs 
-    # to update as well
-    specparms = Instance(HasTraits, SHARED_SPECPARMS)
-    lambdas = DelegatesTo('specparms')
+    Notes
+    -----
+    Older implementaions kept view and model separate, and it was up to
+    model when to trigger view updates, but this implementation has less
+    boilerplate, and it's useful for plots to inspect their model objects
+    because metadata makes plots more flexible.  
+    """
+ 
+    implements(IView) #Superfulous at this point, but PlotSelectors looks for
+    
+    model = Instance(HasTraits) #<-- Material object, must be initialized with
+
+    # Can't delegate specparms to model, or lambdas would be delegate of delegate, fails
+    specparms = Instance(HasTraits, SHARED_SPECPARMS)  
+    lambdas = DelegatesTo('specparms')                
     x_unit = DelegatesTo('specparms')
-
-    eplot = Instance(Plot)
-    nplot = Instance(Plot)             #Traits are populated on update usually
-
-    data = Instance(AbstractPlotData)
     
-    earray=CArray()
-    narray=CArray()
-    ereal=Property(Array,depends_on=["earray"])     #Storing as traits just in case I want to have the array view     
-    eimag=Property(Array,depends_on=["earray"])
-    nreal=Property(Array,depends_on=["narray"])
-    nimag=Property(Array,depends_on=["narray"])
-
-    ToggleReal=Action(name="Toggle Real", action="togimag")
-    ToggleImag=Action(name="Toggle Imaginary", action="togreal")
-
-    view = View(
-        Tabbed(
-            Item('eplot', editor=ComponentEditor(), dock='tab', label='Dielectric'),
-            Item('nplot', editor=ComponentEditor(), dock='tab', label='Index'), 
-            show_labels=False         #Side label not tab label
-            ),
-        width=800, height=600,  buttons=['Undo'],             #Buttons work but only respond to trait changes not plot changes like zoom and stuff
-        resizable=True
-    )
-
-
-    def _get_ereal(self):
-        return self.earray.real
+    data = Instance(ArrayPlotData)
     
-    def _get_eimag(self): 
-        return self.earray.imag
-
-    def _get_nreal(self): 
-        return self.narray.real
-
-    def _get_nimag(self): 
-        return self.narray.imag
-
-    def create_plots(self):
-        self.eplot = ToolbarPlot(self.data)
-        self.nplot= ToolbarPlot(self.data)
-
-        plot_line_points(self.eplot, ('x','er'), color='orange', name='e1')
-        plot_line_points(self.eplot, ('x','ei'), color='green', name='ie2')
-        plot_line_points(self.nplot, ('x','nr'), color='orange', name='n')
-        plot_line_points(self.nplot, ('x','ni'), color='green', name='ik')
-
-        self.add_tools_title(self.eplot, 'Dielectric ')
-        self.add_tools_title(self.nplot, 'Index of Refraction ')
-
+    def __init__(self, *args, **kwargs):
+        """Create plots (requires _data_default), then all listeners
+        should just hook up.
+        """
+        super(ABCView, self).__init__(*args, **kwargs)
+        self.update_data()
+        self.create_plots()
+               
+    def _data_default(self):
+        """ Default plotdata with "x" and then never have to recreate."""
+        data = ArrayPlotData()#dict(x=self.lambdas, er=[], ei=[], nr=[], ni=[]))    
+        data.set_data('x', self.lambdas)
+        return data        
+        
+    def _lambdas_changed(self):
+        self.data.set_data('x', self.lambdas)
+    
     def add_tools_title(self, plot, title_keyword):
-        '''Used to add same tools to multiple plots'''
-        plot.title = title_keyword + 'vs. Wavelength'
+        """Used to add same tools to multiple plots"""
+        plot.title = title_keyword
         plot.legend.visible = True
 
         bottom_axis = PlotAxis(plot, orientation='bottom',
@@ -469,70 +449,109 @@ class MaterialView(HasTraits):
                                label_font='Arial', 
                                tick_color='green',
                                tick_weight=1)
-        vertical_axis = PlotAxis(plot, orientation='left',
-                                 title='Relative'+str(title_keyword))
 
-        plot.underlays.append(vertical_axis)
+        # CUSTOM YLABEL, why bother?
+#        vertical_axis = PlotAxis(plot, orientation='left',
+#                                 title='Relative'+str(title_keyword))
+
+#        plot.underlays.append(vertical_axis)
         plot.underlays.append(bottom_axis)
 
         # Attach some tools to the plot
         plot.tools.append(PanTool(plot))
         zoom = ZoomTool(component=plot, tool_mode="box", always_on=False)
-        plot.overlays.append(zoom)
+        plot.overlays.append(zoom)    
 
-
-    def togimag(self):      #NOT SURE HOW TO QUITE DO THIS
-        print 'togimag not supported!!'
-
-    def togreal(self):
-        print 'togimag not supported!!'
-
-    def update(self, earray, narray):    
-        '''Method to update plots; draws them if they don't exist; otherwise it simply updates the data'''     
-        self.earray=earray
-        self.narray=narray
+    def create_plots(self):
+        """ Creates toolbar plot(s); draws lines initially. """
         
-        if self.data == None:
-            self.data = ArrayPlotData(x=self.lambdas, 
-                                      er=self.ereal, 
-                                      nr=self.nreal,
-                                      ei=self.eimag,
-                                      ni=self.nimag)
-            self.create_plots()
-        else:
-            self.update_data()
-
     def update_data(self):
-        self.data.set_data('er', self.ereal)
-        self.data.set_data('nr', self.nreal) 
-        self.data.set_data('ei', self.eimag)
-        self.data.set_data('ni', self.nimag)
-        self.eplot.request_redraw() 
-        self.nplot.request_redraw()
+        """ Update plot data only."""
 
 
-class ScatterView(HasTraits):
-    '''Used to view scattering cross sections and other relevant parameters from mie scattering program'''
+class MaterialView(ABCView):
+    """ Plots index of refraction and dielectric function of a material in real
+    time, by listening to delegated traits.
+
+    Important: Chose not to have direct update listeners from model.earray.
+    Materials still need to physically do "update()" (called mview()),
+    but now plots have access to Material for metdata attributes.
+    
+    """
+
+    eplot = Instance(Plot)
+    nplot = Instance(Plot)             #Traits are populated on update usually
+    
+    earray = DelegatesTo('model')
+    narray = DelegatesTo('model')
+
+    ToggleReal=Action(name="Toggle Real", action="togimag")
+    ToggleImag=Action(name="Toggle Imaginary", action="togreal")
+
+    # Custom plot_title disallowed
+
+    view = View(
+        Tabbed(
+            Item('eplot', editor=ComponentEditor(), dock='tab', label='Dielectric'),
+            Item('nplot', editor=ComponentEditor(), dock='tab', label='Index'), 
+            show_labels=False         #Side label not tab label
+            ),
+        width=800, height=600,  buttons=['Undo'],             
+        resizable=True
+        )
+        
+    def _earray_changed(self):
+        self.update_data()
+        
+    def create_plots(self):
+        self.eplot = ToolbarPlot(self.data)
+        self.nplot = ToolbarPlot(self.data)
+        
+        # Name required or will appear twice in legend!
+        plot_line_points(self.eplot, ('x','er'), color='orange', name='e1')
+        plot_line_points(self.eplot, ('x','ei'), color='green', name='ie2')
+        plot_line_points(self.nplot, ('x','nr'), color='orange', name='n')
+        plot_line_points(self.nplot, ('x','ni'), color='green', name='ik')         
+
+        self.add_tools_title(self.eplot, 'Dielectric vs. Wavelength')
+        self.add_tools_title(self.nplot, 'Index of Refraction vs. Wavelength ')
+
+    def update_data(self):    
+        """Method to update plots; draws them if they don't exist; otherwise 
+        simply updates the data
+        """     
+        self.data.set_data('er', self.earray.real)
+        self.data.set_data('nr', self.narray.real) 
+        self.data.set_data('ei', self.earray.imag)
+        self.data.set_data('ni', self.narray.imag)
+
+
+class ScatterView(ABCView):
+    """Used to view scattering cross sections and other relevant parameters from mie scattering program"""
 
     implements(IView)
 
-    specparms = Instance(HasTraits, SHARED_SPECPARMS)
-    lambdas = DelegatesTo('specparms')
-    x_unit = DelegatesTo('specparms')
+    sigplot = Instance(Plot)        
 
-    sigplot = Instance(Plot)        #Scattering cross section
-    data = Instance(AbstractPlotData)
+    #Scattering, extinction, absorption
+    Cext = DelegatesTo('model')    
+    Cscatt = DelegatesTo('model')   
+    Cabs = DelegatesTo('model')   
+    
+    # Useful to have callers change, for example FullMie vs. Composite
+    plot_title = Str('Scattering Spectrum')
 
-    extarray=Array()    #Scattering, extinction, absorption
-    scatarray=Array()
-    absarray=Array()
+    # No listeners to Cext, Cscatt, Cabs, as it's easier to implement 
+    # sview.update_data() from Mie, just have to remember that update_cross()
+    # must call it after every update.
 
-    exmax=Tuple(Float,Float)     #Technically properties but don't update with view for some reason
-    absmax=Tuple(Float,Float)    #Pukes if 0,0 default not provided, but this is probably due to my program not tuple trait
-    scatmax=Tuple(Float,Float)
-    exarea=Float         #Store the area under the curve for now, although this should be gotten in curve analysis data
-    absarea=Float
-    scatarea=Float 
+    # Plot area, max, min showed on view
+    exmax = Tuple(Float,Float)     #Technically properties but don't update with view for some reason
+    absmax = Tuple(Float,Float)    #Pukes if 0,0 default not provided, but this is probably due to my program not tuple trait
+    scatmax = Tuple(Float,Float)
+    exarea = Float         #Store the area under the curve for now, although this should be gotten in curve analysis data
+    absarea = Float
+    scatarea = Float 
 
     view = View(
         Item('sigplot', editor=ComponentEditor(), dock='tab', label='Cross Section', show_label=False),
@@ -549,7 +568,7 @@ class ScatterView(HasTraits):
         width=800, height=600,
         resizable=True
     )
-
+    
     def compute_max_xy(self, array):
         rounding = 3  #Change for rounding of these 
         value = max(array)
@@ -558,76 +577,45 @@ class ScatterView(HasTraits):
         return (round(x,rounding), round(value,rounding))
 
     def compute_area(self, array):
-        ''' Get the area under a curve.  If I want to change integration style, should just make the integration 
-            style an Enum variable and redo this on a trait change'''
-        rounding=0
-        return round(simps(array, self.lambdas, even='last'), rounding)
+        """ Get the area under a curve.  If I want to change integration style, 
+        should just make the integration style an Enum variable and redo this 
+        on a trait change"""
+        return simps(array, self.lambdas, even='last')
 
     def create_plots(self):
         self.sigplot = ToolbarPlot(self.data)
-        self.sigplot.plot(("x", "Scattering"), name="Scattering", color="green", linewidth=4)
-        self.sigplot.plot(("x", "Scattering"), name="Scattering", color="green", type='scatter', marker_size=2)
+        
+        # Don't change names, used by DoubleSView!
+        plot_line_points(self.sigplot, ('x','Scattering'), color='green', name='Scattering')
+        plot_line_points(self.sigplot, ('x','Absorbance'), color='blue', name='Absorbance')
+        plot_line_points(self.sigplot, ('x','Extinction'), color='red', name='Extinction')
 
-        self.sigplot.plot(("x", "Absorbance"), name="Absorbance", color="blue", linewidth=4)
-        self.sigplot.plot(("x", "Absorbance"), name="Absorbance", color="blue", type='scatter', marker_size=2)
+        self.add_tools_title(self.sigplot, self.plot_title)
 
-        self.sigplot.plot(("x", "Extinction"), name="Extinction", color="red", linewidth=4)
-        self.sigplot.plot(("x", "Extinction"), name="Extinction", color="red", type='scatter', marker_size=2)
-
-        self.add_tools_title(self.sigplot, 'Scattering Spectrum')
-
-    def add_tools_title(self, plot, title_keyword):
-        '''Used to add same tools to multiple plots'''
-        plot.title = title_keyword + 'vs. Wavelength'
-        plot.legend.visible = True
-
-        bottom_axis = PlotAxis(plot, orientation='bottom', 
-                               title=self.x_unit, 
-                               label_color='red',
-                               label_font='Arial', 
-                               tick_color='green', tick_weight=1)
-
-        vertical_axis = PlotAxis(plot, orientation='left',
-                                 title=str(title_keyword))
-
-        plot.underlays.append(vertical_axis)
-        plot.underlays.append(bottom_axis)
-
-        # Attach some tools to the plot
-        plot.tools.append(PanTool(plot))
-        zoom = ZoomTool(component=plot, tool_mode="box", always_on=False)
-        plot.overlays.append(zoom)
-
-    def update(self, extarray, scatarray, absarray):         
-        self.extarray=extarray 
-        self.absarray=absarray 
-        self.scatarray=scatarray
-
-        if self.data == None:
-            self.data = ArrayPlotData(x=self.lambdas, 
-                                      Scattering=self.scatarray, 
-                                      Absorbance=self.absarray , 
-                                      Extinction=self.extarray)
-            self.create_plots()
-        else:
-            self.update_data()
-            self.exarea=self.compute_area(self.extarray)
-            self.absarea=self.compute_area(self.absarray)
-            self.scatarea=self.compute_area(self.scatarray)
-            
-            try:
-                self.exmax=self.compute_max_xy(self.extarray)
-                self.absmax=self.compute_max_xy(self.absarray)
-                self.scatmax=self.compute_max_xy(self.scatarray)
-
-            except TypeError:  #Sometimes these inexplicably mess up, especially when loading in strange materials
-                print 'Cannot find max xy values in ext,abs,scattering cross sections'
-                pass
-
+    def _plot_title_changed(self):
+        self.sigplot.title = self.plot_title
 
     def update_data(self):
         #Don't alter these keys 'x', 'sig' etc... as they are called in the composit_plot Double Sview object
-        self.data.set_data('Scattering', self.scatarray)
-        self.data.set_data('Absorbance', self.absarray) 
-        self.data.set_data('Extinction', self.extarray)
-        self.sigplot.request_redraw()
+        self.data.set_data('Scattering', self.Cscatt)
+        self.data.set_data('Absorbance', self.Cabs) 
+        self.data.set_data('Extinction', self.Cext)
+        
+        self.exarea = self.compute_area(self.Cext)
+        self.absarea = self.compute_area(self.Cabs)
+        self.scatarea = self.compute_area(self.Cscatt)
+        
+        try:
+            self.exmax=self.compute_max_xy(self.Cext)
+            self.absmax=self.compute_max_xy(self.Cabs)
+            self.scatmax=self.compute_max_xy(self.Cscatt)
+
+        except TypeError:  #Sometimes these inexplicably mess up, especially when loading in strange materials
+            print 'Cannot find max xy values in ext,abs,scattering cross sections'
+            pass        
+
+
+        
+if __name__ == '__main__':
+    from pame.material_models import Sellmeir
+    Sellmeir().configure_traits()

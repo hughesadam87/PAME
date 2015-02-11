@@ -35,13 +35,6 @@ class ABCExternal(BasicMaterial):
     
     def _get_xpoints(self):
         return len(self.file_x)
-    
-    # Called on lambdas_changed
-    def update_all(self):
-        """ Update data, interpolation, view all"""
-        self.update_data()
-        self.update_interp() #<---- IMPOIRTANT
-        self.update_mview()
 
 
     def update_interp(self):
@@ -72,11 +65,11 @@ class ABCExternal(BasicMaterial):
         
     def convert_unit(self):
         """ If file unit is not same as current unit"""
-        if self.file_spec_unit != self.x_unit:
-            # NEED AT ADD LAYER WHERE COMMON SYNONMYMS FOR WAVELENGTH ARE USED
+        if self.file_spec_unit != self.specparms.x_unit:
+            # SpectralConverter should have a class method that does this...
             f = SpectralConverter(input_array=self.file_x,
                                   input_units=self.file_spec_unit,
-                                  output_units=self.x_unit)
+                                  output_units=self.specparms.x_unit)
             self.file_x = f.output_array    
 
     def update_data(self):
@@ -104,11 +97,10 @@ class ABCFile(ABCExternal):
     short_name = Property(depends_on='file_path')
     file_id = Str()  #Used to identify with methods below.  For example, Sopra is "Sopra"
     file_extention = Str() #Again, not all files may have this
+    header = Str()     
  
     delimiter = None #If not none, will split on a certain character.  Used for csv file
                      #Otherwise, default split()/genfromtxt will split on all whitespace
-
-    header = Str()     
   
     
     def _file_path_changed(self):
@@ -116,8 +108,8 @@ class ABCFile(ABCExternal):
            1. Read file Data 
            2. Convert Unit 
            3. Interpolate"""
-        self.update_all()
-    
+        self.update_data()
+        self.update_interp()    
     
     # Unit Conversions
     def _file_spec_unit_changed(self):

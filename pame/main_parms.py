@@ -9,6 +9,9 @@ import numpy as np
 # PAME imports
 import config
 
+class SpectralError(Exception):
+    """ """
+
 class SpecParms(HasTraits):
     '''Global class which defines variables and methods shared by all other class methods''' 
 
@@ -16,45 +19,54 @@ class SpecParms(HasTraits):
     valid_units = DelegatesTo('conv')
     x_unit = Enum(values='valid_units')   #THIS IS HOW YOU DEFER A LIST OF VALUES TO ENUM
 
+    # Privately, changing units, sampling etc... will update _lambdas in realtime
+    # but lambdas is only updated through button push, which triggers trait events.
+    _lambdas=Array
     lambdas=Array
 
-    x_samples=Property(Int, depends_on=['lambdas'])
-    xstart=Property(Float, depends_on=['lambdas'])
-    xend=Property(Float, depends_on=['lambdas'])
+    update = Button
+
+    x_samples=Property(Int, depends_on=['_lambdas'])
+    xstart=Property(Float, depends_on=['_lambdas'])
+    xend=Property(Float, depends_on=['_lambdas'])
     x_increment=Property(Float, depends_on=['x_samples', 'xstart', 'xend'])
 
 
     traits_view = View(
-        VGroup(
+        VGroup(          
+            HGroup(  
+                     Item('update', label='Update Spectra', show_label=False),                 
+                     Item(name='x_unit', style='simple', label='Spectral Unit'),
+                     Item(name = 'x_increment', style='readonly'),                     
+                   ), #    label='Spectral Parameters'
             HGroup(  Item(name = 'xstart'),  
                      Item(name = 'xend'),
                      Item(name ='x_samples'),
                      ),
-            
-            HGroup(  
-                     Item(name='x_unit', style='simple', label='Spectral Unit'),
-                     Item(name = 'x_increment', style='readonly'),                     
-                   ), #    label='Spectral Parameters'
              )
         )
 
-    def simulation_requested(self):
-        ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
-        ### trait_get is shortcut to return dic if the keys are adequate descriptors for output
-        return {'lambdas':self.lambdas, 
-                'xstart':self.xstart,
-                'xend':self.xend,
-                'x_increment':self.x_increment,
-                'x_samples':self.x_samples,
-                'x_unit':self.x_unit
-                }
-
-
     def _conv_default(self): 
-        return SpectralConverter(input_array=self.lambdas, input_units='Nanometers')
+        return SpectralConverter(input_array=self._lambdas, 
+                                 input_units=config.xunit) # self.x_unit) <-- issue
     
-    def _lambdas_default(self): 
-        return linspace(config.xstart,config.xend,config.xpoints)
+    # Private lambdas
+    def __lambdas_default(self): 
+        return linspace(config.xstart,
+                        config.xend,
+                        config.xpoints)
+    
+
+    # Replace w/ button
+    def _update_fired(self):
+        """ Set self.lambdas to self._lambdas.  If user didn't change anything,
+        doesn't trigger a superfluous redraw.
+        """
+        if not np.allclose(self.lambdas, self._lambdas):
+            self.lambdas = np.copy(self._lambdas) #<--- Otherwise, same obj ref
+
+    def _lambdas_default(self):
+        return self._lambdas
 
     def _x_unit_default(self): 
         return config.xunit
@@ -64,10 +76,10 @@ class SpecParms(HasTraits):
 
     #@cached_property
     def _get_x_samples(self): 
-        return self.lambdas.shape[0]
+        return self._lambdas.shape[0]
 
     def _set_x_samples(self, samples):
-        self.lambdas= np.linspace(self.xstart, self.xend, num=samples)
+        self._lambdas= np.linspace(self.xstart, self.xend, num=samples)
 
     #@cached_property
     def _get_x_increment(self):  
@@ -75,31 +87,48 @@ class SpecParms(HasTraits):
 
     def _x_unit_changed(self):
         self.conv.output_units=self.x_unit     #INPUT ALWAYS KEPT AT NANOMETERS, THIS IS IMPORTANT DONT EDIT
-        self.lambdas = self.conv.output_array
+        self._lambdas = self.conv.output_array
 
     #@cached_property
     def _get_xstart(self): 
-        return self.lambdas[0]
+        return self._lambdas[0]
 
     #@cached_property
     def _get_xend(self):  
-        return self.lambdas[-1]
+        return self._lambdas[-1]
 
-    def _set_xstart(self, xstart): 
-        self.lambdas=linspace(xstart, self.xend, num=self.x_samples)
+    def _set_xstart(self, xstart):
+        xtart = int(xstart) # cast ui input 
+        if xstart >= self.xend:
+            raise SpectralError('xend must be >= xstart')        
+        self._lambdas=linspace(xstart, self.xend, num=self.x_samples)
 
     def _set_xend(self, xend):
-        self.lambdas=linspace(self.xstart, xend, num=self.x_samples)
+        xend = int(xend)
+        if xend <= self.xstart:
+            raise SpectralError('xend must be >= xstart')
+        self._lambdas=linspace(self.xstart, xend, num=self.x_samples)
 
     def specific_array(self, new_unit): 
         """Method Used to return a unit-converted array to models which specifically require certain unit systems (aka uM)"""
         if new_unit not in self.valid_units:
             print 'could not update based on this non_valid unit,', str(new_unit)
-            return self.lambdas
+            return self._lambdas
         else:
-            self.conv.input_array=self.lambdas
+            self.conv.input_array=self._lambdas
             self.conv.output_units=new_unit
             return self.conv.output_array   
+
+    def simulation_requested(self):
+        ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
+        ### trait_get is shortcut to return dic if the keys are adequate descriptors for output
+        return {'lambdas':self._lambdas, 
+                'xstart':self.xstart,
+                'xend':self.xend,
+                'x_increment':self.x_increment,
+                'x_samples':self.x_samples,
+                'x_unit':self.x_unit
+                }
 
 
 class AngleParms(HasTraits):

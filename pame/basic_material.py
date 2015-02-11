@@ -21,9 +21,6 @@ class BasicMaterial(HasTraits):
     specparms=Instance(HasTraits, SHARED_SPECPARMS)    
     lambdas=DelegatesTo('specparms')	
 
-    # For mview only
-    x_unit=DelegatesTo('specparms')   
-
     earray=CArray()  
     narray=Property(CArray, depends_on=['earray'])
     karray=Property(CArray, depends_on=['narray'])  #Wave vectors
@@ -32,7 +29,7 @@ class BasicMaterial(HasTraits):
     source=Enum('Model', 'File', 'Custom')
     c=Float(299792458)     #Speed of light m/s
 
-    mview=Instance(MaterialView,())  
+    mview=Instance(MaterialView)  
     mviewbutton=Button 
 
     basic_group=HGroup(Item('mviewbutton', label='Show Material', show_label=False), 
@@ -47,38 +44,22 @@ class BasicMaterial(HasTraits):
     def __init__(self, *args, **kwargs):
         super(BasicMaterial, self).__init__(*args, **kwargs)
         self.update_data()
-        self.update_mview()  
-
-    def _earray_default(self): 
-        #Used later so not always redeclaring this
-        return empty(self.lambdas.shape, dtype='complex') 
-    
-    def update_all(self):
-        """ Update data, view all"""
-        self.update_data()
-        self.update_mview()
-        # File materials and so on will update interp as well
-
-    def _lambdas_changed(self): 
-        self.update_all()
-        
-    def _earray_changed(self): 
-        self.update_mview()
 
     # ABC METHOD
     def update_data(self): 
         """ Sets n or e arrays.  All subclasses must overwrite this!"""
         pass
 
-    def update_mview(self): 
-        self.mview.update(self.earray, self.narray)
+    def _mview_default(self):
+        """ Mview links itself to self.earray, so updates are automatic."""
+        return MaterialView(model=self)
+    
+    def _lambdas_changed(self): 
+        self.update_data()
 
     def _mviewbutton_fired(self): 
-        self.mview.data=None  #This will force a redraw which forces resizing of the plot.  Remove if you can fix the "auto_size" axis reset issue
-        self.update_mview()
         self.mview.edit_traits()
 
-        
     # Property Interface
     # ------------------
     def _get_narray(self): 

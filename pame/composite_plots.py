@@ -140,41 +140,6 @@ class DoubleSview(HasTraits):
         resizable=True)
 
 
-class DoubleView(HasTraits):
-    """ What the hell is this?"""
-    DV=List(IMaterial)
-    my_selection=Instance(IMaterial)
-    alview=Property(depends_on='my_selection')
-    get2=Property(depends_on='my_selection')
-    mytra=Property(depends_on='my_selection')
-
-    implements(ICompositeView)
-
-    @cached_property
-    def _get_alview(self): 
-        if self.my_selection is not None:
-        #	return hex(id(self.my_selection.eplot))
-            return self.my_selection
-    @cached_property
-    def _get_get2(self):
-        if self.my_selection is not None:
-            print 'can clone', self.my_selection.copyable_trait_names()
-            return self.my_selection.mview
-
-    @cached_property
-    def _get_mytra(self): 	
-        if self.my_selection is not None:
-            return self.my_selection.trait_names()
-
-
-    traits_view=View( Item('DV', editor=ListStrEditor(selected='my_selection')), 
-                      Item('alview', style='simple', editor=InstanceEditor()), 
-                      Item('get2', style='simple', editor=InstanceEditor()), 
-                      Item('get2', style='custom', editor=InstanceEditor()),
-                      resizable=True, 
-                      width=800, 
-                      height=600)
-
 
 if __name__ == '__main__':
     NanoSphereShell().configure_traits()

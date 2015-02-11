@@ -18,7 +18,11 @@ def complex_n_to_e(narray):
 
 def complex_e_to_n(earray): 
     """ Return complex index of refraction given complex dielectric"""
-    return SM.sqrt(earray)  
+    try:
+        return SM.sqrt(earray) 
+    except Exception:
+        print "FAILED ON earray", type(earray), earray.shape, earray.dtype
+        import sys; sys.exit()
 
  
 #https://github.com/enthought/traitsui/blob/master/examples/demo/Dynamic_Forms/dynamic_range_editor.py   

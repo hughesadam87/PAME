@@ -326,12 +326,16 @@ class NanoSphereShell(NanoSphere):
     
     # Sphere and shell
     def _FullMie_default(self): 
-        return self.sphere_shell()
+        out = self.sphere_shell()
+        out.sview.plot_title = 'Full Sphere-Shell'
+        return out
     
     # Just a sphere BUT CORE RADIUS IS EFFECTIVE RADIUS!!!
     def _CompositeMie_default(self): 
-        return effective_sphere(r_core = self.r_core + self.shell_width, 
+        out = effective_sphere(r_core = self.r_core + self.shell_width, 
                                 label='EFFECTIVE Radius')
+        out.sview.plot_title = 'Composite Sphere'
+        return out        
     
     @on_trait_change('r_core, shell_width, ShellMaterial.Material1, ShellMaterial.Material2')
     def r_eff(self):

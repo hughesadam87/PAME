@@ -92,7 +92,6 @@ class CompositeMaterial(BasicMaterial):
 
     def _MixingStyle_changed(self): 
         self.update_mix()
-        self.update_mview()
 
     def _Material1_changed(self): 
         self.sync_trait('Material1', self.Mix, 'solutematerial')

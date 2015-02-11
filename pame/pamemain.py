@@ -74,6 +74,7 @@ class GlobalScene(HasTraits):
      fview=Instance(ViewMlab)     #May want to pass specparms and fiberparms to this later if it requries them
      stratastyle = Enum('Fiber', 'Glass Slide')
 
+     # Dielectric state probably could be in SHARED, but don't want to take apart
      current_state = Instance(IOptic)
      opticstate = Instance(IOptic)
      opticview = DelegatesTo('opticstate')

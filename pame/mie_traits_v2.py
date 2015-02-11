@@ -58,9 +58,12 @@ class Mie(HasTraits):
 
     def __init__(self, *args, **kwargs):
         super(Mie, self).__init__(*args, **kwargs)
-        self.on_trait_change(self.update_cross, 'CoreMaterial, MediumMaterial, ecore, emedium, bessmax, cutoff_criteria') 
-        self.update_sview()  #Update sview because mie_compare_plot listens to it
+        self.on_trait_change(self.update_cross, 'CoreMaterial, MediumMaterial,\
+                             ecore, emedium, bessmax, cutoff_criteria') 
         print 'Initialized Mie Theory'
+        
+    def _sview_default(self):
+        return ScatterView(model=self)
 
     def _Cext_default(self): 
         return empty(self.ecore.shape[0], dtype='float')   
@@ -78,16 +81,11 @@ class Mie(HasTraits):
     def _MediumMaterial_default(self): 
         return Dispwater()
 
-    def update_sview(self): 
-        self.sview.update(self.Cext, self.Cscatt, self.Cabs)
-
     def _sviewbutton_fired(self): 
-        self.update_cross() 
         self.sview.edit_traits()   
 
     def update_cross(self): 
-        """ Always end this by updating sview"""
-        self.update_sview()  #Function which computes cross section for each Mie object
+        """ ABC METHOD, udpate cross section"""
 
     #Utilities to do general looping and have a cutoff in place to truncate scattering coefficients.###
     def cutoff_check(self, new, old):
@@ -100,21 +98,20 @@ class Mie(HasTraits):
         self.cutoff = False
 
     #For generating ricatti bessel functions of arbitrary argument and order###
-    def bessy(self, order, argument):
-        """Given order, n, and argument, z, computes mad bessel related junk.
+    #http://stackoverflow.com/questions/28441767/vectorized-spherical-bessel-functions-in-python?noredirect=1#comment45215851_28441767
+    def bessy(self, n, z):
+        """Given order (n) and argument (z), computes mad bessel related junk.
         Argument can be a scalar or vector numeric.
         """
-        n=order
-        z=argument
-        
-        jns=(special.sph_jn(n, z))   #comptues jn and jn derivative in a tuple
-        yns=(special.sph_yn(n, z))   #Return all the way up to nth order
-        yn=yns[0]
-        dyn=yns[1]
-        jn=jns[0]        #jn
-        djn=jns[1]       #derivative jn
-        i=complex(0,1.0)
+        #http://docs.scipy.org/doc/scipy/reference/special.html
+        # Returns all orders of N for a single argument (ie if order is 5,
+        # returns n=0,1,2,3,4 for arg z.  Pain in the ass actually...
+        # sph_jnyn computes jn, derivjn, yn, derivyn in one pass
 
+        jn, djn, yn, dyn = special.sph_jnyn(n,z) #Compute sph j/y in one pass
+        i = 1j
+
+        # Choose only the nth's bessel function 
         jn=complex(jn[n])  
         yn=complex(yn[n])
         djn=complex(djn[n])
@@ -196,8 +193,7 @@ class sphere_electrostatics(ABCsphere):
     def update_cross(self):
         x=self.k_medium* self.r_core
         Qscatt=(8.0/3.0 * x**4) * ( abs(self.ecore-self.emedium/ self.ecore+2.0* self.emedium)**2 )  #????QSCAT VS CSCATT???
-
-        self.update_sview()	
+        # DOESN"T SET/RETURN ANYTHING	
 
 
 class bare_sphere(ABCsphere):
@@ -255,8 +251,54 @@ class bare_sphere(ABCsphere):
             self.Cscatt[i]=( (2.0*math.pi)/(k**2) ) * scatt_term   #UNITS DEFINED BY 1/K**2
             self.Cabs[i]=self.Cext[i]-self.Cscatt[i]
 
-        self.update_sview()     
+        self.sview.update_data()     
         
+
+    def update_cross_new(self):
+#           for i in range(self.ecore.shape[0]):   #XX! Can't remove; bessel functions can't generate with full arrays
+            ext_term=0.0  ; scatt_term=0.0 ; ext_old=50
+            asum=0.0      ; bsum=0.0
+            n=0
+            while self.cutoff==False and n <= self.bessmax:   #DYNAMIC CONVERGENCE, WITH SAFETY NET
+                n += 1                   #  SUM FROM 1 TO INFINITY, NOT 0!!!
+                k=self.k_medium
+                x=k*self.r_core         
+                m1=self.ncore / self.nmedium   #m1 is really just m in book 
+               
+                Px, dPx, Xx, dXx = self.bessy(n,x)[0:4]   #Riccati bessel of X
+                Pmx, dPmx, Xmx = self.bessy(n, m1*x)[0:3] #Ricatti bessel of MX
+                
+                f1=m1*Pmx*dPx  
+                f2=Px*dPmx    
+                f3=m1*Pmx*dXx 
+                f4=Xx*dPmx
+                a=(f1-f2)/(f3-f4)
+
+                f1=f1/m1  
+                f2=m1*f2 
+                f3=f3/m1 
+                f4=m1*f4            #Relation between at and be is simply adjusting these by m or 1/m
+                b=(f1-f2)/(f3-f4)
+
+                asum=asum+a 
+                bsum=bsum+b 
+                AB=a+b
+                
+                # Why only real components in ext term?
+                ext_term += ( (2.0*n + 1.0)  * AB.real)      #UNITLESS
+                scatt_term +=  ( (2.0*n + 1.0) ) * ( (abs(a))**2  + (abs(b))**2)
+
+                #Cutoff the loop, then reset the switch after#
+                self.cutoff_check(ext_term, ext_old)     #THIS ONLY CHECKS THE SCATTERING TERM AN FOR CONVERGENCE, MAY NOT THE FIRST TO CONVERGE IN ALL INSTANCES
+                ext_old=ext_term
+
+            self.cutoff_reset()
+
+            self.Cext = ( (2.0*math.pi)/(k**2) ) * ext_term            
+            self.Cscatt = ( (2.0*math.pi)/(k**2) ) * scatt_term   #UNITS DEFINED BY 1/K**2
+            self.Cabs = self.Cext[i]-self.Cscatt[i]   
+            self.sview.update_data()     
+
         
 class effective_sphere(bare_sphere):
     """ Bare sphere, but r_core is implied to mean effective radius,
@@ -338,7 +380,7 @@ class sphere_shell(bare_sphere, shell):
             self.Cscatt[i]=( (2.0*math.pi)/(abs(k**2)) ) * scatt_term   #UNITS DEFINED BY 1/K**2
             self.Cabs[i]=self.Cext[i]-self.Cscatt[i]
 
-        self.update_sview()
+        self.sview.update_data()
 
     def simulation_requested(self):
         out = super(sphere_shell, self).simulation_requested()          
