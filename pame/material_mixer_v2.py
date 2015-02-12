@@ -34,13 +34,9 @@ class DoubleMixer(HasTraits):
     def __init__(self, *args, **kwargs):
         super(DoubleMixer, self).__init__(*args, **kwargs)
         self.on_trait_change(self.update_mix, 'solutematerial, solventmaterial, esolvent, esolute, Vfrac') 
+        self.update_mix()
 
-    #def _solutematerial_default(self): 
-        #return Sellmeir()
-
-    #def _solventmaterial_default(self): 
-        #return Dispwater()
-
+    # Doesn't set any default materials, so impetus is on calling programs
     def update_mix(self): 
         pass
 
@@ -63,21 +59,26 @@ class MG_Mod(DoubleMixer):
     K=Range(low= -100.0, high= 100.0, value=0.0)   #Parameter in Maxwell Garnett Mixing Model
 
     traits_view=View( 
-        Item('mix_name', label='Mixing Style Name'), 
+        Item('mix_name', label='Mixing Style', style='readonly'), 
         HGroup( 
                 Item('Vfrac'), 
                 Item('K')
                 ), 
-        Item('solutematerial', label='solute_in_materialmix', show_label=False),
-        Item('solventmaterial', label='solvent_in_materialmix', show_label=False),
-    )
+        HGroup(
+            Item('solutematerial', label='solute_in_materialmix', show_label=False),
+            Item('solventmaterial', label='solvent_in_materialmix', show_label=False),
+            )
+        )
 
     def _K_changed(self): 
         self.update_mix()
 
     def update_mix(self):
         """Its important to update the mixed array all at once because there's a listenter 
-        in another method that can change at exact moment anything changes"""
+        in another method that can change at exact moment anything changes
+        """
+        # Why isn't this vectoriezed???
+        print 'IN UPDATE MIX'
         eeff=np.empty(self.esolute.shape, dtype='complex')
         for i in range(len(self.esolvent)):
             em = self.esolvent[i]

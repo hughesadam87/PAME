@@ -32,16 +32,9 @@ class BasicLayer(HasTraits):
     def _d_changed(self):
         self.d = float(self.d) #<--- Unicode bug user enters it gets unicode-converted
 
-#    def __init__(self, *args, **kwargs):
-#        super(BasicLayer, self).__init__(*args, **kwargs)
-#        self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)
-
     def _material_default(self): 
         return Constant() 
-
- #   def _material_changed(self): 
- #       self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)        
-
+     
     def simulation_requested(self):
         return {
                 'layer_name':self.name,
@@ -63,7 +56,8 @@ class Composite(BasicLayer):
     oldsolvent=Instance(IMaterial)  #Used for syncing layers, called by layer_editor
 
     def _material_default(self): 
-        return self.SphericalInclusions_Disk()
+        from composite_materials_v2 import CompositeMaterial
+        return CompositeMaterial()#self.SphericalInclusions_Disk()
 
     def sync_solvent(self, solvent):
         '''Used to override materials from layereditor'''
@@ -108,7 +102,7 @@ class Boundary(BasicLayer):
     designator=Str('basic')
     d=Str(globalparms.semiinf_layer)	
 
-class Substrate(Boundary):             #THESE ARE NOT IMPLEMENTED IN SUPERMODEL YET
+class Substrate(Boundary):             
     name=Str('Substrate')
 
     def _material_default(self): 

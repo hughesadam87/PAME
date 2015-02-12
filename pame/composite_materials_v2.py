@@ -13,11 +13,11 @@ class CompositeMaterial(BasicMaterial):
     """
     materialchooser = Instance(HasTraits, SHARED_MCHOOSER)    
     selectedtree = DelegatesTo('materialchooser')
+    mat_class = DelegatesTo('materialchooser')
 
     Material1=Instance(IMaterial)
     Material2=Instance(IMaterial)   #Make these classes later
-    mat_class = Enum('Bulk Material', 'Mixed Bulk Materials', 'Nanoparticle Objects')
-
+    
     Mat1History=List(IMaterial)  #When the materials change, this logs them.  Useful for advanced stuff
     Mat2History=List(IMaterial)
 
@@ -30,27 +30,29 @@ class CompositeMaterial(BasicMaterial):
     selectmat1=Button 
     selectmat2=Button
 
-    mixgroup=Group(   VGroup(
-        HGroup(
-            Item('MixingStyle', label='Mixing Method', show_label=False),
-            Item('Mix', editor=InstanceEditor(), style='custom', label='Mixing Parameters', show_label=False ),
-            ),	
-        Item('mviewbutton', label='Show Mixed Material', show_label=False),
-        ),    #Group Label here
-                      label='Mixing Parameters')            #View Label 
+    mixgroup=Group(   
+        VGroup(
+           Item('MixingStyle', label='Mixing Method', show_label=False),
+           Item('Mix', editor=InstanceEditor(), style='custom', 
+                label='Mixing Parameters', show_label=False ),        
+               ), 
+        label='Mixing Parameters')     
 
-    compmatgroup=Group(Item('mat_name', label='Material Name'),
+    compmatgroup=Group(
+                    HGroup(
+                           Item('mviewbutton', label='Show Composite Material', show_label=False),
+                           Item('selectmat1', label='Change Solute', show_label=False), 
+                           Item('selectmat2', label='Change Solvent', show_label=False),
+                           Item('mat_class', label='Material Class'),
+                           Item('mat_name', label='Material Name', show_label=False)
+                           ),
                        Tabbed( 
                            Item('Material1', editor=InstanceEditor(), 
                                 style='custom', label='Solute', show_label=False),
                            Item('Material2', editor=InstanceEditor(),
                                 style='custom', label='Solvent', show_label=False),
                            ),
-                       HGroup(		
-                           Item('selectmat1', label='Change Solute', show_label=False), 
-                           Item('selectmat2', label='Change Solvent', show_label=False),
-                           Item('mat_class', label='Material Class')
-                           ),
+
                        label='Materials')
 
     traits_view=View(
@@ -61,6 +63,7 @@ class CompositeMaterial(BasicMaterial):
 
     def __init__(self, *args, **kwargs):
         super(CompositeMaterial, self).__init__(*args, **kwargs)
+        # Need syncing, and Mix will autoupdate when material1/2 change
         self.sync_trait('Material1', self.Mix, 'solutematerial')	
         self.sync_trait('Material2', self.Mix, 'solventmaterial') 
 
@@ -85,7 +88,8 @@ class CompositeMaterial(BasicMaterial):
         return mat2def
 
     def _Mix_default(self): 
-        return MG_Mod()
+        return MG_Mod(solutematerial=self.Material1,
+                      solventmaterial=self.Material2)
 
     def _mat_name_default(self): 
         return self.Material1.mat_name + '  IN   ' + self.Material2.mat_name
@@ -94,67 +98,52 @@ class CompositeMaterial(BasicMaterial):
         self.update_mix()
 
     def _Material1_changed(self): 
-        self.sync_trait('Material1', self.Mix, 'solutematerial')
+        print 'changing mat 1'
+#        self.sync_trait('Material1', self.Mix, 'solutematerial')
         self.Mat1History.append(self.Material1)
+        # This should be a property, right?  Or a separate attribute?
+        self.mat_name = self.Material1.mat_name + '  IN   ' + self.Material2.mat_name
 
     def _Material2_changed(self): 
-        self.sync_trait('Material2', self.Mix, 'solventmaterial')
+        print 'changing mat 2'
+#        self.sync_trait('Material2', self.Mix, 'solventmaterial')
         self.Mat2History.append(self.Material2)
-
-    def _Mix_changed(self):
-        """When I change mix, I make a new object, so this guarantees they are synchd"""
-        self.sync_trait('Material1', self.Mix, 'solutematerial')
-        self.sync_trait('Material2', self.Mix, 'solventmaterial')
+        self.mat_name = self.Material1.mat_name + '  IN   ' + self.Material2.mat_name
 
     def update_mix(self):
+        kwds = dict(Vfrac=self.Vfrac, #vfrac because don't want it to reset to default
+                    solutematerial=self.Material1,
+                    solventmaterial=self.Material2
+                    )
+        
         if self.MixingStyle=='MG (root)':
-            self.Mix=MG(Vfrac=self.Vfrac) #vfrac because don't want it to reset to default
+            self.Mix=MG(**kwds) 
 
         elif self.MixingStyle=='Bruggeman (root)':
-            self.Mix=Bruggeman(Vfrac=self.Vfrac)
+            self.Mix=Bruggeman(**kwds)
 
         elif self.MixingStyle=='QCACP (root)':
-            self.Mix=QCACP(Vfrac=self.Vfrac)
+            self.Mix=QCACP(**kwds)
 
         elif self.MixingStyle=='MGMOD':
-            self.Mix=MG_Mod(Vfrac=self.Vfrac)
-
-    def _get_selectedtree(self): 
-        if self.mat_class=='Bulk Material': 
-            return self.selectedtree 
-
-        if self.mat_class=='Mixed Bulk Materials':
-            return self.compositetree
-
-        if self.mat_class=='Nanoparticle Objects': 
-            return self.nanotree
+            self.Mix=MG_Mod(**kwds)
 
     # Change Solute
     def _selectmat1_fired(self): 
         """Used to select material.  The exceptions are if the user returns nothing or selects a folder rather than an object for example"""
-        self.selectedtree.configure_traits(kind='modal') #Leave as configure traits not edit traits
-
-        print self.selectedtree
-        print self.selectedtree.current_selection, 'WOWWOHO\n\n'
+        print "CHANING MAT 1"
+        self.selectedtree.configure_traits(kind='modal')
         try:
-            selected_adapter = self.selectedtree.current_selection
-            apikey = selected_adapter.apikey
-        except (TypeError, AttributeError):  #If user selects none, or selects a folder object, not an actual selection
-            print 'Selection failed to find apikey'
-            return
-        
-        print 'NIGGA', apikey
-        if apikey == 'composite':
-            print 'SETTING TO COMPOSITEMATERIAL'
-            self.Materia11 = CompositeMaterial()
-        else:
-            self.Materia11 = Sellmeir()
-        
-        
+            selected_adapter=self.selectedtree.current_selection
+            selected_adapter.populate_object()
+            self.Material1=selected_adapter.matobject
+        except (TypeError, AttributeError):  
+            pass        
         
 
     # Change Solvent
     def _selectmat2_fired(self): 
+        print 'CHAGING MATERIAL 2 SONONON'
         self.selectedtree.configure_traits(kind='modal')
         try:
             selected_adapter=self.selectedtree.current_selection
@@ -213,7 +202,8 @@ class CompositeMaterial_Equiv(CompositeMaterial):
         return 'Custom Equiv'
 
     def _Mix_default(self):
-        return self.CustomEquiv()
+        return self.CustomEquiv(solutematerial=self.Material1,
+                      solventmaterial=self.Material2)
 
 
 class SphericalInclusions(CompositeMaterial):
