@@ -39,7 +39,15 @@ class DoubleMixer(HasTraits):
     # Doesn't set any default materials, so impetus is on calling programs
     def update_mix(self): 
         pass
-
+    
+class LinearSum(DoubleMixer):
+    """ Linear mixing: V(e1) + (1-V)e2 for e1=solute, e2=solvent"""
+    
+    def update_mix(self):
+        V = float(self.Vfrac) #<--- Seem to be getting unicode
+        self.mixedarray = V*self.esolute + (1-V)*self.esolvent
+        
+    traits_view = View('Vfrac')
 
 class MG_Mod(DoubleMixer):    
     """Modified MG equations by Garcia; specific to spheres with dipoles. 

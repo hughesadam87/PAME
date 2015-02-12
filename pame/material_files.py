@@ -44,7 +44,8 @@ class ABCExternal(BasicMaterial):
         return len(self.file_x)
     
     def _lambdas_changed(self):
-    #    self.update_data() #(update data only re-reads file...; this is waste)
+     #update data only re-reads file, so don't need
+    #   self.update_data() 
         self.update_interp()        
     
     def _interpolation_changed(self):

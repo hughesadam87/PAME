@@ -4,7 +4,7 @@ from traits.api import *
 from traitsui.api import *	
 from interfaces import IMixer, IStorage, IMaterial
 import math
-from material_mixer_v2 import MG_Mod, Bruggeman, QCACP, MG
+from material_mixer_v2 import MG_Mod, Bruggeman, QCACP, MG, LinearSum
 from pame.material_chooser import SHARED_MCHOOSER
 
 class CompositeMaterial(BasicMaterial):
@@ -22,8 +22,12 @@ class CompositeMaterial(BasicMaterial):
     Mat2History=List(IMaterial)
 
     Mix=Instance(IMixer)
-
-    MixingStyle=Enum('MGMOD', 'Bruggeman (root)', 'QCACP (root)', 'MG (root)')
+    MixingStyle=Enum('MGMOD', 
+                     'Bruggeman (root)', 
+                     'QCACP (root)',
+                     'MG (root)',
+                     'LinearSum'
+                     )
     Vfrac=DelegatesTo('Mix')	#Coordinates with parameter in mixer
     earray=DelegatesTo('Mix', prefix='mixedarray')
 
@@ -41,16 +45,16 @@ class CompositeMaterial(BasicMaterial):
     compmatgroup=Group(
                     HGroup(
                            Item('mviewbutton', label='Show Composite Material', show_label=False),
-                           Item('selectmat1', label='Change Solute', show_label=False), 
-                           Item('selectmat2', label='Change Solvent', show_label=False),
+                           Item('selectmat1', label='Change Material1', show_label=False), 
+                           Item('selectmat2', label='Change Material2', show_label=False),
                            Item('mat_class', label='Material Class'),
                            Item('mat_name', label='Material Name', show_label=False)
                            ),
                        Tabbed( 
                            Item('Material1', editor=InstanceEditor(), 
-                                style='custom', label='Solute', show_label=False),
+                                style='custom', show_label=False),
                            Item('Material2', editor=InstanceEditor(),
-                                style='custom', label='Solvent', show_label=False),
+                                style='custom', show_label=False),
                            ),
 
                        label='Materials')
@@ -98,15 +102,11 @@ class CompositeMaterial(BasicMaterial):
         self.update_mix()
 
     def _Material1_changed(self): 
-        print 'changing mat 1'
-#        self.sync_trait('Material1', self.Mix, 'solutematerial')
         self.Mat1History.append(self.Material1)
         # This should be a property, right?  Or a separate attribute?
         self.mat_name = self.Material1.mat_name + '  IN   ' + self.Material2.mat_name
 
     def _Material2_changed(self): 
-        print 'changing mat 2'
-#        self.sync_trait('Material2', self.Mix, 'solventmaterial')
         self.Mat2History.append(self.Material2)
         self.mat_name = self.Material1.mat_name + '  IN   ' + self.Material2.mat_name
 
@@ -127,6 +127,9 @@ class CompositeMaterial(BasicMaterial):
 
         elif self.MixingStyle=='MGMOD':
             self.Mix=MG_Mod(**kwds)
+            
+        elif self.MixingStyle=='LinearSum':
+            self.Mix=LinearSum(**kwds)
 
     # Change Solute
     def _selectmat1_fired(self): 
