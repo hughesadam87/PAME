@@ -13,7 +13,7 @@ class PlotSelector(HasTraits):
    layereditor = Instance(HasTraits, SHARED_LAYEREDITOR) #DelegatesTo('b_app')
    stack = DelegatesTo('layereditor')
    selected_layer = Enum(values='stack') #<-- make shortname
-   sync = Bool(True)
+   sync = Bool(False)
    
    plot_dict = Dict # Property(Dict, depends_on='selected_layer')
    _plot_list = List 

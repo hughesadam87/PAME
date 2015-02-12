@@ -123,7 +123,6 @@ class OpticalView(HasTraits):
     average = Bool(False)  #Averaging style
     plot = Any #Plot, ToolbarPlot, ImagePlot
     data = Instance(ArrayPlotData,())
-    
 
     traits_view = View( HGroup(
                              Item('refresh', label='REFRESH', show_label=False),                                                                   
@@ -181,6 +180,14 @@ class OpticalView(HasTraits):
 
     def _refresh_fired(self):
         self.optic_model.update_opticview()
+        
+    def _model_changed(self):
+        """ Don't want users chnging Model: 1 View to a Model.  If Model
+        changes, make a new view is the pattern enforced.
+        """ 
+        raise PlotError("PAME Model-View design patter prevents changing"
+                        " the Model instace on a given IView.  Please make"
+                        " a separate view.")
 
     def __model_attr_default(self):
         return self.choose
@@ -480,22 +487,51 @@ class MaterialView(ABCView):
     """
 
     eplot = Instance(Plot)
-    nplot = Instance(Plot)             #Traits are populated on update usually
+    nplot = Instance(Plot)  
     
     earray = DelegatesTo('model')
     narray = DelegatesTo('model')
 
     ToggleReal=Action(name="Toggle Real", action="togimag")
     ToggleImag=Action(name="Toggle Imaginary", action="togreal")
+    
+    interpolation = Enum(['linear',
+                          'nearest',
+                          'zero',
+                          'slinear',
+                          'quadratic',
+                          'cubic'])
+    show_interp = Bool(False)
+    _is_interpolated = Property(Bool, depends_on='model')
+    
+    def _get__is_interpolated(self):
+        """ If current material is a subclass of ABCExternal.  Checks for
+        attribute file_x because importing and type checking class results
+        in import loop.
+        """
+        try:
+            self.model.file_x
+            return True
+        except AttributeError:
+            return False
+
 
     # Custom plot_title disallowed
 
     view = View(
+        VGroup(
+            HGroup(
+                Item('interpolation', label='Interpolation', 
+                    visible_when='_is_interpolated is True'),
+                Item('show_interp', label='Show Bounds',
+                    visible_when='_is_interpolated is True')
+                ),        
         Tabbed(
             Item('eplot', editor=ComponentEditor(), dock='tab', label='Dielectric'),
             Item('nplot', editor=ComponentEditor(), dock='tab', label='Index'), 
             show_labels=False         #Side label not tab label
             ),
+         ),
         width=800, height=600,  buttons=['Undo'],             
         resizable=True
         )

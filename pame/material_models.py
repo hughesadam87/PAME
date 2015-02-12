@@ -1,50 +1,17 @@
 from basic_material import BasicMaterial
 from traits.api import *
 from traitsui.api import *
-from numpy import array, sqrt, empty
+import numpy as np
+from utils import complex_e_to_n
 
 class ABCMaterialModel(BasicMaterial):	
-    def __init__(self, *args, **kwargs):
-        super(ABCMaterialModel, self).__init__(*args, **kwargs)
-
     source='Model'
-        
-
+    
 class Constant(ABCMaterialModel):
-    from numpy.lib import scimath as SM
-    constant_dielectric=Complex() 
+    """ Interpolated array from scalaer complex value N or E """
+    constant_dielectric = Complex() 
     constant_index=Property(Complex,
                             depends_on='constant_dielectric')
-
-    def _constant_dielectric_changed(self):
-        self.update_data()
-
-    def _constant_dielectric_default(self):
-        return complex(1.804535, 0.0)
-
-    def _get_constant_index(self): 
-        return self.SM.sqrt(self.constant_dielectric)
-
-    def _set_constant_index(self, constant): 
-        nr=constant.real
-        nk=constant.imag          #NEED TO VERIFY THESE WORK SEE PLOT VS OLD VALUES
-        er = nr**2 -nk**2 
-        ei = 2.0*nr*nk
-        self.constant_dielectric=complex(er, ei)
-
-    def _mat_name_default(self): 
-        return  'Constant Material Array: No Dispersion'
-
-    def update_data(self): 
-        self.earray[:]=self.constant_dielectric
-        
-        
-    def simulation_requested(self):
-        out = super(Constant, self).simulation_requested()
-        out['e_constant'] = self.constant_dielectric
-        out['n_constant'] = self.constant_index
-        return out
-
 
     traits_view=View (
         VGroup(
@@ -57,10 +24,41 @@ class Constant(ABCMaterialModel):
         resizable=True, width=.5, height=.2,
     )
 
+    def _constant_dielectric_changed(self):
+        self.update_data()
+
+    def _constant_dielectric_default(self):
+        return complex(1.804535, 0.0)
+
+    def _get_constant_index(self): 
+        return complex_e_to_n(self.constant_dielectric)
+
+    # This isn't same as complex_n_to_e, don't change
+    def _set_constant_index(self, constant): 
+        nr=constant.real
+        nk=constant.imag          
+        er = nr**2 -nk**2 
+        ei = 2.0*nr*nk
+        self.constant_dielectric=complex(er, ei)
+
+    def _mat_name_default(self): 
+        return  'Constant Material Array: No Dispersion'
+
+    def update_data(self): 
+        earray = np.empty(len(self.lambdas), dtype='complex')
+        earray.fill(self.constant_dielectric)
+        self.earray = earray
+               
+        
+    def simulation_requested(self):
+        out = super(Constant, self).simulation_requested()
+        out['e_constant'] = self.constant_dielectric
+        out['n_constant'] = self.constant_index
+        return out
+
 class Cauchy(ABCMaterialModel):
     """ """
     mat_name = Str('Fused Silica')
-    model_id = Str('cauchy') #Waht are model id's for?
     
     A = Float(1.4580)
     B = Float(0.00354)
@@ -109,7 +107,6 @@ class Sellmeir(ABCMaterialModel):
     resonance based fiber optic sensors."  J. APpl. Phys. 101, 092111 (2007)
     """
     mat_name=Str('Dispersive Glass')
-    model_id=Str('sellmeir')   
 
     a1=Float(.6961663) 
     a3=Float(.8974794) 
@@ -125,7 +122,6 @@ class Sellmeir(ABCMaterialModel):
         VGroup( Include('basic_group'), Include('sellmeir_group') ),
         resizable=True
     )
-
 
     def simulation_requested(self):
         out = super(Sellmeir, self).simulation_requested()       
@@ -147,14 +143,13 @@ class Sellmeir(ABCMaterialModel):
         f1=(self.a1*l_sqr) / (l_sqr - self.b1**2)
         f2=(self.a2*l_sqr) / (l_sqr - self.b2**2)       #Dummy indicies
         f3=(self.a3*l_sqr) / (l_sqr - self.b3**2)  
-        self.narray = sqrt(1.0 + f1 + f2 + f3)	
+        self.narray = np.sqrt(1.0 + f1 + f2 + f3)	
 
 
 class Dispwater(ABCMaterialModel):
-    '''Returns dispersion of water as put in some paper'''
+    """Returns dispersion of water as put in some paper"""
     A=Float(3479.0) 
     B=Float(5.111 * 10**7)  #WHAT UNITS
-    model_id=Str('Dispwater')   
 
     def _mat_name_default(self): 
         return 'Dispersive Water'	
@@ -212,9 +207,7 @@ class ABCMetalModel(ABCMaterialModel):
     #SET FREQENCY/WAVELENGTH TO BE RECIPROCAL OF EACH OTHER LIKE N/E WITH FREQUENCY BEING CANONICAL REPRESENTATION
 
 class DrudeBulk(ABCMetalModel):
-    '''Taken from another gupta paper to test form.  I think this is valid for a metal sheet, not np's'''
-
-    model_id=Str('DrudeBulk')   # What is the point of this?  Have class name... delete, or put in ABCMaterial???
+    """Taken from another gupta paper to test form.  I think this is valid for a metal sheet, not np's"""
 
     valid_metals=Enum('gold','silver','aluminum','copper')  #Currently only 
 

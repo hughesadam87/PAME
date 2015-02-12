@@ -10,7 +10,7 @@ from traitsui.table_filter \
      EvalTableFilter
 from main_parms import FiberParms, SpecParms
 from modeltree_v2 import Model
-from material_models import Dispwater
+from material_models import Dispwater, Sellmeir, Constant
 import globalparms
 
 class BasicLayer(HasTraits):
@@ -32,15 +32,15 @@ class BasicLayer(HasTraits):
     def _d_changed(self):
         self.d = float(self.d) #<--- Unicode bug user enters it gets unicode-converted
 
-    def __init__(self, *args, **kwargs):
-        super(BasicLayer, self).__init__(*args, **kwargs)
-        self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)
+#    def __init__(self, *args, **kwargs):
+#        super(BasicLayer, self).__init__(*args, **kwargs)
+#        self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)
 
     def _material_default(self): 
-        return Dispwater() 
+        return Constant() 
 
-    def _material_changed(self): 
-        self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)        
+ #   def _material_changed(self): 
+ #       self.sync_trait('modeltree', self.material, 'modeltree', mutual=True)        
 
     def simulation_requested(self):
         return {
@@ -103,7 +103,6 @@ class Nanoparticle(Composite):
         self.sync_status=False
 
 
-
 class Boundary(BasicLayer):
     """Represent the interface of the stack on either the left or right"""
     designator=Str('basic')
@@ -111,10 +110,9 @@ class Boundary(BasicLayer):
 
 class Substrate(Boundary):             #THESE ARE NOT IMPLEMENTED IN SUPERMODEL YET
     name=Str('Substrate')
-    from material_models import Sellmeir
 
     def _material_default(self): 
-        return self.Sellmeir()
+        return Sellmeir()
 
 class Solvent(Boundary):
     name=Str('Solvent')

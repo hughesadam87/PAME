@@ -2,6 +2,8 @@
     - Composite Material for Bulk Materials
     - General composite equivalent object for mixing spheres and shells
     - Class for mixing spherical objects on a flat disk surface
+    
+Only presents Adapters, not materials themselves.    
 """
 
 from traits.api import *
@@ -48,7 +50,12 @@ tree_editor = TreeEditor(
         TreeNode( node_for  = [ IAdapter ],
                   auto_open = True,
                   label     = 'name',
-                  view      = View( [ 'name', 'source', 'notes', 'preview', 'matobject', 'thefile' ] )     #TRAITS FROM IADAPTER OBJECT
+                  view      = View( [ 'name',
+                                      'source',
+                                      'notes',
+                                      'preview',
+                                      'matobject',
+                                      'apikey' ] )     #TRAITS FROM IADAPTER OBJECT
                   )
         ],
     selection_mode='single',

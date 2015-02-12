@@ -10,7 +10,8 @@ from traitsui.table_filter \
      EvalTableFilter
 from collections import OrderedDict
 
-from pame.material_chooser import MaterialChooser
+from pame.material_chooser import SHARED_MCHOOSER
+from pame.materialapi import ALLMATERIALS
 
 class StackError(Exception):
     """ """
@@ -18,11 +19,9 @@ class StackError(Exception):
 class LayerEditor(HasTraits):
     
     specparms = Instance(HasTraits, SHARED_SPECPARMS)
-    
-    materialchooser = Instance(MaterialChooser,())    
+    materialchooser = Instance(HasTraits, SHARED_MCHOOSER) 
     selectedtree = DelegatesTo('materialchooser')
     mat_class = DelegatesTo('materialchooser')
-    
 
     sync_rad_selection=Any
 
@@ -70,8 +69,10 @@ class LayerEditor(HasTraits):
         #	HSplit(
         HGroup(
             Item('add_basic', show_label=False), 
-            Item('remove', enabled_when='selected_layer != solvent and selected_layer != substrate', show_label=False),
-            Item('changematerial', label='Configure Layer Material', show_label=False, enabled_when='selected_layer is not None'),
+            Item('remove', show_label=False, 
+                 enabled_when='selected_layer != solvent and selected_layer != substrate'),
+            Item('changematerial', label='Configure Layer Material',
+                 show_label=False, enabled_when='selected_layer is not None'),
             Item('mat_class', label='Choose Material Type', style='simple'),
             ), 
 
@@ -155,25 +156,20 @@ class LayerEditor(HasTraits):
 
             # If changing substrate or solvent
             if self.stack[self.selected_index] == self.solvent:
-                newlayer = Solvent(material=newmat, 
-                                   )
+                newlayer = Solvent(material=newmat)
                 self.solvent=newlayer
             elif self.stack[self.selected_index] == self.substrate:
-                newlayer = Substrate(material=newmat,
-                                     )		
+                newlayer = Substrate(material=newmat)		
                 self.substrate=newlayer
 
-            ### If changing layer ###
-
+            # If changing normal layer
             else:
-
                 if self.mat_class=='Mixed Bulk Materials':
                     newlayer=Composite(material=newmat, 
                                        d = self.selected_d,
                                        ) 
                
                 elif self.mat_class=='Bulk Material':
-                    print 'entering basic layerl'
                     newlayer=BasicLayer(material=newmat, 
                                         d = self.selected_d,
                                         )
@@ -186,11 +182,9 @@ class LayerEditor(HasTraits):
             self.stack[self.selected_index] = newlayer
             self.selected_layer = self.stack[self.selected_index]
 
-
         except (TypeError, AttributeError) as exc:  #If user selects none, or selects a folder object, not an actual selection
-            print 'In exception in layereditor change materal', self.stack[self.selected_index], self.selected_layer
+            print 'In exception in layereditor change materal\n', self.stack[self.selected_index], self.selected_layer
             raise exc
-            pass
 
 
     def _stack_default(self):
@@ -259,6 +253,5 @@ SHARED_LAYEREDITOR = LayerEditor()
 
 
 if __name__ == '__main__':
-    MaterialChooser().configure_traits()
-#    LayerEditor().configure_traits()
+    LayerEditor().configure_traits()
 

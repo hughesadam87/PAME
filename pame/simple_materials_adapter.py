@@ -1,3 +1,4 @@
+
 from traits.api import Str, HasTraits, Instance, Button, implements, File, Property, Bool
 from traitsui.api import View, Item, Group, Include
 from interfaces import IMaterial, IAdapter
@@ -7,7 +8,6 @@ class BasicAdapter(HasTraits):
     """ Adapter for previewing, other things.  What is shown in "MATERIAL" tab. 
     populate_object() method used to show an instance of the material.
     """
-    from basic_material import BasicMaterial
     implements(IAdapter)
     
     name=Str('Basic Material')
@@ -15,6 +15,7 @@ class BasicAdapter(HasTraits):
     notes=Str('Not Found')
     matobject = Instance(IMaterial)
     preview = Button
+    apikey = 'basic' #<-- Materials API identifier
 
     def _preview_fired(self): 
         """ View the material as plot"""
@@ -24,11 +25,17 @@ class BasicAdapter(HasTraits):
         self.destory_object()
 
     def populate_object(self): 
-        """Method used to instantiate an object to conserve resources"""
-        self.matobject=self.BasicMaterial()
+        """Instantiate selected object."""
+        # Imports must be in here because some objects need to access apikey,
+        # but have infinite recursion if importing materials.  For example,
+        # if composite materials needs to set materia1 to a composite material,
+        # this will lead to recursive imports.
+        from materialapi import ALLMATERIALS
+        self.matobject=ALLMATERIALS[self.apikey]()
 
     def destory_object(self):
-        """Method used to destroy an object; not sure if ever will be useful"""
+        """Method used to destroy an object; not sure if ever will be useful
+        or if it even destroys the object..."""
         self.matobject=None
 
     basicgroup=Group(
@@ -43,44 +50,29 @@ class BasicAdapter(HasTraits):
 
 
 class ConstantAdapter(BasicAdapter):
-    from material_models import Constant
     name="Constant"
     source="Custom Made"
-    notes="Simply provide a constant value for the dielectric/index of refraction and it will return a constant array of values.  Can enter complex values in the form"
-
-    def populate_object(self): 
-        self.matobject=self.Constant()
-        
+    notes="Simply provide a constant value for the dielectric/index of refraction and it will return a constant array of values.  Can enter complex values in the form"        
+    apikey = 'constant'
 
 class SellmeirAdapter(BasicAdapter):
     from material_models import Sellmeir
     name="Sellmeir Model (defaults to optical fiber glasss)"
     source="Gupta Paper" #CITE
     notes="Preserves Kramers Kronig relation"
-
-    def populate_object(self): 
-        self.matobject=self.Sellmeir()
+    apikey = 'sellmeir'
         
 class CauchyAdapter(BasicAdapter):
-    from material_models import Cauchy
-    
     name="Cauchy Model (defaults to fused silicate)"
     source="http://en.wikipedia.org/wiki/Cauchy%27s_equation" 
     notes="Does not necessarily preserve Kramers Kronig relation (non-physical materials)"
-
-    def populate_object(self): 
-        self.matobject=self.Cauchy()    
-    
-
+    apikey='cauchy'
 
 class DrudeBulkAdapter(BasicAdapter):
-    from material_models import DrudeBulk
     name="Drude Bulk"
     source="One of the gupta papers"
     notes="Uses lamplasma and lamcollision to predict dielectric function based on Drude model"
-
-    def populate_object(self):
-        self.matobject=self.DrudeBulk()
+    apikey='drudebulk'
 
         
 class NKJsonAdapter(BasicAdapter):
@@ -130,17 +122,14 @@ class ABCFileAdapter(BasicAdapter):
         self.name = newname
 
 
-class SopraFileAdapter(ABCFileAdapter):
-    from material_files import SopraFile
-    
+class SopraFileAdapter(ABCFileAdapter):    
     source="Sopra"
     notes="http://www.sspectra.com/sopra.html"
+    apikey='sopra'
 
     def _set_matobject(self): 
         self.matobject = self.SopraFile(file_path=self.file_path)
         
-
-
 class XNKFileAdapter(ABCFileAdapter):
     from material_files import XNKFile, XNKFileCSV
     csv = Bool(False) 
@@ -148,6 +137,13 @@ class XNKFileAdapter(ABCFileAdapter):
     notes="Assumes real and imaginary parts of the index of refraction in "\
     "delimited columns.  If header present, must be first line and begin with "\
     "a '#' character"
+    
+    apikey = Property(depends_on='csv')
+    
+    def _get_apikey(self):
+        if self.csv:
+            return 'xnk_csv'
+        return 'xnk'        
 
     def _set_matobject(self): 
         if self.csv:

@@ -43,7 +43,9 @@ class BasicMaterial(HasTraits):
 
     def __init__(self, *args, **kwargs):
         super(BasicMaterial, self).__init__(*args, **kwargs)
+        print 'IN NEW MATERAIL', self.__class__.__name__, self
         self.update_data()
+        print 'DONE INTIIALIXEING'
 
     # ABC METHOD
     def update_data(self): 
@@ -58,7 +60,7 @@ class BasicMaterial(HasTraits):
         self.update_data()
 
     def _mviewbutton_fired(self): 
-        self.mview.edit_traits()
+        self.mview.edit_traits(kind='live')
 
     # Property Interface
     # ------------------

@@ -18,12 +18,7 @@ def complex_n_to_e(narray):
 
 def complex_e_to_n(earray): 
     """ Return complex index of refraction given complex dielectric"""
-    try:
-        return SM.sqrt(earray) 
-    except Exception:
-        print "FAILED ON earray", type(earray), earray.shape, earray.dtype
-        import sys; sys.exit()
-
+    return SM.sqrt(earray) 
  
 #https://github.com/enthought/traitsui/blob/master/examples/demo/Dynamic_Forms/dynamic_range_editor.py   
 #http://stackoverflow.com/questions/9956167/change-property-parameter-from-within-class-constructor-python-traits/28286878#28286878

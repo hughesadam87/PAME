@@ -35,11 +35,11 @@ class DoubleMixer(HasTraits):
         super(DoubleMixer, self).__init__(*args, **kwargs)
         self.on_trait_change(self.update_mix, 'solutematerial, solventmaterial, esolvent, esolute, Vfrac') 
 
-    def _solutematerial_default(self): 
-        return Sellmeir()
+    #def _solutematerial_default(self): 
+        #return Sellmeir()
 
-    def _solventmaterial_default(self): 
-        return Dispwater()
+    #def _solventmaterial_default(self): 
+        #return Dispwater()
 
     def update_mix(self): 
         pass

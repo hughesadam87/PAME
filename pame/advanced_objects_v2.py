@@ -52,8 +52,8 @@ class NanoSphere(SphericalInclusions_Disk):
                 ),
             Group(	
                 Group(
-                    Item('selectmat1', label='Change Core Material'),
-                    Item('CoreMaterial', style='custom'),  
+                    Item('selectmat1', label='Change Core Material', show_label=False),
+                    Item('CoreMaterial', style='custom', show_label=False),  
                     label='Core Material'),
                 Group(
                     Item('selectmat2', label='Change Medium Material'),
@@ -95,7 +95,6 @@ class NanoSphere(SphericalInclusions_Disk):
 class DrudeNew(ABCMetalModel, NanoSphere):
     '''Drude model with interband contributions(From paper "Advanced Drude Model")'''
     mat_name=Str('Drude Gold Nanoparticle')
-    model_id=Str('DrudeNew')
     valid_metals=Enum('gold') 
     lamp=Float(145)
     gamp=Float(17000)

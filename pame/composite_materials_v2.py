@@ -5,13 +5,13 @@ from traitsui.api import *
 from interfaces import IMixer, IStorage, IMaterial
 import math
 from material_mixer_v2 import MG_Mod, Bruggeman, QCACP, MG
-from pame.material_chooser import MaterialChooser
-
+from pame.material_chooser import SHARED_MCHOOSER
 
 class CompositeMaterial(BasicMaterial):
-    '''Still inherits basic traits like earray, narray and how they are interrelated'''
-
-    materialchooser = Instance(MaterialChooser,())    
+    """Still inherits basic traits like earray, narray and how they are 
+    interrelated
+    """
+    materialchooser = Instance(HasTraits, SHARED_MCHOOSER)    
     selectedtree = DelegatesTo('materialchooser')
 
     Material1=Instance(IMaterial)
@@ -41,8 +41,10 @@ class CompositeMaterial(BasicMaterial):
 
     compmatgroup=Group(Item('mat_name', label='Material Name'),
                        Tabbed( 
-                           Item('Material1', editor=InstanceEditor(), style='custom', label='Solute', show_label=False),
-                           Item('Material2', editor=InstanceEditor(), style='custom', label='Solvent', show_label=False),
+                           Item('Material1', editor=InstanceEditor(), 
+                                style='custom', label='Solute', show_label=False),
+                           Item('Material2', editor=InstanceEditor(),
+                                style='custom', label='Solvent', show_label=False),
                            ),
                        HGroup(		
                            Item('selectmat1', label='Change Solute', show_label=False), 
@@ -85,10 +87,8 @@ class CompositeMaterial(BasicMaterial):
     def _Mix_default(self): 
         return MG_Mod()
 
-    
     def _mat_name_default(self): 
         return self.Material1.mat_name + '  IN   ' + self.Material2.mat_name
-
 
     def _MixingStyle_changed(self): 
         self.update_mix()
@@ -97,17 +97,14 @@ class CompositeMaterial(BasicMaterial):
         self.sync_trait('Material1', self.Mix, 'solutematerial')
         self.Mat1History.append(self.Material1)
 
-
     def _Material2_changed(self): 
         self.sync_trait('Material2', self.Mix, 'solventmaterial')
         self.Mat2History.append(self.Material2)
 
-
     def _Mix_changed(self):
-        '''When I change mix, I make a new object, so this guarantees they are synchd'''
+        """When I change mix, I make a new object, so this guarantees they are synchd"""
         self.sync_trait('Material1', self.Mix, 'solutematerial')
         self.sync_trait('Material2', self.Mix, 'solventmaterial')
-
 
     def update_mix(self):
         if self.MixingStyle=='MG (root)':
@@ -134,15 +131,27 @@ class CompositeMaterial(BasicMaterial):
 
     # Change Solute
     def _selectmat1_fired(self): 
-        '''Used to select material.  The exceptions are if the user returns nothing or selects a folder rather than an object for example'''
+        """Used to select material.  The exceptions are if the user returns nothing or selects a folder rather than an object for example"""
         self.selectedtree.configure_traits(kind='modal') #Leave as configure traits not edit traits
 
+        print self.selectedtree
+        print self.selectedtree.current_selection, 'WOWWOHO\n\n'
         try:
-            selected_adapter=self.selectedtree.current_selection
-            selected_adapter.populate_object()
-            self.Material1=selected_adapter.matobject	
+            selected_adapter = self.selectedtree.current_selection
+            apikey = selected_adapter.apikey
         except (TypeError, AttributeError):  #If user selects none, or selects a folder object, not an actual selection
-            pass
+            print 'Selection failed to find apikey'
+            return
+        
+        print 'NIGGA', apikey
+        if apikey == 'composite':
+            print 'SETTING TO COMPOSITEMATERIAL'
+            self.Materia11 = CompositeMaterial()
+        else:
+            self.Materia11 = Sellmeir()
+        
+        
+        
 
     # Change Solvent
     def _selectmat2_fired(self): 
@@ -208,7 +217,7 @@ class CompositeMaterial_Equiv(CompositeMaterial):
 
 
 class SphericalInclusions(CompositeMaterial):
-    '''Composite material of inclusions of spheres are integrated with the VFrac parameter in volume'''
+    """Composite material of inclusions of spheres are integrated with the VFrac parameter in volume"""
     ###SINCE ONLY METHODS I USE SO FAR USE SPHERICAL PARTICLES, THIS HAS unitvolume_sphere WHICH IS FOR SPHERICAL INCLUSIONS ONLY###
     platform_type=Str
     particle_type=Str('Spherical Inclusions')  
@@ -292,7 +301,7 @@ class SphericalInclusions(CompositeMaterial):
         
 
 class SphericalInclusions_Shell(SphericalInclusions):
-    '''Used for sphere/shell nanoparticles; shell thickness is automatically determined by r_particle (aka biotin radius)'''
+    """Used for sphere/shell nanoparticles; shell thickness is automatically determined by r_particle (aka biotin radius)"""
 
     platform_type=Str('Shell Platform')   #Core particle  (Usually NP)
 
@@ -375,7 +384,7 @@ class SphericalInclusions_Disk(SphericalInclusions):
     )
 
 class TriangularInclusions(CompositeMaterial):
-    '''Essentially a composite material except inclusions of triangular cylinder are integrated with the VFrac parameter in volume'''
+    """Essentially a composite material except inclusions of triangular cylinder are integrated with the VFrac parameter in volume"""
     ###Here we also look into the equilateral triangular particles, this model is given by the paper "Adsorption and Conformation of Serum Albumin Protein on Gold Nanoparticles Investigated Using Dimensional Measurements and in Situ Spectroscopic Methods" by Tsai and DelRio etc.###
 
     platform_type=Str
@@ -429,7 +438,7 @@ class TriangularInclusions(CompositeMaterial):
 
 
 class TriangularInclusions_Shell_case1(TriangularInclusions):
-    '''Used for sphere/shell nanoparticles; shell thickness is determined by l_particle (edge length of the triangular cylinder)'''
+    """Used for sphere/shell nanoparticles; shell thickness is determined by l_particle (edge length of the triangular cylinder)"""
 
     platform_type=Str('Shell Platform')   #Core particle  (Usually NP)
     mat_name=Str('Triangular Inclusions (orientation1) on a Spherical particle"s shell')
@@ -457,7 +466,7 @@ class TriangularInclusions_Shell_case1(TriangularInclusions):
 
 
 class TriangularInclusions_Shell_case2(TriangularInclusions):
-    '''Used for sphere/shell nanoparticles; shell thickness is determined by h_particle (height of the triangular cylinder)'''
+    """Used for sphere/shell nanoparticles; shell thickness is determined by h_particle (height of the triangular cylinder)"""
 
     mat_name=Str('Triangular Inclusions (orientation 2) on a Spherical particle"s shell')
 

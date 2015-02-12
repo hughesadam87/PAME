@@ -20,7 +20,7 @@ class ABCExternal(BasicMaterial):
     file_spec_unit = Str()        
 
     # Store the real data in the file; should be visualized on mview later
-    file_x = Array()       
+    file_x = Array()  # !!! <--- file_x attribute used by mview for inspection, dont' change!     
     file_n = CArray() #Complex array nr, ni  
     file_e = Property(CArray, depends_on='file_n')
     
