@@ -54,6 +54,12 @@ class ConstantAdapter(BasicAdapter):
     source="Custom Made"
     notes="Simply provide a constant value for the dielectric/index of refraction and it will return a constant array of values.  Can enter complex values in the form"        
     apikey = 'constant'
+    
+class DispwaterAdapter(BasicAdapter):
+    name = "Dispersion model for water"
+    source = "Don't recall"
+    notes = "Better than using a constant index for water"
+    apikey = 'dispwater'
 
 class SellmeirAdapter(BasicAdapter):
     from material_models import Sellmeir

@@ -60,10 +60,14 @@ class SpecParms(HasTraits):
     # Replace w/ button
     def _update_fired(self):
         """ Set self.lambdas to self._lambdas.  If user didn't change anything,
-        doesn't trigger a superfluous redraw.
+        doesn't trigger a superfluous redraw.  If user changes sample size,
+        then shapes change and can't do "allclose"
         """
-        if not np.allclose(self.lambdas, self._lambdas):
-            self.lambdas = np.copy(self._lambdas) #<--- Otherwise, same obj ref
+        if self.lambdas.shape == self._lambdas.shape:
+            if np.allclose(self.lambdas, self._lambdas):
+                return 
+
+        self.lambdas = np.copy(self._lambdas) #<--- Otherwise, same obj ref
 
     def _lambdas_default(self):
         return self._lambdas

@@ -2,8 +2,8 @@ from traits.api import *
 from traitsui.api import *
 import numpy as np
 from basic_material import BasicMaterial
-from numpy import empty, interp, linspace
 from converter import SpectralConverter
+import scipy.interpolate as scinterp
 import os
 import logging
 from pame.utils import complex_n_to_e
@@ -19,8 +19,15 @@ class ABCExternal(BasicMaterial):
     xpoints = Property(Int)
     file_spec_unit = Str()        
 
+    interpolation = Enum('linear',
+                         'nearest', 
+                         'zero',
+                         'slinear',
+                         'quadratic', 
+                         'cubic')
+
     # Store the real data in the file; should be visualized on mview later
-    file_x = Array()  # !!! <--- file_x attribute used by mview for inspection, dont' change!     
+    file_x = Array()      
     file_n = CArray() #Complex array nr, ni  
     file_e = Property(CArray, depends_on='file_n')
     
@@ -35,14 +42,20 @@ class ABCExternal(BasicMaterial):
     
     def _get_xpoints(self):
         return len(self.file_x)
+    
+    def _lambdas_changed(self):
+    #    self.update_data() #(update data only re-reads file...; this is waste)
+        self.update_interp()        
+    
+    def _interpolation_changed(self):
+        self.update_interp()
 
+    def _extrapolation_changed(self):
+        self.update_interp()
 
     def update_interp(self):
         """Interpolates complex arrays from file data and sets self.narray (real and imaginary),
         could also set dielectric function, since BasicMaterial updates when either is changed."""
-
-#        if len(self.file_x) != 0:  #If array populated
-
         nps = self.file_n
         xps = self.file_x
 
@@ -54,15 +67,24 @@ class ABCExternal(BasicMaterial):
             print "Had to sort values in material_files.update_interp\n"
             print 'ns.shape, xs.shape:', nps.shape, xps.shape,  'woot', self.mat_name, self.short_name
 
-        # INTERPOLATION WILL JUST EXTEND CONSTANT VALUE ON LEFT OR RIGHT EQUAL TO LAST VALUE IN DATSET
-        # http://docs.scipy.org/doc/numpy/reference/generated/numpy.interp.html
-        n = interp(self.lambdas, xps, nps.real)#, left=0, right=0)
-        k = interp(self.lambdas, xps, nps.imag)#, left=0, right=0)
+        # Spline interpolation.  
+        f = scinterp.interp1d(xps, nps, kind=self.interpolation, bounds_error=False)             
+        narray = f(self.lambdas)
+                
+        if self.extrapolation:
+            #Only extrapolate if there are Nans.  Mask by dropping Nans
+            #And passing full x, dropped x and narray.  Can't be complex,
+            #even though spline interp can be...
+            # http://docs.scipy.org/doc/numpy/reference/generated/numpy.interp.html            
+            if np.isnan(self.narray).any():
+                xmask = self.lambdas[np.logical_not(np.isnan(narray))]
+                nmask = narray[np.logical_not(np.isnan(narray))]
+                n = np.interp(self.lambdas, xmask, nmask.real)#, left=0, right=0)
+                k = np.interp(self.lambdas, xmask, nmask.imag)#, left=0, right=0)
+                narray = n + 1j*k
+                
+        self.narray = narray
 
-        # Create complex array from two real arrays        
-        self.narray = n + 1j*k
-
-        
     def convert_unit(self):
         """ If file unit is not same as current unit"""
         if self.file_spec_unit != self.specparms.x_unit:
@@ -203,7 +225,7 @@ class SopraFile(ABCFile):
         xend = float(headerlist[2])
         xpoints = int(headerlist[3])
 
-        self.file_x = linspace(xstart, xend, xpoints+1) #<< +1?
+        self.file_x = np.linspace(xstart, xend, xpoints+1) #<< +1?
 
         # Set specunit ...
         if code==1:

@@ -13,7 +13,7 @@ from interfaces import IAdapter
 from File_Finder import LiveSearch
 
 from simple_materials_adapter import BasicAdapter, SellmeirAdapter, ConstantAdapter, \
-    DrudeBulkAdapter, SopraFileAdapter, XNKFileAdapter, CauchyAdapter
+    DrudeBulkAdapter, SopraFileAdapter, DispwaterAdapter, XNKFileAdapter, CauchyAdapter
 
 from yamlmaterials import YamlAdapter
 
@@ -181,9 +181,10 @@ class Model( HasTraits ):
         return [
             BasicAdapter(),
             ConstantAdapter(),            
+            DispwaterAdapter(),
             CauchyAdapter(),
             SellmeirAdapter(),
-        ]
+            ]
 
     # Metal Models Models ------
     def _metals_default(self):

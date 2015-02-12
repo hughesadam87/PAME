@@ -31,6 +31,10 @@ class BasicMaterial(HasTraits):
 
     mview=Instance(MaterialView)  
     mviewbutton=Button 
+    
+    # Used by subclasses, and needs to be here so MaterielView can Delegate
+    interpolation = Any
+    extrapolation = Bool(False)
 
     basic_group=HGroup(Item('mviewbutton', label='Show Material', show_label=False), 
                        Item('mat_name', label='Material Name', style='simple')
@@ -59,6 +63,13 @@ class BasicMaterial(HasTraits):
 
     def _mviewbutton_fired(self): 
         self.mview.edit_traits(kind='live')
+        
+    def _interpolation_default(self):
+        return None
+    
+    # Defaults to False, not None
+    def _extrapolation_default(self):
+        return False 
 
     # Property Interface
     # ------------------

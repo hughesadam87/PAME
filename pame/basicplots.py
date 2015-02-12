@@ -495,26 +495,8 @@ class MaterialView(ABCView):
     ToggleReal=Action(name="Toggle Real", action="togimag")
     ToggleImag=Action(name="Toggle Imaginary", action="togreal")
     
-    interpolation = Enum(['linear',
-                          'nearest',
-                          'zero',
-                          'slinear',
-                          'quadratic',
-                          'cubic'])
-    show_interp = Bool(False)
-    _is_interpolated = Property(Bool, depends_on='model')
-    
-    def _get__is_interpolated(self):
-        """ If current material is a subclass of ABCExternal.  Checks for
-        attribute file_x because importing and type checking class results
-        in import loop.
-        """
-        try:
-            self.model.file_x
-            return True
-        except AttributeError:
-            return False
-
+    interpolation = DelegatesTo('model')
+    extrapolation = DelegatesTo('model')
 
     # Custom plot_title disallowed
 
@@ -522,9 +504,9 @@ class MaterialView(ABCView):
         VGroup(
             HGroup(
                 Item('interpolation', label='Interpolation', 
-                    visible_when='_is_interpolated is True'),
-                Item('show_interp', label='Show Bounds',
-                    visible_when='_is_interpolated is True')
+                    visible_when='interpolation is not None'),
+                Item('extrapolation', label='Extrapolate',
+                    visible_when='interpolation is not None')
                 ),        
         Tabbed(
             Item('eplot', editor=ComponentEditor(), dock='tab', label='Dielectric'),
