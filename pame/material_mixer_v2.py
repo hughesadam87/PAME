@@ -78,27 +78,27 @@ class MG_Mod(DoubleMixer):
         in another method that can change at exact moment anything changes
         """
         # Why isn't this vectoriezed???
-        print 'IN UPDATE MIX'
         eeff=np.empty(self.esolute.shape, dtype='complex')
-        for i in range(len(self.esolvent)):
-            em = self.esolvent[i]
-            emr = em.real
-            emi = em.imag  #Usually zero
-            ep = self.esolute[i]
-            epr = ep.real
-            epi = ep.imag
+        em = np.copy(self.esolvent)
+        emr = em.real
+        emi = em.imag  #Usually zero
+        ep = np.copy(self.esolute)
+        epr = ep.real
+        epi = ep.imag
 
-            A = self.Vfrac*(epr - emr)
-            B = self.Vfrac*epi
-            shell_scaling = (1.0/3.0)          #1/3 for spherical particles, not sure for others!!!
-            gam = (1.0/(3.0*emr) ) + (self.K/(4.0*math.pi*emr))
-            C = em + shell_scaling*(epr - emr) - self.Vfrac*gam*(epr-emr)
-            D = shell_scaling*epi - self.Vfrac*gam*epi
-            eff_r = emr + ( (A*C + B*D)/ (C**2 + D**2) )
-            eff_i = ((B*C - A*D)/(C**2 + D**2)).real   #IMAGINARY PART SHOULD BE 0 NO MATTER WHAT!
-            eeff[i] = complex(eff_r, eff_i)
-        self.mixedarray=eeff
-
+        A = self.Vfrac*(epr - emr)
+        B = self.Vfrac*epi
+        shell_scaling = (1.0/3.0)          #1/3 for spherical particles, not sure for others!!!
+        gam = (1.0/(3.0*emr) ) + (self.K/(4.0*math.pi*emr))
+        C = em + shell_scaling*(epr - emr) - self.Vfrac*gam*(epr-emr)
+        D = shell_scaling*epi - self.Vfrac*gam*epi
+        eff_r = emr + ( (A*C + B*D)/ (C**2 + D**2) )
+        eff_i = ((B*C - A*D)/(C**2 + D**2)).real   #IMAGINARY PART SHOULD BE 0 NO MATTER WHAT!
+        eeff.real = eff_r
+        eeff.imag = eff_i
+       
+        self.mixedarray = eeff       
+       
 
 class RootFinder(DoubleMixer):
     """ These mixing models come from:
