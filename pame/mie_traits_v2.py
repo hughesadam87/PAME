@@ -56,11 +56,14 @@ class Mie(HasTraits):
 
     traits_view=View(Include('basic_group'))
 
+    # Lots of events will trigger draw of cross section (as they should)
+    # Problem is, when lambdas changes, changes all of these materials,
+    # and they each go on to trigger a redraw.  Somehow need to make this
+    # cycle.  
     def __init__(self, *args, **kwargs):
         super(Mie, self).__init__(*args, **kwargs)
         self.on_trait_change(self.update_cross, 'CoreMaterial, MediumMaterial,\
                              ecore, emedium, bessmax, cutoff_criteria') 
-        print 'Initialized Mie Theory'
         
     def _sview_default(self):
         return ScatterView(model=self)

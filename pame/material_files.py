@@ -18,6 +18,9 @@ class ABCExternal(BasicMaterial):
     xend = Property(Float)
     xpoints = Property(Int)
     file_spec_unit = Str()        
+    
+    # File stores its own instance of converter to change representations
+    converter = Instance(SpectralConverter) 
 
     interpolation = Enum('linear',
                          'nearest', 
@@ -57,15 +60,17 @@ class ABCExternal(BasicMaterial):
         """Interpolates complex arrays from file data and sets self.narray (real and imaginary),
         could also set dielectric function, since BasicMaterial updates when either is changed."""
         nps = self.file_n
-        xps = self.converted_xunit()
-
-        # Reverse (This happens even in wavelength = nm data, just how files formatted)
-        # Problem is, units like wavenumber should do this by default, so need to build that in...
-#        if self.file_x[0] > self.file_x[-1]:  #If last value is larger than first! (Then backwards)
-        nps=nps[::-1] 
-        xps=xps[::-1]    #Syntax to reverse an array 
-        print "Had to reverse values in material_files.update_interp()\n"
-
+        xps = self.converter.specific_array(self.specparms.x_unit)
+                
+        def _is_flipped(array):
+            if array[0] > array[-1]:
+                return True
+        
+        # If lambas and xps are not in the same order, reverse
+        if _is_flipped(self.lambdas) != _is_flipped(xps):
+            nps=nps[::-1] 
+            xps=xps[::-1]    #Syntax to reverse an array 
+            #print "Had to reverse values in material_files.update_interp()\n"
 
         # Spline interpolation.  
         f = scinterp.interp1d(xps, nps, kind=self.interpolation, bounds_error=False)             
@@ -85,12 +90,11 @@ class ABCExternal(BasicMaterial):
 
         self.narray = narray
 
-    def converted_xunit(self):
+    def _converter_default(self):
         """ If file unit is not same as current unit"""
-        f = SpectralConverter(input_array=self.file_x,
+        return SpectralConverter(input_array=self.file_x,
                               input_units=self.file_spec_unit,
-                              output_units=self.specparms.x_unit)
-        return f.output_array    
+                              output_units=self.specparms.x_unit)  
 
     def update_data(self):
         """ Must set header, set file_x, set file_n and call updated_interp() """
@@ -125,8 +129,8 @@ class ABCFile(ABCExternal):
     def _file_path_changed(self):
         """ THIS HANDLES MAIN EVENT! 
            1. Read file Data 
-           2. Convert Unit 
-           3. Interpolate"""
+           3. Interpolate
+           """
         self.update_data()
         self.update_interp()    
     

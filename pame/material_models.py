@@ -86,7 +86,7 @@ class Cauchy(ABCMaterialModel):
 
 
     def update_data(self):		
-        um = self.specparms.specific_array('Micrometers')  #<---
+        um = self.specparms.conv.specific_array('Micrometers')  #<---
         A,B,C,D = self.A, self.B, self.C, self.D
         self.narray = self.A + self.B/um**2 + C/um**3 + D/um**4       
         
@@ -138,7 +138,7 @@ class Sellmeir(ABCMaterialModel):
         self.update_data()
 
     def update_data(self):		
-        um_xarray = self.specparms.specific_array('Micrometers')
+        um_xarray = self.specparms.conv.specific_array('Micrometers')
         l_sqr = um_xarray**2
         f1=(self.a1*l_sqr) / (l_sqr - self.b1**2)
         f2=(self.a2*l_sqr) / (l_sqr - self.b2**2)       #Dummy indicies
@@ -155,7 +155,7 @@ class Dispwater(ABCMaterialModel):
         return 'Dispersive Water'	
     
     def update_data(self): 	
-        nm_xarray = self.specparms.specific_array('Nanometers')
+        nm_xarray = self.specparms.conv.specific_array('Nanometers')
         self.narray=1.32334 + (self.A/ nm_xarray**2 ) - (self.B/nm_xarray**4)   #Entry in nm
 
     @on_trait_change('A, B')
@@ -253,7 +253,7 @@ class DrudeBulk(ABCMetalModel):
 
 
     def update_data(self):   #THIS DOES FIRE AT INSTANTIATION
-        m_xarray=self.specparms.specific_array('Meters')
+        m_xarray=self.specparms.conv.specific_array('Meters')
         unity=array([complex(0.0,1.0)], dtype=complex)  #Gupta requries i * lambda, so this gets complex value of the xarray
         self.earray = 1.0 - ( (m_xarray**2 * self.lam_collis) / (self.lam_plasma**2 * ( self.lam_collis + m_xarray*unity)  ) )
 

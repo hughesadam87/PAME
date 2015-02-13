@@ -94,17 +94,6 @@ class SpecParms(HasTraits):
             raise SpectralError('Only positive spectral values allowed!')        
         self.xend = xend
 
-    def specific_array(self, new_unit): 
-        """Method Used to return a unit-converted array to models which specifically require certain unit systems (aka uM)"""
-        if new_unit not in self.valid_units:
-            raise SpecralError('Invalid spectral unit: %s' % new_unit)
-    
-        # Temporarily change outunit, send, return it back
-        self.conv.output_units=new_unit
-        specificarray = self.conv.output_array   
-        self.conv.output_units = self.x_unit
-        return specificarray
-
     def simulation_requested(self):
         ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
         ### trait_get is shortcut to return dic if the keys are adequate descriptors for output

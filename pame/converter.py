@@ -3,6 +3,9 @@ from traitsui.api import View, Item, Group, HSplit, VSplit
 from numpy import linspace, array
 from math import pi
 
+class ConversionError(Exception):
+    """ """
+
 class SpectralConverter ( HasTraits ):
 
     h=float(6.626068*10**-34)  # m**2 kg / s
@@ -64,6 +67,19 @@ class SpectralConverter ( HasTraits ):
 
     def _get_valid_units(self): 
         return self.proportional+self.reciprocal
+    
+    def specific_array(self, new_unit): 
+        """Return a unit-converted array without changing current settings"""
+        print 'in specific array', new_unit
+        if new_unit not in self.valid_units:
+            raise ConversionError('Invalid spectral unit: %s' % new_unit)
+    
+        # Temporarily change outunit, send, return it back
+        old_unit = self.output_units
+        self.output_units = new_unit
+        specificarray = self.output_array   
+        self.output_units = old_unit
+        return specificarray    
     
     # Property implementations
     def _get_output_array ( self ):

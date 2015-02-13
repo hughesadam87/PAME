@@ -300,8 +300,11 @@ def coh_tmm(pol, n_list, d_list, th_0, lam_vac, pame_output=False):
     if (d_list[0] != inf) or (d_list[-1] != inf):
         raise ValueError('d_list must start and end with inf!')
 
+    # Should this case exist?  Light couldn't get down a semi-infinite absorbing
+    # media to begin with!
     if abs((n_list[0]*np.sin(th_0)).imag) > 100*EPSILON:
-        raise ValueError('Error in n0 or th0!')
+        raise ValueError('Error in n0 or th0!  Semi-infinite media cannot'
+                         ' be absorbing (have imaginary component).')
 
     num_layers = n_list.size
     #th_list is a list with, for each layer, the angle that the light travels

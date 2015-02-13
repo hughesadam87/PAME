@@ -189,13 +189,10 @@ class LayerEditor(HasTraits):
 
     def _stack_default(self):
         '''Initialize the stack with some layers'''
-        solvent=Solvent() 
-        substrate=Substrate()
-        mats=[substrate,
+        mats=[Substrate(),
 #              Composite(d=24.0),
               Nanoparticle(d=24.0), 
-              solvent]  #Default layer is nanoparticle with shell
-
+              Solvent()]  #Default layer is nanoparticle with shell
         return mats
 
     #  Important to declare these here instead of on the delcaration of the stack; otherwise tableeditor trips ###

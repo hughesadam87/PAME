@@ -27,7 +27,6 @@ class BasicMaterial(HasTraits):
 
     mat_name=Str()
     source=Enum('Model', 'File', 'Custom')
-    c=Float(299792458)     #Speed of light m/s
 
     mview=Instance(MaterialView)  
     mviewbutton=Button 

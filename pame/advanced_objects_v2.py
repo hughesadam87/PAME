@@ -154,7 +154,6 @@ class DrudeNP_corrected(DrudeBulk, NanoSphere):
     valid_metals=Enum('gold','silver')  #Need fermi velocity for copper and aluminum
     apply_correction=Bool(True)
 
-
     def _valid_metals_changed(self): 
         self.update_data()
     

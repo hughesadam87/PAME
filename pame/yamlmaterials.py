@@ -16,15 +16,16 @@ class YamlMaterial(ABCExternal):
 
     # New traits
     datatype = Enum(['nk','k'])
-    datastring = Str  #This is actual data that yamel gets as str
+    datastring = Str  #This is actual data that yaml gets as str
 
+    # This is main trigger from yaml adapter I think
     def _datastring_changed(self):
-        """ THIS HANDLES MAIN EVENT! 
-        1. Read file Data 
-        2. Convert Unit 
-        3. Interpolate
-        """    
+        self.update_data()
+        self.update_interp()
         
+    def update_data(self):
+        """ Yaml Files are always Micrometers.
+        """    
         # Already a long string, so this seems best way to parse...
         if self.datatype == 'nk':
             x = []
@@ -45,11 +46,8 @@ class YamlMaterial(ABCExternal):
 #         elif datatype == 'k':
             raise NotImplementedError('YAML datatype not understood %s' % datatype)    
 
-        ## Convert unit
-        #self.convert_unit()
-
         #Interpolate
-        self.update_interp()
+        #self.update_interp()
 
 class YamlAdapter(ABCFileAdapter):
     """ Adapter to parse yaml.dump and figure out if experimental data, or 

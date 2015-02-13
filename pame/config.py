@@ -26,7 +26,7 @@ MATDELIM = '\t'
    
 # Material databases to use by default
 USESOPRA = True
-USERIINFO = False #slows performance it's so large
+USERIINFO = True #slows performance it's so large
 
 # Spectral parameters
 xstart = 300 
