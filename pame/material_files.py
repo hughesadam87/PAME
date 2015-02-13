@@ -44,8 +44,7 @@ class ABCExternal(BasicMaterial):
         return len(self.file_x)
     
     def _lambdas_changed(self):
-     #update data only re-reads file, so don't need
-    #   self.update_data() 
+       #update data only re-reads file, so don't need udpate_data()
         self.update_interp()        
     
     def _interpolation_changed(self):
@@ -60,7 +59,6 @@ class ABCExternal(BasicMaterial):
         nps = self.file_n
         xps = self.converted_xunit()
 
-        print 'UPDATING INTERP', self.file_spec_unit, self.specparms.x_unit
         # Reverse (This happens even in wavelength = nm data, just how files formatted)
         # Problem is, units like wavenumber should do this by default, so need to build that in...
 #        if self.file_x[0] > self.file_x[-1]:  #If last value is larger than first! (Then backwards)
@@ -85,7 +83,6 @@ class ABCExternal(BasicMaterial):
                 k = np.interp(self.lambdas, xmask, nmask.imag)#, left=0, right=0)
                 narray = n + 1j*k
 
-        print 'FUCK', nps[0], xps[0], narray[0]                
         self.narray = narray
 
     def converted_xunit(self):
@@ -181,7 +178,7 @@ class XNKFile(ABCFile):
 
     traits_view=View(Item('header', style='readonly'),
                      Item('mviewbutton', show_label=False, label='Show Material'),
-                     Item('file_path', show_label=False, style='readonly') )
+                     Item('file_path', style='readonly') )
     
 
 class XNKFileCSV(XNKFile):
@@ -192,8 +189,6 @@ class XNKFileCSV(XNKFile):
     
 
 class SopraFile(ABCFile):  
-
-    ###NEEDS FIXED TO WORK W NEW SPECPARMS AND STUFF###
 
     file_id='Sopra'
     file_extension='.nk'

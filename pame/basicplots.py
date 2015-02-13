@@ -424,7 +424,6 @@ class ABCView(HasTraits):
     # Can't delegate specparms to model, or lambdas would be delegate of delegate, fails
     specparms = Instance(HasTraits, SHARED_SPECPARMS)  
     lambdas = DelegatesTo('specparms')                
-    x_unit = DelegatesTo('specparms')
     
     data = Instance(ArrayPlotData)
     
@@ -444,6 +443,7 @@ class ABCView(HasTraits):
         
     def _lambdas_changed(self):
         self.data.set_data('x', self.lambdas)
+        self.create_plots() #Redraw to change xaxis label
     
     def add_tools_title(self, plot, title_keyword):
         """Used to add same tools to multiple plots"""
@@ -451,7 +451,7 @@ class ABCView(HasTraits):
         plot.legend.visible = True
 
         bottom_axis = PlotAxis(plot, orientation='bottom',
-                               title=self.x_unit, 
+                               title=self.specparms.x_unit, 
                                label_color='red', 
                                label_font='Arial', 
                                tick_color='green',

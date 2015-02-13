@@ -36,13 +36,14 @@ class DoubleMixer(HasTraits):
         # Yes, neccesary to listen to materials and earrays
         self.on_trait_change(self.update_mix, 'solutematerial, solventmaterial, \
                                                esolvent, esolute, Vfrac') 
-        # Let composite_object initialize       
+        # Let composite_material call this; for some reason, isn't triggering 
+        # when used with composite_material anyway
         #self.update_mix() 
 
-    # Doesn't set any default materials, so impetus is on calling programs
     def update_mix(self): 
-        pass
-    
+        if self.esolute.shape != self.esolvent.shape:
+            return
+        
 class LinearSum(DoubleMixer):
     """ Linear mixing: V(e1) + (1-V)e2 for e1=solute, e2=solvent"""
 
@@ -51,7 +52,8 @@ class LinearSum(DoubleMixer):
     beta = Property(Range(0.0, 1.0, value=0.5), depends_on='alpha')
     
     def update_mix(self):
-        print' in linear sum update mix'
+        if self.esolute.shape != self.esolvent.shape:
+            return        
         self.mixedarray = self.alpha*self.esolute + self.beta*self.esolvent
         
     def _alpha_changed(self):
@@ -95,8 +97,8 @@ class MG_Mod(DoubleMixer):
                 Item('K')
                 ), 
         HGroup(
-            Item('solutematerial', label='solute_in_materialmix', show_label=False),
-            Item('solventmaterial', label='solvent_in_materialmix', show_label=False),
+#            Item('solutematerial', label='solute_in_materialmix', show_label=False),
+#            Item('solventmaterial', label='solvent_in_materialmix', show_label=False),
             )
         )
 
@@ -107,8 +109,9 @@ class MG_Mod(DoubleMixer):
         """Its important to update the mixed array all at once because there's a listenter 
         in another method that can change at exact moment anything changes
         """
-        print' in mgmod update mix'
-        
+        if self.esolute.shape != self.esolvent.shape:
+            return
+            
         eeff=np.empty(self.esolute.shape, dtype='complex')
         em = self.esolvent#np.copy(self.esolvent)
         emr = em.real
@@ -152,6 +155,9 @@ class RootFinder(DoubleMixer):
         return B-A
 
     def update_mix(self):
+        if self.esolute.shape != self.esolvent.shape:
+            return
+        
         eeff=np.empty(self.esolute.shape, dtype=complex)
         for i in range(len(eeff)):
             e1 = self.esolute[i]#.real    
@@ -226,8 +232,8 @@ class EquivMethod(DoubleMixer):
             Item('shell_core_ratio', label='Shell/Core Ratio', style='readonly'),
             ),
 
-        Item('solutematerial'), 
-        Item('solventmaterial'),
+#        Item('solutematerial'), 
+#        Item('solventmaterial'),
     )
 
 
@@ -247,6 +253,8 @@ class EquivMethod(DoubleMixer):
         self.shell_width=input_value * self.r_particle
 
     def update_mix(self):
+        if self.esolute.shape != self.esolvent.shape:
+            return        
         eeff = np.empty(self.esolute.shape, dtype='complex')
         r1 = self.r_particle
         r2 = self.shell_width+self.r_particle        #KEY THAT r2 is not just shell_width
@@ -313,7 +321,9 @@ class CustomEquiv(EquivMethod):
         return self.shell_scaling * self.shell_width
 
     def update_mix(self):
-
+        if self.esolute.shape != self.esolvent.shape:
+            return
+        
         r1=self.rcore_eff
         r2=self.shell_width_effective+self.rcore_eff        #KEY THAT r2 is not just shell_width
         A=(r1/r2)**3

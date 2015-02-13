@@ -149,13 +149,14 @@ class Sellmeir(ABCMaterialModel):
 class Dispwater(ABCMaterialModel):
     """Returns dispersion of water as put in some paper"""
     A=Float(3479.0) 
-    B=Float(5.111 * 10**7)  #WHAT UNITS
+    B=Float(5.111 * 10**7)  # I Believe units of NM
 
     def _mat_name_default(self): 
         return 'Dispersive Water'	
     
     def update_data(self): 	
-        self.narray=1.32334 + (self.A/ self.lambdas**2 ) - (self.B/self.lambdas**4)   #Entry in nm
+        nm_xarray = self.specparms.specific_array('Nanometers')
+        self.narray=1.32334 + (self.A/ nm_xarray**2 ) - (self.B/nm_xarray**4)   #Entry in nm
 
     @on_trait_change('A, B')
     def update_model(self):

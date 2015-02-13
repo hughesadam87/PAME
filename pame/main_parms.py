@@ -99,9 +99,11 @@ class SpecParms(HasTraits):
         if new_unit not in self.valid_units:
             raise SpecralError('Invalid spectral unit: %s' % new_unit)
     
-        self.conv.input_array = np.copy(self.lambdas) #Copy probably necessary
+        # Temporarily change outunit, send, return it back
         self.conv.output_units=new_unit
-        return self.conv.output_array   
+        specificarray = self.conv.output_array   
+        self.conv.output_units = self.x_unit
+        return specificarray
 
     def simulation_requested(self):
         ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''

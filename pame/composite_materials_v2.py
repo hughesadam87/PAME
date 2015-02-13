@@ -18,6 +18,7 @@ class CompositeMaterial(BasicMaterial):
     Material1=Instance(IMaterial)
     Material2=Instance(IMaterial)   #Make these classes later
 
+
     Mix=Instance(IMixer)
     MixingStyle=Enum('MGMOD', 
                      'Bruggeman (root)', 
