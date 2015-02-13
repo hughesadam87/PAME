@@ -192,8 +192,8 @@ class LayerEditor(HasTraits):
         solvent=Solvent() 
         substrate=Substrate()
         mats=[substrate,
-              Composite(d=24.0),
-#              Nanoparticle(d=24.0), 
+#              Composite(d=24.0),
+              Nanoparticle(d=24.0), 
               solvent]  #Default layer is nanoparticle with shell
 
         return mats
