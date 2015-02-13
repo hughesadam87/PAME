@@ -58,15 +58,16 @@ class ABCExternal(BasicMaterial):
         """Interpolates complex arrays from file data and sets self.narray (real and imaginary),
         could also set dielectric function, since BasicMaterial updates when either is changed."""
         nps = self.file_n
-        xps = self.file_x
+        xps = self.converted_xunit()
 
+        print 'UPDATING INTERP', self.file_spec_unit, self.specparms.x_unit
         # Reverse (This happens even in wavelength = nm data, just how files formatted)
         # Problem is, units like wavenumber should do this by default, so need to build that in...
-        if self.file_x[0] > self.file_x[-1]:  #If last value is larger than first! (Then backwards)
-            nps=nps[::-1] 
-            xps=xps[::-1]    #Syntax to reverse an array 
-            print "Had to sort values in material_files.update_interp\n"
-            print 'ns.shape, xs.shape:', nps.shape, xps.shape,  'woot', self.mat_name, self.short_name
+#        if self.file_x[0] > self.file_x[-1]:  #If last value is larger than first! (Then backwards)
+        nps=nps[::-1] 
+        xps=xps[::-1]    #Syntax to reverse an array 
+        print "Had to reverse values in material_files.update_interp()\n"
+
 
         # Spline interpolation.  
         f = scinterp.interp1d(xps, nps, kind=self.interpolation, bounds_error=False)             
@@ -83,17 +84,16 @@ class ABCExternal(BasicMaterial):
                 n = np.interp(self.lambdas, xmask, nmask.real)#, left=0, right=0)
                 k = np.interp(self.lambdas, xmask, nmask.imag)#, left=0, right=0)
                 narray = n + 1j*k
-                
+
+        print 'FUCK', nps[0], xps[0], narray[0]                
         self.narray = narray
 
-    def convert_unit(self):
+    def converted_xunit(self):
         """ If file unit is not same as current unit"""
-        if self.file_spec_unit != self.specparms.x_unit:
-            # SpectralConverter should have a class method that does this...
-            f = SpectralConverter(input_array=self.file_x,
-                                  input_units=self.file_spec_unit,
-                                  output_units=self.specparms.x_unit)
-            self.file_x = f.output_array    
+        f = SpectralConverter(input_array=self.file_x,
+                              input_units=self.file_spec_unit,
+                              output_units=self.specparms.x_unit)
+        return f.output_array    
 
     def update_data(self):
         """ Must set header, set file_x, set file_n and call updated_interp() """
@@ -125,7 +125,6 @@ class ABCFile(ABCExternal):
     delimiter = None #If not none, will split on a certain character.  Used for csv file
                      #Otherwise, default split()/genfromtxt will split on all whitespace
   
-    
     def _file_path_changed(self):
         """ THIS HANDLES MAIN EVENT! 
            1. Read file Data 
@@ -134,9 +133,10 @@ class ABCFile(ABCExternal):
         self.update_data()
         self.update_interp()    
     
-    # Unit Conversions
-    def _file_spec_unit_changed(self):
-        self.convert_unit()
+    #def _file_spec_unit_changed(self):
+        #raise MaterialFileError('Design choice to disallow changing of file_spec_unit')
+    ## This shouldn't happen
+    ##    self.update_interp()
     
     def _get_short_name(self):
         return os.path.basename(self.file_path)
@@ -180,8 +180,8 @@ class XNKFile(ABCFile):
 
 
     traits_view=View(Item('header', style='readonly'),
-                     Item('mviewbutton'),
-                     Item('file_path') )
+                     Item('mviewbutton', show_label=False, label='Show Material'),
+                     Item('file_path', show_label=False, style='readonly') )
     
 
 class XNKFileCSV(XNKFile):

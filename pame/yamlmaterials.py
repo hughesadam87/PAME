@@ -45,8 +45,8 @@ class YamlMaterial(ABCExternal):
 #         elif datatype == 'k':
             raise NotImplementedError('YAML datatype not understood %s' % datatype)    
 
-        # Convert unit
-        self.convert_unit()
+        ## Convert unit
+        #self.convert_unit()
 
         #Interpolate
         self.update_interp()

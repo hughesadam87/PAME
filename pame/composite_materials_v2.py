@@ -17,9 +17,6 @@ class CompositeMaterial(BasicMaterial):
 
     Material1=Instance(IMaterial)
     Material2=Instance(IMaterial)   #Make these classes later
-    
-    Mat1History=List(IMaterial)  #When the materials change, this logs them.  Useful for advanced stuff
-    Mat2History=List(IMaterial)
 
     Mix=Instance(IMixer)
     MixingStyle=Enum('MGMOD', 
@@ -62,14 +59,12 @@ class CompositeMaterial(BasicMaterial):
     traits_view=View(
                      Include('compmatgroup' ),
                      Include('mixgroup'), 
-                     #Item('Mat1History', editor=ListEditor(), style='custom'), 
                      resizable=True, buttons=OKCancelButtons)
 
     def __init__(self, *args, **kwargs):
         super(CompositeMaterial, self).__init__(*args, **kwargs)
-        # Need syncing, and Mix will autoupdate when material1/2 change
-        self.sync_trait('Material1', self.Mix, 'solutematerial')	
-        self.sync_trait('Material2', self.Mix, 'solventmaterial') 
+        self.Mix.update_mix()
+
 
     def simulation_requested(self):
         out = super(CompositeMaterial, self).simulation_requested()
@@ -82,14 +77,10 @@ class CompositeMaterial(BasicMaterial):
         return out
 
     def _Material1_default(self): 
-        mat1def=Sellmeir()
-        self.Mat1History.append(mat1def)
-        return mat1def
+        return Sellmeir()
 
     def _Material2_default(self): 	
-        mat2def=Dispwater()
-        self.Mat2History.append(mat2def)
-        return mat2def
+        return Dispwater()
 
     def _Mix_default(self): 
         return MG_Mod(solutematerial=self.Material1,
@@ -99,18 +90,19 @@ class CompositeMaterial(BasicMaterial):
         return self.Material1.mat_name + '  IN   ' + self.Material2.mat_name
 
     def _MixingStyle_changed(self): 
-        self.update_mix()
+        self.update_Mix() 
 
     def _Material1_changed(self): 
-        self.Mat1History.append(self.Material1)
         # This should be a property, right?  Or a separate attribute?
         self.mat_name = self.Material1.mat_name + '  IN   ' + self.Material2.mat_name
+        self.Mix.solutematerial = self.Material1
 
     def _Material2_changed(self): 
-        self.Mat2History.append(self.Material2)
         self.mat_name = self.Material1.mat_name + '  IN   ' + self.Material2.mat_name
+        self.Mix.solventmaterial = self.Material2
 
-    def update_mix(self):
+    def update_Mix(self):
+        print 'in update_MIX'
         kwds = dict(Vfrac=self.Vfrac, #vfrac because don't want it to reset to default
                     solutematerial=self.Material1,
                     solventmaterial=self.Material2
@@ -130,11 +122,15 @@ class CompositeMaterial(BasicMaterial):
             
         elif self.MixingStyle=='LinearSum':
             self.Mix=LinearSum(**kwds)
+            
+        # I think because I'm delegating mixedarray, but for some reason DoubleMixer.__init__
+        # trigger doesn't hook up right.  Should not have to do this, but doesn't
+        # cost much extra so don't mess with it.  Exhausted all posib
+        self.Mix.update_mix()
 
     # Change Solute
     def _selectmat1_fired(self): 
         """Used to select material.  The exceptions are if the user returns nothing or selects a folder rather than an object for example"""
-        print "CHANING MAT 1"
         self.selectedtree.configure_traits(kind='modal')
         try:
             selected_adapter=self.selectedtree.current_selection
@@ -146,7 +142,6 @@ class CompositeMaterial(BasicMaterial):
 
     # Change Solvent
     def _selectmat2_fired(self): 
-        print 'CHAGING MATERIAL 2 SONONON'
         self.selectedtree.configure_traits(kind='modal')
         try:
             selected_adapter=self.selectedtree.current_selection
@@ -191,7 +186,7 @@ class CompositeMaterial_Equiv(CompositeMaterial):
         self.sync_trait('r_particle', self.Mix, 'r_particle', mutual=True)  
         self.sync_trait('shell_width', self.Mix, 'shell_width', mutual=True)		
 
-    def update_mix(self):
+    def update_Mix(self):
         if self.MixingStyle=='Equivalence':
             self.Mix=self.EquivMethod()
 
@@ -490,6 +485,7 @@ class TriangularInclusions_Shell_case2(TriangularInclusions):
 
 if __name__ == '__main__':
 #	f=CompositeMaterial_Equiv()
-    f = CompositeMaterial()
+    from main_parms import SpecParms
+    f = CompositeMaterial(specparms = SpecParms())
 #	f=SphericalInclusions_Disk()
     f.configure_traits()

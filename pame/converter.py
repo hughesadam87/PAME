@@ -64,6 +64,7 @@ class SpectralConverter ( HasTraits ):
 
     def _get_valid_units(self): 
         return self.proportional+self.reciprocal
+    
     # Property implementations
     def _get_output_array ( self ):
         if self.input_units in self.proportional and self.output_units in self.proportional:

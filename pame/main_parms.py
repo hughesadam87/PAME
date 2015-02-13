@@ -21,16 +21,16 @@ class SpecParms(HasTraits):
 
     # Privately, changing units, sampling etc... will update _lambdas in realtime
     # but lambdas is only updated through button push, which triggers trait events.
-    _lambdas=Array
+    #_lambdas=Array
     lambdas=Array
 
     update = Button
 
-    x_samples=Property(Int, depends_on=['_lambdas'])
-    xstart=Property(Float, depends_on=['_lambdas'])
-    xend=Property(Float, depends_on=['_lambdas'])
-    x_increment=Property(Float, depends_on=['x_samples', 'xstart', 'xend'])
-
+    x_samples=Int(config.xpoints)
+    #x_samples=Property(Int, depends_on=['_lambdas'])
+    xstart = Float(config.xstart)#Property(Float, depends_on=['_lambdas'])
+    xend = Float(config.xend)#Property(Float, depends_on=['_lambdas'])
+    x_increment = Property(Float, depends_on=['x_samples', 'xstart', 'xend'])
 
     traits_view = View(
         VGroup(          
@@ -47,86 +47,66 @@ class SpecParms(HasTraits):
         )
 
     def _conv_default(self): 
-        return SpectralConverter(input_array=self._lambdas, 
+        return SpectralConverter(input_array=self.lambdas, 
                                  input_units=config.xunit) # self.x_unit) <-- issue
     
-    # Private lambdas
-    def __lambdas_default(self): 
+    def _lambdas_default(self): 
         return linspace(config.xstart,
                         config.xend,
                         config.xpoints)
     
 
-    # Replace w/ button
     def _update_fired(self):
         """ Set self.lambdas to self._lambdas.  If user didn't change anything,
         doesn't trigger a superfluous redraw.  If user changes sample size,
         then shapes change and can't do "allclose"
         """
-        if self.lambdas.shape == self._lambdas.shape:
-            if np.allclose(self.lambdas, self._lambdas):
-                return 
-
-        self.lambdas = np.copy(self._lambdas) #<--- Otherwise, same obj ref
-
-    def _lambdas_default(self):
-        return self._lambdas
-
+        # Update data, update converter
+        self.lambdas = np.linspace(self.xstart, self.xend, self.x_samples)
+        self.conv.input_array = self.lambdas
+        self.conv.input_units = self.x_unit
+        
     def _x_unit_default(self): 
         return config.xunit
 
     def _valid_units_default(self): 
         return self.conv.valid_units
 
-    #@cached_property
-    def _get_x_samples(self): 
-        return self._lambdas.shape[0]
-
-    def _set_x_samples(self, samples):
-        self._lambdas= np.linspace(self.xstart, self.xend, num=samples)
-
-    #@cached_property
     def _get_x_increment(self):  
-        return round(abs(self.xstart - self.xend) / self.x_samples, 4)
+        return  abs(self.xstart - self.xend) / self.x_samples
 
     def _x_unit_changed(self):
-        self.conv.output_units=self.x_unit     #INPUT ALWAYS KEPT AT NANOMETERS, THIS IS IMPORTANT DONT EDIT
-        self._lambdas = self.conv.output_array
-
-    #@cached_property
-    def _get_xstart(self): 
-        return self._lambdas[0]
-
-    #@cached_property
-    def _get_xend(self):  
-        return self._lambdas[-1]
+        """ Get new array, set xstart, xend form it and all will sync up."""
+        self.conv.output_units = self.x_unit     #INPUT ALWAYS KEPT AT NANOMETERS, THIS IS IMPORTANT DONT EDIT
+        outnew = self.conv.output_array
+        self.xstart = outnew[0]
+        self.xend = outnew[-1]
 
     def _set_xstart(self, xstart):
-        xtart = int(xstart) # cast ui input 
-        if xstart >= self.xend:
-            raise SpectralError('xend must be >= xstart')        
-        self._lambdas=linspace(xstart, self.xend, num=self.x_samples)
+        xstart = int(xstart) # cast ui input 
+        if xstart < 0:
+            raise SpectralError('Only positive spectral values allowed!')
+        self.xstart = xstart
 
     def _set_xend(self, xend):
         xend = int(xend)
-        if xend <= self.xstart:
-            raise SpectralError('xend must be >= xstart')
-        self._lambdas=linspace(self.xstart, xend, num=self.x_samples)
+        if xend < 0:
+            raise SpectralError('Only positive spectral values allowed!')        
+        self.xend = xend
 
     def specific_array(self, new_unit): 
         """Method Used to return a unit-converted array to models which specifically require certain unit systems (aka uM)"""
         if new_unit not in self.valid_units:
-            print 'could not update based on this non_valid unit,', str(new_unit)
-            return self._lambdas
-        else:
-            self.conv.input_array=self._lambdas
-            self.conv.output_units=new_unit
-            return self.conv.output_array   
+            raise SpecralError('Invalid spectral unit: %s' % new_unit)
+    
+        self.conv.input_array = np.copy(self.lambdas) #Copy probably necessary
+        self.conv.output_units=new_unit
+        return self.conv.output_array   
 
     def simulation_requested(self):
         ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
         ### trait_get is shortcut to return dic if the keys are adequate descriptors for output
-        return {'lambdas':self._lambdas, 
+        return {'lambdas':self.lambdas, 
                 'xstart':self.xstart,
                 'xend':self.xend,
                 'x_increment':self.x_increment,

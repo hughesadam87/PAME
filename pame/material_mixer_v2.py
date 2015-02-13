@@ -29,12 +29,15 @@ class DoubleMixer(HasTraits):
     Vfrac=Range(low=0.0, high=1.0, value=.1)   #Mixing percent
 
     implements(IMixer)   #Inherited by subclasses
-
+    
     # LEAVE AS IS, NECESSARY
     def __init__(self, *args, **kwargs):
         super(DoubleMixer, self).__init__(*args, **kwargs)
-        self.on_trait_change(self.update_mix, 'solutematerial, solventmaterial, esolvent, esolute, Vfrac') 
-        self.update_mix()
+        # Yes, neccesary to listen to materials and earrays
+        self.on_trait_change(self.update_mix, 'solutematerial, solventmaterial, \
+                                               esolvent, esolute, Vfrac') 
+        # Let composite_object initialize       
+        #self.update_mix() 
 
     # Doesn't set any default materials, so impetus is on calling programs
     def update_mix(self): 
@@ -42,12 +45,31 @@ class DoubleMixer(HasTraits):
     
 class LinearSum(DoubleMixer):
     """ Linear mixing: V(e1) + (1-V)e2 for e1=solute, e2=solvent"""
+
+    # alpha = percent material 1.  Beta = percent material 2
+    alpha = Range(0.0, 1.0, value=0.5)
+    beta = Property(Range(0.0, 1.0, value=0.5), depends_on='alpha')
     
     def update_mix(self):
-        V = float(self.Vfrac) #<--- Seem to be getting unicode
-        self.mixedarray = V*self.esolute + (1-V)*self.esolvent
+        print' in linear sum update mix'
+        self.mixedarray = self.alpha*self.esolute + self.beta*self.esolvent
         
-    traits_view = View('Vfrac')
+    def _alpha_changed(self):
+        self.update_mix()
+        
+    def _get_beta(self):
+        return 1.0 - self.alpha
+    
+    def _set_beta(self, beta):
+        self.alpha = 1.0 - beta
+    
+        
+    traits_view = View(
+                  VGroup(
+                      Item('alpha', label='% Mat 1'),
+                      Item('beta', label='% Mat 2')
+                      )
+                  )
 
 class MG_Mod(DoubleMixer):    
     """Modified MG equations by Garcia; specific to spheres with dipoles. 
@@ -85,12 +107,13 @@ class MG_Mod(DoubleMixer):
         """Its important to update the mixed array all at once because there's a listenter 
         in another method that can change at exact moment anything changes
         """
-        # Why isn't this vectoriezed???
+        print' in mgmod update mix'
+        
         eeff=np.empty(self.esolute.shape, dtype='complex')
-        em = np.copy(self.esolvent)
+        em = self.esolvent#np.copy(self.esolvent)
         emr = em.real
         emi = em.imag  #Usually zero
-        ep = np.copy(self.esolute)
+        ep = self.esolute#np.copy(self.esolute)
         epr = ep.real
         epi = ep.imag
 
