@@ -211,6 +211,7 @@ class NanoSphereShell(NanoSphere):
                     #TotalMix syncs CompositeCore to solutematerial.  Solution not ideal
 
     np_plots=Instance(DoubleSview)
+    free_path = Bool(False)
 
     earray=DelegatesTo('TotalMix')
     Vfrac=DelegatesTo('TotalMix')

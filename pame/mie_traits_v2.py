@@ -336,7 +336,9 @@ class sphere_shell(bare_sphere, shell):
     def update_cross(self):
         print 'full mie updating cross'
         for i in range(self.ecore.shape[0]):
-            ext_term=0.0;	scatt_term=0.0;	 ext_old=50.0 	  #Loop related parameters to ensure proper entry
+            ext_term=0.0
+	    scatt_term=0.0
+	    ext_old=50.0 	  #Loop related parameters to ensure proper entry
             k=self.k_medium[i]
             x=k*float(self.r_core)         #N (nm CANCEL so conv not needed)
             y=k*float(self.shell_width+self.r_core)  #THIS IS IMPORTANT!!

@@ -142,7 +142,7 @@ class GlobalScene(HasTraits):
      
      stratagroup = Group(
          Item('stratastyle', show_label=False),
-         label='Choose Strata'
+         label='Choose Substrate Type'
      )
 
      choosesimgroup=Group(
