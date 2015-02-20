@@ -18,9 +18,6 @@ class ABCExternal(BasicMaterial):
     xend = Property(Float)
     xpoints = Property(Int)
     file_spec_unit = Str()        
-    
-    # File stores its own instance of converter to change representations
-    converter = Instance(SpectralConverter) 
 
     interpolation = Enum('linear',
                          'nearest', 
@@ -33,6 +30,7 @@ class ABCExternal(BasicMaterial):
     file_x = Array()      
     file_n = CArray() #Complex array nr, ni  
     file_e = Property(CArray, depends_on='file_n')
+    xps_in_nm = Array() #<-- x values in file in nanometers
     
     def _get_file_e(self):
         return complex_n_to_e(self.file_n)
@@ -60,17 +58,12 @@ class ABCExternal(BasicMaterial):
         """Interpolates complex arrays from file data and sets self.narray (real and imaginary),
         could also set dielectric function, since BasicMaterial updates when either is changed."""
         nps = self.file_n
-        xps = self.converter.specific_array(self.specparms.x_unit)
-                
-        def _is_flipped(array):
-            if array[0] > array[-1]:
-                return True
+        xps = np.copy(self.xps_in_nm)
         
-        # If lambas and xps are not in the same order, reverse
-        if _is_flipped(self.lambdas) != _is_flipped(xps):
+        # xps is always nm, so if goes large, small, reverse N's
+        if xps[0] > xps[-1]:
             nps=nps[::-1] 
-            xps=xps[::-1]    #Syntax to reverse an array 
-            #print "Had to reverse values in material_files.update_interp()\n"
+            xps=xps[::-1]    #Syntax to reverse an array             
 
         # Spline interpolation.  
         f = scinterp.interp1d(xps, nps, kind=self.interpolation, bounds_error=False)             
@@ -90,11 +83,14 @@ class ABCExternal(BasicMaterial):
 
         self.narray = narray
 
-    def _converter_default(self):
-        """ If file unit is not same as current unit"""
-        return SpectralConverter(input_array=self.file_x,
-                              input_units=self.file_spec_unit,
-                              output_units=self.specparms.x_unit)  
+    def _xps_in_nm_default(self):
+        """ Store file datapoints in nm (only need once assuming Nanometer
+        unit system is used internally in PAME
+        """
+        conv = SpectralConverter(input_array=self.file_x,
+                                 input_units=self.file_spec_unit,
+                                 output_units='Nanometers')  
+        return conv.output_array
 
     def update_data(self):
         """ Must set header, set file_x, set file_n and call updated_interp() """

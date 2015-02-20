@@ -97,7 +97,7 @@ def plot_line_points(*args, **kwargs):
 
 class OpticalView(HasTraits):
     """ Plot reflectance, transmission etc... from dielectric slab."""
-    optic_model = Instance(HasTraits) # DielectricSlab object, must be initialized by calling fcn        
+    optic_model = Instance(HasTraits) # DielectricSlab object, must be initialized by calling fcn            
     optical_stack = Property()
     x_unit = Property()
 
@@ -207,7 +207,7 @@ class OpticalView(HasTraits):
         """ Return either Angles (rads) or current spectral unit """
         if self.primary_axis == 'Wavelengths':
             return 'Angles'
-        return self.optic_model.x_unit    
+        return self.optic_model.specparms.working_x_unit   
     
     @on_trait_change('average, show_legend, real_or_imag, primary_axis,\
                       lam_samples.value, ang_samples.value')
@@ -234,7 +234,8 @@ class OpticalView(HasTraits):
         ostack = self.optical_stack #So don't have to recall property over and over
         
         # Depending on primary_axis, set X to lambdas Y to Angles or vice/ver
-        primary_x = self.optic_model.lambdas[::self.lam_samples.value]
+        # For x, resample wavelengths and choose current unit system via request()
+        primary_x = self.optic_model.specparms.working_lambdas[::self.lam_samples.value]
         primary_y = self.optic_model.angles[::self.ang_samples.value]
         colormap = config.LINECMAP
         
@@ -422,9 +423,8 @@ class ABCView(HasTraits):
     model = Instance(HasTraits) #<-- Material object, must be initialized with
 
     # Can't delegate specparms to model, or lambdas would be delegate of delegate, fails
-    specparms = Instance(HasTraits, SHARED_SPECPARMS)  
-    lambdas = DelegatesTo('specparms')                
-    
+    specparms = Instance(HasTraits, SHARED_SPECPARMS) 
+    working_lambdas = DelegatesTo('specparms')
     data = Instance(ArrayPlotData)
     
     def __init__(self, *args, **kwargs):
@@ -438,11 +438,11 @@ class ABCView(HasTraits):
     def _data_default(self):
         """ Default plotdata with "x" and then never have to recreate."""
         data = ArrayPlotData()#dict(x=self.lambdas, er=[], ei=[], nr=[], ni=[]))    
-        data.set_data('x', self.lambdas)
+        data.set_data('x', self.working_lambdas )
         return data        
         
-    def _lambdas_changed(self):
-        self.data.set_data('x', self.lambdas)
+    def _working_lambdas_changed(self):
+        self.data.set_data('x', self.working_lambdas)
         self.create_plots() #Redraw to change xaxis label
     
     def add_tools_title(self, plot, title_keyword):
@@ -451,10 +451,10 @@ class ABCView(HasTraits):
         plot.legend.visible = True
 
         bottom_axis = PlotAxis(plot, orientation='bottom',
-                               title=self.specparms.x_unit, 
-                               label_color='red', 
-                               label_font='Arial', 
-                               tick_color='green',
+                               title=self.specparms.working_x_unit, 
+                         #      label_color='red', 
+                         #      label_font='Arial', 
+                         #      tick_color='green',
                                tick_weight=1)
 
         # CUSTOM YLABEL, why bother?
@@ -591,14 +591,14 @@ class ScatterView(ABCView):
         rounding = 3  #Change for rounding of these 
         value = max(array)
         index = int(where(array==value)[0])  #'where' returns tuple since is can be used on n-dim arrays
-        x = self.lambdas[index]
+        x = self.working_lambdas[index]
         return (round(x,rounding), round(value,rounding))
 
     def compute_area(self, array):
         """ Get the area under a curve.  If I want to change integration style, 
         should just make the integration style an Enum variable and redo this 
         on a trait change"""
-        return simps(array, self.lambdas, even='last')
+        return simps(array, self.working_lambdas, even='last')
 
     def create_plots(self):
         self.sigplot = ToolbarPlot(self.data)

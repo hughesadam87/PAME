@@ -54,30 +54,26 @@ class SpectralConverter ( HasTraits ):
         return self.input_array[0]
 
     def _get_xend(self):  
-#	print 'before', self.xend.value
-        end=(self.input_array.shape[0])-1
-        return self.input_array[end]
+        return self.input_array[-1]
 
     def _get_xnewstart(self):
         return self.output_array[0]
 
     def _get_xnewend(self): 
-        end=self.output_array.shape[0]-1
-        return self.output_array[end]
+        return self.output_array[-1]
 
     def _get_valid_units(self): 
         return self.proportional+self.reciprocal
     
     def specific_array(self, new_unit): 
         """Return a unit-converted array without changing current settings"""
-        print 'in specific array', new_unit
         if new_unit not in self.valid_units:
             raise ConversionError('Invalid spectral unit: %s' % new_unit)
     
         # Temporarily change outunit, send, return it back
         old_unit = self.output_units
         self.output_units = new_unit
-        specificarray = self.output_array   
+        specificarray = self.output_array  #propety so not copied 
         self.output_units = old_unit
         return specificarray    
     

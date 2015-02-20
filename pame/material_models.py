@@ -155,8 +155,7 @@ class Dispwater(ABCMaterialModel):
         return 'Dispersive Water'	
     
     def update_data(self): 	
-        nm_xarray = self.specparms.conv.specific_array('Nanometers')
-        self.narray=1.32334 + (self.A/ nm_xarray**2 ) - (self.B/nm_xarray**4)   #Entry in nm
+        self.narray=1.32334 + (self.A/ self.lambdas**2 ) - (self.B/self.lambdas**4)   #Entry in nm
 
     @on_trait_change('A, B')
     def update_model(self):

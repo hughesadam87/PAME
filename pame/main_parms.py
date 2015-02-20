@@ -13,19 +13,23 @@ class SpectralError(Exception):
     """ """
 
 class SpecParms(HasTraits):
-    '''Global class which defines variables and methods shared by all other class methods''' 
-
+    """ Creates spectral array from xstart, xend, xsamples and xunit.
+    Internally, pame uses nm as a the primary spectral unit for numerical
+    stability and consistency in calculations across components of the software.
+    """
+    
     conv=Instance(SpectralConverter)  
     valid_units = DelegatesTo('conv')
     x_unit = Enum(values='valid_units')   #THIS IS HOW YOU DEFER A LIST OF VALUES TO ENUM
 
-    # Privately, changing units, sampling etc... will update _lambdas in realtime
-    # but lambdas is only updated through button push, which triggers trait events.
-    #_lambdas=Array
-    lambdas=Array
-
+    # Lambdas is the interally stored nanometers array
+    # Working lambdas is in current x-unit (used in plotting even when
+    # nanometers array is not changed)
+    working_lambdas = Array
+    working_x_unit = Str("Nanometers")
+    lambdas = Array
     update = Button
-
+    
     x_samples=Int(config.xpoints)
     #x_samples=Property(Int, depends_on=['_lambdas'])
     xstart = Float(config.xstart)#Property(Float, depends_on=['_lambdas'])
@@ -47,13 +51,19 @@ class SpecParms(HasTraits):
         )
 
     def _conv_default(self): 
+        """ Starts with nanometer inputs and outputs"""
         return SpectralConverter(input_array=self.lambdas, 
-                                 input_units=config.xunit) # self.x_unit) <-- issue
+                                 input_units='Nanometers',
+                                 output_units='Nanometers', #<-- DO NOT CHANGE
+                                 )         
     
     def _lambdas_default(self): 
         return linspace(config.xstart,
                         config.xend,
                         config.xpoints)
+    
+    def _working_lambdas_default(self):
+        return np.copy(self.lambdas)
     
 
     def _update_fired(self):
@@ -61,13 +71,23 @@ class SpecParms(HasTraits):
         doesn't trigger a superfluous redraw.  If user changes sample size,
         then shapes change and can't do "allclose"
         """
-        # Update data, update converter
-        self.lambdas = np.linspace(self.xstart, self.xend, self.x_samples)
-        self.conv.input_array = self.lambdas
-        self.conv.input_units = self.x_unit
+        # Set the input array to user's new units (kind of roundabout)
+        # and return the nanometers array as output units
+        self.conv.input_array = np.linspace(self.xstart, 
+                                            self.xend,
+                                            self.x_samples)
+        out = self.conv.specific_array('Nanometers')
+        # Outunit still fixed to nanometers
+        if not np.allclose(self.lambdas, out):
+            self.lambdas = out
+            
+        # Trigger an update anytime update fires, even if doesn't change
+        # self.lambdas so that plots can redraw their axis
+        self.working_x_unit = self.conv.input_units #MUST COME BEFORE WORKIGN_LAMBDAS
+        self.working_lambdas = np.copy(self.conv.input_array)
         
     def _x_unit_default(self): 
-        return config.xunit
+        return 'Nanometers'
 
     def _valid_units_default(self): 
         return self.conv.valid_units
@@ -77,27 +97,39 @@ class SpecParms(HasTraits):
 
     def _x_unit_changed(self):
         """ Get new array, set xstart, xend form it and all will sync up."""
-        self.conv.output_units = self.x_unit     #INPUT ALWAYS KEPT AT NANOMETERS, THIS IS IMPORTANT DONT EDIT
-        outnew = self.conv.output_array
-        self.xstart = outnew[0]
-        self.xend = outnew[-1]
+        oldarray = self.conv.specific_array(self.x_unit)
+        
+        self.conv.input_units = self.x_unit   
+        self.conv.input_array = np.linspace(oldarray[0], 
+                                            oldarray[-1],
+                                            self.x_samples)        
+        self.xstart = oldarray[0]
+        self.xend = oldarray[-1]
 
     def _set_xstart(self, xstart):
         xstart = int(xstart) # cast ui input 
         if xstart < 0:
             raise SpectralError('Only positive spectral values allowed!')
         self.xstart = xstart
+        self.conv.input_array = np.linspace(self.xstart, 
+                                            self.xend,
+                                            self.x_samples)         
 
     def _set_xend(self, xend):
         xend = int(xend)
         if xend < 0:
             raise SpectralError('Only positive spectral values allowed!')        
         self.xend = xend
+        self.conv.input_array = np.linspace(self.xstart, 
+                                            self.xend,
+                                            self.x_samples) 
 
     def simulation_requested(self):
-        ''' Method to return dictionary of traits that may be useful as output for paramters and or this and that'''
+        ''' Method to return dictionary of traits that may be useful as 
+        output for paramters and or this and that
+        '''
         ### trait_get is shortcut to return dic if the keys are adequate descriptors for output
-        return {'lambdas':self.lambdas, 
+        return {'lambdas':self.working_lambdas, #<-- Unit user is working in 
                 'xstart':self.xstart,
                 'xend':self.xend,
                 'x_increment':self.x_increment,
@@ -111,7 +143,9 @@ class AngleParms(HasTraits):
     and Modes used on reflectance computations.
     """
 
-    Mode=Enum('S-polarized', 'P-polarized', 'Unpolarized')
+    Mode = Enum('S-polarized',
+               'P-polarized',
+               'Unpolarized')
     
     angle_start = Float(0)
     angle_stop = Float(45)

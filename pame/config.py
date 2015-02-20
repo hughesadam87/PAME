@@ -28,11 +28,11 @@ MATDELIM = '\t'
 USESOPRA = True
 USERIINFO = True #slows performance it's so large
 
-# Spectral parameters
+# Spectral parameters IN NANOMETERS (MUST BE IN NANOMETERS, CAN CONVERT
+# IN PROGRAM)
 xstart = 300 
 xend = 700
 xpoints = 100
-xunit = 'Nanometers'
 
 # Simulation
 # ----------
