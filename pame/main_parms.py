@@ -106,20 +106,12 @@ class SpecParms(HasTraits):
         self.xstart = oldarray[0]
         self.xend = oldarray[-1]
 
-    def _set_xstart(self, xstart):
-        xstart = int(xstart) # cast ui input 
-        if xstart < 0:
-            raise SpectralError('Only positive spectral values allowed!')
-        self.xstart = xstart
+    def _xstart_changed(self):
         self.conv.input_array = np.linspace(self.xstart, 
                                             self.xend,
                                             self.x_samples)         
 
-    def _set_xend(self, xend):
-        xend = int(xend)
-        if xend < 0:
-            raise SpectralError('Only positive spectral values allowed!')        
-        self.xend = xend
+    def _xend_changed(self):
         self.conv.input_array = np.linspace(self.xstart, 
                                             self.xend,
                                             self.x_samples) 
