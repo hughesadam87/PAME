@@ -1,6 +1,7 @@
 
-from traits.api import Str, HasTraits, Instance, Button, implements, File, Property, Bool
-from traitsui.api import View, Item, Group, Include
+from traits.api import Str, HasTraits, Instance, Button, implements, File, \
+     Property, Bool, Any
+from traitsui.api import View, Item, Group, Include, InstanceEditor
 from interfaces import IMaterial, IAdapter
 import os.path as op 
 
@@ -15,14 +16,16 @@ class BasicAdapter(HasTraits):
     notes=Str('Not Found')
     matobject = Instance(IMaterial)
     preview = Button
+    testview = Any # SHows material after preview fired
     apikey = 'basic' #<-- Materials API identifier
 
     def _preview_fired(self): 
         """ View the material as plot"""
         if self.matobject == None:
             self.populate_object()
-        self.matobject.edit_traits(kind='livemodal')      #Modal screws up objects for some reason
-        self.destory_object()
+        self.testview = self.matobject.mview
+    #    self.matobject.edit_traits(kind='livemodal')      #Modal screws up objects for some reason
+    #    self.destory_object()
 
     def populate_object(self): 
         """Instantiate selected object."""
@@ -42,7 +45,12 @@ class BasicAdapter(HasTraits):
         Item('name', style='readonly'),   #THESE ARENT READ ONLY!
         Item('source', style='readonly'),
         Item('notes'),
-        Item('preview'), 
+        Item('preview', show_label=False, visible_when='testview is None'), 
+        Item('testview', 
+             visible_when='testview is not None',
+             editor=InstanceEditor(),
+             style='custom',
+             show_label=False)
     )
 
     traitsview= View(Include('basicgroup'),              

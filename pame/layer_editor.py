@@ -166,17 +166,17 @@ class LayerEditor(HasTraits):
             else:
                 if self.mat_class=='Mixed Bulk Materials':
                     newlayer=Composite(material=newmat, 
-                                       d = self.selected_d,
+                                       d = float(self.selected_d),
                                        ) 
                
                 elif self.mat_class=='Bulk Material':
                     newlayer=BasicLayer(material=newmat, 
-                                        d = self.selected_d,
+                                        d = float(self.selected_d),
                                         )
 
                 elif self.mat_class=='Nanoparticle Objects':
                     newlayer=Nanoparticle(material=newmat, 
-                                          d = self.selected_d,
+                                          d = float(self.selected_d),
                                           )
 
             self.stack[self.selected_index] = newlayer

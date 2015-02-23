@@ -61,7 +61,7 @@ class BasicMaterial(HasTraits):
         self.update_data()
 
     def _mviewbutton_fired(self): 
-        self.mview.edit_traits(kind='live')
+        self.mview.edit_traits(kind='live') #<-- why live?
         
     def _interpolation_default(self):
         return None

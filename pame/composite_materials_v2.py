@@ -20,7 +20,7 @@ class CompositeMaterial(BasicMaterial):
 
 
     Mix=Instance(IMixer)
-    MixingStyle=Enum('MGMOD', 
+    MixingStyle=Enum('MG Garcia', 
                      'Bruggeman (root)', 
                      'QCACP (root)',
                      'MG (root)',
@@ -118,7 +118,7 @@ class CompositeMaterial(BasicMaterial):
         elif self.MixingStyle=='QCACP (root)':
             self.Mix=QCACP(**kwds)
 
-        elif self.MixingStyle=='MGMOD':
+        elif self.MixingStyle=='MG Garcia':
             self.Mix=MG_Mod(**kwds)
             
         elif self.MixingStyle=='LinearSum':
@@ -328,7 +328,8 @@ class SphericalInclusions_Disk(SphericalInclusions):
     def __init__(self, *args, **kwargs):
         super(SphericalInclusions_Disk, self).__init__(*args, **kwargs)
 
-    def _r_platform_default(self): return 31250.0 #62.5uM diameter
+    def _r_platform_default(self):
+        return 31250.0 #62.5uM diameter
 
     def _get_d_particle(self): 
         return 2.0*self.r_particle

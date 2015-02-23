@@ -154,7 +154,7 @@ class SimConfigure(HasTraits):
                     Item('choose_layers', style='custom', show_label=False, label='Deep Copy'),
                     Item('mater_only', label='Store', visible_when='choose_layers != "None"')
                     ),
-                label='Dielectric Slab'              
+                label='Multilayer Stack'              
 
                 ),
             layout='tabbed'),
@@ -302,7 +302,7 @@ class ABCSim(HasTraits):
     simeditor =\
         TableEditor(
             columns=[
-                ObjectColumn(name='trait_name', label='Trait Name'),         #Add these in general sim class
+                ObjectColumn(name='trait_name', label='Parameter'),         #Add these in general sim class
                 ObjectColumn(name='start', label='Start Value'),
                 ObjectColumn(name='end', label='End Value'),
                 ],
