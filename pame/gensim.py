@@ -446,7 +446,7 @@ class ABCSim(HasTraits):
 
         # Are traits missing?
         if len(missing) > 0:
-            status_message='<font color="red"> Could not find required traits: </font>'
+            status_message='<font color="red"> Could not find required input: </font>'
             status_message += ', '.join(missing)
             ready = False
 
@@ -454,14 +454,14 @@ class ABCSim(HasTraits):
         trait_names = [obj.trait_name for obj in self.sim_variables]
         duplicates = set([name for name in trait_names if trait_names.count(name) > 1])
         if duplicates:
-            status_message='<font color="red"> Duplicate simulation trait(s) found: </font>'
+            status_message='<font color="red"> Duplicate simulation input(s) found: </font>'
             for trait in duplicates:
                 status_message += trait + ',  '
             ready = False                        
 
 
         if ready:
-            status_message='<font color="green"> Simulation ready: all traits found</font>'
+            status_message='<font color="green"> Simulation ready: all input found</font>'
             ready = True
 
         self.ready = ready
