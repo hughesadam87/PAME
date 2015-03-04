@@ -33,7 +33,9 @@ class PlotSelector(HasTraits):
    def _selected_layer_changed(self):
       self.plot_dict = pamutils.flatten_traitobject(
                         self.selected_layer.material,
-                        IView) #<--- Types plots shown
+                        IView,
+                        ignore='model', #<--- Material/View recursion eror
+                        ) #<--- Types plots shown
       
       # Special sorting for objects of form [a, a.b, b.c.e]...
       # http://stackoverflow.com/questions/28156414/sorting-strings-in-python-that-have-a-hierarchical-alphabetical-order

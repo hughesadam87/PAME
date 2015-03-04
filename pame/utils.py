@@ -64,10 +64,15 @@ def flatten_dict(d, *types):
     return node_map
 
 #http://stackoverflow.com/questions/28140794/enthought-traits-hastraits-class-as-a-nested-dictionary/28145345#28145345
-def flatten_traitobject(traitobject, *types):
-    """ Flatten a trait object, return dictionary"""
+def flatten_traitobject(traitobject, *types, **kwargs):
+    """ Flatten a trait object, return dictionary.  Use ignore keyword
+    to pass over trait names that might cause recursion errors.  For example,
+    the mview trait has a reference back to model.  This will cause recursion 
+    loop between Material and Mview, so ignore it.
+    """
     node_map = {}
     node_path = [] 
+    ignore = kwargs.pop('ignore', [])
     def nodeRecursiveMap(traitobject, node_path): 
         for key in traitobject.editable_traits():
             val = traitobject.get(key)[key]
@@ -75,7 +80,8 @@ def flatten_traitobject(traitobject, *types):
                 if isinstance(val, types[0]):
                     node_map['.'.join(node_path + [key])] = val 
             try:
-                nodeRecursiveMap(val, node_path + [key])
+                if key not in ignore:
+                    nodeRecursiveMap(val, node_path + [key])
             except (AttributeError, TypeError):
                 pass
     nodeRecursiveMap(traitobject, node_path)
