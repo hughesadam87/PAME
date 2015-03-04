@@ -52,7 +52,7 @@ tree_editor = TreeEditor(
         # TOP NODE
         TreeNode( node_for  = [ MaterialList ],
                   auto_open = True,
-                  label     = '=All Materials',
+                  label     = '=Bulk Materials',
                   view      = no_view,
                   name      = 'Material models, files and databases',
                   ),        
