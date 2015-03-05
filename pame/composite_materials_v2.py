@@ -150,7 +150,6 @@ class CompositeMaterial(BasicMaterial):
             pass
 
 
-
 class CompositeMaterial_Equiv(CompositeMaterial):
     """From Effective THeory of composites with interphase:
           
