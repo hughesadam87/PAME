@@ -5,15 +5,13 @@ from traitsui.api import *
 from interfaces import IMixer, IStorage, IMaterial
 import math
 from material_mixer_v2 import MG_Mod, Bruggeman, QCACP, MG, LinearSum
-from pame.material_chooser import SHARED_MCHOOSER
+from pame.modeltree_v2 import SHARED_TREE
 
 class CompositeMaterial(BasicMaterial):
     """Still inherits basic traits like earray, narray and how they are 
     interrelated
     """
-    materialchooser = Instance(HasTraits, SHARED_MCHOOSER)    
-    selectedtree = DelegatesTo('materialchooser')
-    mat_class = DelegatesTo('materialchooser')
+    selectedtree = Instance(HasTraits, SHARED_TREE)  
 
     Material1=Instance(IMaterial)
     Material2=Instance(IMaterial)   #Make these classes later
@@ -45,7 +43,6 @@ class CompositeMaterial(BasicMaterial):
                            Item('mviewbutton', label='Show Composite Material', show_label=False),
                            Item('selectmat1', label='Change Material1', show_label=False), 
                            Item('selectmat2', label='Change Material2', show_label=False),
-                           Item('mat_class', label='Material Class'),
                            Item('mat_name', label='Material Name', show_label=False)
                            ),
                        Tabbed( 
@@ -136,7 +133,7 @@ class CompositeMaterial(BasicMaterial):
         try:
             selected_adapter=self.selectedtree.current_selection
             selected_adapter.populate_object()
-            self.Material1=selected_adapter.matobject
+            self.Material1 = selected_adapter.matobject
         except (TypeError, AttributeError):  
             pass        
         
@@ -147,10 +144,9 @@ class CompositeMaterial(BasicMaterial):
         try:
             selected_adapter=self.selectedtree.current_selection
             selected_adapter.populate_object()
-            self.Material2=selected_adapter.matobject
+            self.Material2 = selected_adapter.matobject
         except (TypeError, AttributeError):  
             pass
-
 
 
 class CompositeMaterial_Equiv(CompositeMaterial):

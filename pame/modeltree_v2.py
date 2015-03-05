@@ -15,7 +15,10 @@ from File_Finder import LiveSearch
 from simple_materials_adapter import BasicAdapter, SellmeirAdapter, ConstantAdapter, \
     DrudeBulkAdapter, SopraFileAdapter, DispwaterAdapter, XNKFileAdapter, CauchyAdapter
 
+# Adapters
 from yamlmaterials import YamlAdapter
+import composite_materials_adapter as cma
+import nano_materials_adapter as nma
 
 from pame import sopra_dir, riinfo_dir, XNK_dir
 import config
@@ -52,12 +55,50 @@ tree_editor = TreeEditor(
         # TOP NODE
         TreeNode( node_for  = [ MaterialList ],
                   auto_open = True,
-                  label     = '=Bulk Materials',
+                  label     = '=All Materials',
                   view      = no_view,
                   name      = 'Material models, files and databases',
                   ),        
         
-        # Second level (models, files, database)
+        TreeNode( node_for  = [ MaterialList ],
+                  auto_open = False,
+                  children  = 'CompMaterials',
+                  label     = '=Composite Materials',
+                  name      = 'Mixed materials: binary liquids, spheres in shells...',
+                  view      = no_view,
+                  add       = [ Category ]
+                  ),        
+        
+        TreeNode( node_for  = [ MaterialList ], #<--- Not really, node of other nodes/categories
+                  auto_open = False,
+                  children  = 'NanoMaterials',
+                  label     = '=NanoMaterials',
+                  name      = 'Nanosphere + shell',
+                  view      = no_view,
+                  add       = [ Category ]
+                  ),             
+
+        # Couldn't get this to be a folder node proper because needs to be
+        # a folder of folders, and couldn't figure out how to add BulkMateirals
+        # to MaterialList, because material list is list of categories.  Would
+        # need to add a category of categories EG:
+            # BulkMaterial
+            #  [ModelCategories, FileCategeories, DBCategories]
+            #
+            
+        # But material list expects list of materials not list of list of materials
+        # I did try a lot of messing around but nothing worked.
+        TreeNode( node_for  = [ MaterialList ],
+                  auto_open = False,
+#                  children  = 'BulkMaterials',
+                  label     = '=< BulkMaterials >',
+                  name      = 'Material models or refractive index files',
+                  view      = no_view,
+                  add       = [ IAdapter ]
+                  ),       
+      
+        
+#        Second level (models, files, database)
         TreeNode( node_for  = [ MaterialList ],
                   auto_open = False,
                   children  = 'ModelCategories',   #Trait
@@ -232,12 +273,26 @@ class Model( HasTraits ):
 
     def update_tree(self): 
         """ Updates the entire tree """
-        # ALL MODELS MUST GO HERE!
         
         self.materials_trees = MaterialList(
 
-            ModelCategories = 
-            [
+            #Composite and Nano materials
+            #------------
+            NanoMaterials = [
+                nma.NanoSphereAdapter(),
+                nma.NanoSphereShellAdapter()
+                ],
+            
+            CompMaterials = [
+                        cma.CompositeAdapter(),
+                        cma.CompositeMaterial_EquivAdapter(),
+                        cma.SphericalInclusions_DiskAdapter()
+                        ],
+
+            #Bulk Materials
+            #--------
+            ModelCategories = \
+               [
                 Category(
                     name      = 'Non-Metals',
                     Materials = self._adaptersort(self.nonmetals)
@@ -247,9 +302,9 @@ class Model( HasTraits ):
                     Materials = self._adaptersort(self.metals)
                 )
                 ],
-
-            DBCategories = 
-            [
+    
+            DBCategories = \
+               [
                 Category(
                     name      = 'XNK Database',
                     Materials = self._adaptersort(self.xnkdb) 
@@ -259,15 +314,15 @@ class Model( HasTraits ):
                     name      = 'Sopra Database',
                     Materials = self._adaptersort(self.sopradb) 
                     ),
-
+    
                 Category(
                     name      = 'RIINFO Database',
                     Materials = self._adaptersort(self.riinfodb),
                     ),
                 ],
-
-            FileCategories = 
-            [
+    
+            FileCategories = \
+               [
                 Category(
                     name      = 'Sopra Files',
                     Materials = self._adaptersort(self.soprafiles)
@@ -276,9 +331,9 @@ class Model( HasTraits ):
                     name      = 'NK Files',
                     Materials = self._adaptersort(self.nkfiles)
                     ),
-
-                ],
+                ],       
         )
+        
 
     view = View(
         VSplit(
@@ -296,6 +351,10 @@ class Model( HasTraits ):
         width=.8,
         height=.8,
     )
+    
+    
+# SHARED TREE
+SHARED_TREE = Model()
 
 
 

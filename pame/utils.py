@@ -32,11 +32,12 @@ class DynamicRange( HasPrivateTraits ):
     
     # Traits view definitions:
     traits_view = View(Item('value', show_label=False, 
-                            editor = RangeEditor( low_name    = 'low',
-                                                    high_name   = 'high',
-                                                    format      = '%.1f',
-                                                    label_width = 28,
-                                                    mode        = 'auto' )                            
+                            editor = RangeEditor( 
+                                low_name    = 'low',
+                                high_name   = 'high',
+                                format      = '%.1f',
+                                label_width = 28,
+                                mode        = 'auto' )                            
                             )
                        )
 
@@ -80,6 +81,7 @@ def flatten_traitobject(traitobject, *types, **kwargs):
                 if isinstance(val, types[0]):
                     node_map['.'.join(node_path + [key])] = val 
             try:
+                
                 if key not in ignore:
                     nodeRecursiveMap(val, node_path + [key])
             except (AttributeError, TypeError):
