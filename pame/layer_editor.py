@@ -10,7 +10,7 @@ from traitsui.table_filter \
      EvalTableFilter
 from collections import OrderedDict
 
-from pame.material_chooser import SHARED_MCHOOSER
+from pame.modeltree_v2 import SHARED_TREE
 from pame.materialapi import ALLMATERIALS
 
 class StackError(Exception):
@@ -19,8 +19,7 @@ class StackError(Exception):
 class LayerEditor(HasTraits):
     
     specparms = Instance(HasTraits, SHARED_SPECPARMS)
-    materialchooser = Instance(HasTraits, SHARED_MCHOOSER) 
-    selectedtree = DelegatesTo('materialchooser')
+    selectedtree = Instance(HasTraits, SHARED_TREE) 
 
     sync_rad_selection=Any
 

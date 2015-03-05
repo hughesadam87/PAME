@@ -5,14 +5,13 @@ from traitsui.api import *
 from interfaces import IMixer, IStorage, IMaterial
 import math
 from material_mixer_v2 import MG_Mod, Bruggeman, QCACP, MG, LinearSum
-from pame.material_chooser import SHARED_MCHOOSER
+from pame.modeltree_v2 import SHARED_TREE
 
 class CompositeMaterial(BasicMaterial):
     """Still inherits basic traits like earray, narray and how they are 
     interrelated
     """
-    materialchooser = Instance(HasTraits, SHARED_MCHOOSER)    
-    selectedtree = DelegatesTo('materialchooser')
+    selectedtree = Instance(HasTraits, SHARED_TREE)  
 
     Material1=Instance(IMaterial)
     Material2=Instance(IMaterial)   #Make these classes later

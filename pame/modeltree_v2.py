@@ -351,6 +351,10 @@ class Model( HasTraits ):
         width=.8,
         height=.8,
     )
+    
+    
+# SHARED TREE
+SHARED_TREE = Model()
 
 
 
