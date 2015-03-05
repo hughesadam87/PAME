@@ -13,7 +13,6 @@ class CompositeMaterial(BasicMaterial):
     """
     materialchooser = Instance(HasTraits, SHARED_MCHOOSER)    
     selectedtree = DelegatesTo('materialchooser')
-    mat_class = DelegatesTo('materialchooser')
 
     Material1=Instance(IMaterial)
     Material2=Instance(IMaterial)   #Make these classes later
@@ -45,7 +44,6 @@ class CompositeMaterial(BasicMaterial):
                            Item('mviewbutton', label='Show Composite Material', show_label=False),
                            Item('selectmat1', label='Change Material1', show_label=False), 
                            Item('selectmat2', label='Change Material2', show_label=False),
-                           Item('mat_class', label='Material Class'),
                            Item('mat_name', label='Material Name', show_label=False)
                            ),
                        Tabbed( 
@@ -136,7 +134,7 @@ class CompositeMaterial(BasicMaterial):
         try:
             selected_adapter=self.selectedtree.current_selection
             selected_adapter.populate_object()
-            self.Material1=selected_adapter.matobject
+            self.Material1 = selected_adapter.matobject
         except (TypeError, AttributeError):  
             pass        
         
@@ -147,7 +145,7 @@ class CompositeMaterial(BasicMaterial):
         try:
             selected_adapter=self.selectedtree.current_selection
             selected_adapter.populate_object()
-            self.Material2=selected_adapter.matobject
+            self.Material2 = selected_adapter.matobject
         except (TypeError, AttributeError):  
             pass
 

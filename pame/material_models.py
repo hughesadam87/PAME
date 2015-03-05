@@ -253,7 +253,7 @@ class DrudeBulk(ABCMetalModel):
 
     def update_data(self):   #THIS DOES FIRE AT INSTANTIATION
         m_xarray=self.specparms.conv.specific_array('Meters')
-        unity=array([complex(0.0,1.0)], dtype=complex)  #Gupta requries i * lambda, so this gets complex value of the xarray
+        unity = np.array([complex(0.0,1.0)], dtype=complex)  #Gupta requries i * lambda, so this gets complex value of the xarray
         self.earray = 1.0 - ( (m_xarray**2 * self.lam_collis) / (self.lam_plasma**2 * ( self.lam_collis + m_xarray*unity)  ) )
 
 if __name__ == '__main__':

@@ -21,7 +21,6 @@ class LayerEditor(HasTraits):
     specparms = Instance(HasTraits, SHARED_SPECPARMS)
     materialchooser = Instance(HasTraits, SHARED_MCHOOSER) 
     selectedtree = DelegatesTo('materialchooser')
-    mat_class = DelegatesTo('materialchooser')
 
     sync_rad_selection=Any
 
@@ -73,7 +72,6 @@ class LayerEditor(HasTraits):
                  enabled_when='selected_layer != solvent and selected_layer != substrate'),
             Item('changematerial', label='Configure Layer Material',
                  show_label=False, enabled_when='selected_layer is not None'),
-            Item('mat_class', label='Choose Material Type', style='simple'),
             ), 
 
         HGroup(
@@ -149,7 +147,8 @@ class LayerEditor(HasTraits):
         self.selectedtree.configure_traits(kind='modal')
 
         try:
-            selected_adapter=self.selectedtree.current_selection    
+            selected_adapter=self.selectedtree.current_selection  
+            mat_class = selected_adapter.mat_class
             # If user doesn't choose material, selected_adapter becomes a MaterialList isntead of None, why??
             selected_adapter.populate_object()
             newmat=selected_adapter.matobject	
@@ -164,20 +163,22 @@ class LayerEditor(HasTraits):
 
             # If changing normal layer
             else:
-                if self.mat_class=='Mixed Bulk Materials':
+                if mat_class=='mixed':
                     newlayer=Composite(material=newmat, 
                                        d = float(self.selected_d),
                                        ) 
                
-                elif self.mat_class=='Bulk Material':
+                elif mat_class== 'bulk':
                     newlayer=BasicLayer(material=newmat, 
                                         d = float(self.selected_d),
                                         )
 
-                elif self.mat_class=='Nanoparticle Objects':
+                elif mat_class == 'nano':
                     newlayer=Nanoparticle(material=newmat, 
                                           d = float(self.selected_d),
                                           )
+                else:
+                    raise Exception('mat_class "%s" not understood' % mat_class)
 
             self.stack[self.selected_index] = newlayer
             self.selected_layer = self.stack[self.selected_index]

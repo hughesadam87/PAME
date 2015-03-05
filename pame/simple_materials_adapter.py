@@ -10,6 +10,7 @@ class BasicAdapter(HasTraits):
     populate_object() method used to show an instance of the material.
     """
     implements(IAdapter)
+    mat_class = 'bulk' #<-- Don't change, needed by layer_editor
     
     name=Str('Basic Material')
     source=Str('Abstract Base Class for material')
@@ -18,7 +19,7 @@ class BasicAdapter(HasTraits):
     preview = Button
     testview = Any # SHows material after preview fired
     apikey = 'basic' #<-- Materials API identifier
-
+     
     def _preview_fired(self): 
         """ View the material as plot"""
         if self.matobject == None:
