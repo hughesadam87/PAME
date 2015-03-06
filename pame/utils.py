@@ -65,6 +65,9 @@ def flatten_dict(d, *types):
     return node_map
 
 #http://stackoverflow.com/questions/28140794/enthought-traits-hastraits-class-as-a-nested-dictionary/28145345#28145345
+
+# DEPCRECATED!  No longer use this for Pame main panel since plots encapsulate
+# themselves
 def flatten_traitobject(traitobject, *types, **kwargs):
     """ Flatten a trait object, return dictionary.  Use ignore keyword
     to pass over trait names that might cause recursion errors.  For example,

@@ -149,6 +149,18 @@ class CompositeMaterial(BasicMaterial):
             pass
 
 
+    def allview_requested(self, prefix=None):
+        """Dielectric for self, M1, M2
+        """
+        out = super(CompositeMaterial, self).allview_requested() #<-- no prefix
+        out.update(self.Material1.allview_requested(prefix='M1'))
+        out.update(self.Material1.allview_requested(prefix='M2'))
+        
+        if prefix:
+            out = dict( ('%s.%s'%(prefix, k), v) for k,v in out.items() )              
+        return out
+
+
 class CompositeMaterial_Equiv(CompositeMaterial):
     """From Effective THeory of composites with interphase:
           

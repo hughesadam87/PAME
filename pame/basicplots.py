@@ -509,7 +509,7 @@ class MaterialView(ABCView):
                     visible_when='interpolation is not None')
                 ),        
         Tabbed(
-            Item('eplot', editor=ComponentEditor(), dock='tab', label='Dielectric'),
+            Item('eplot', editor=ComponentEditor(), dock='tab', label='Permittivity'),
             Item('nplot', editor=ComponentEditor(), dock='tab', label='Index'), 
             show_labels=False         #Side label not tab label
             ),
@@ -531,7 +531,7 @@ class MaterialView(ABCView):
         plot_line_points(self.nplot, ('x','nr'), color='orange', name='n')
         plot_line_points(self.nplot, ('x','ni'), color='green', name='ik')         
 
-        self.add_tools_title(self.eplot, 'Dielectric vs. Wavelength')
+        self.add_tools_title(self.eplot, 'Dielectric Function vs. Wavelength')
         self.add_tools_title(self.nplot, 'Index of Refraction vs. Wavelength ')
 
     def update_data(self):    

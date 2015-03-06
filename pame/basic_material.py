@@ -14,6 +14,7 @@ import copy
 from pame.utils import complex_e_to_n, complex_n_to_e
 from pame.main_parms import SHARED_SPECPARMS
 
+
 class BasicMaterial(HasTraits):
     
     implements(IMaterial)
@@ -81,7 +82,7 @@ class BasicMaterial(HasTraits):
     def _get_karray(self): 
         return (2.0*math.pi*self.narray)/(self.lambdas) 
 
-
+    # Convention "X_requested" instead of "get_X" to distinguish from properties
     def simulation_requested(self):
         """Dictionary of various traits that are useful for outputting as parameters. Overwrite
         with personal tastes.
@@ -90,6 +91,16 @@ class BasicMaterial(HasTraits):
                 'source':self.source, #(not useful for simulation, right)                
                 'earray':self.earray,
                 'narray':self.narray}
+
+    def allview_requested(self, prefix=None):
+        """Organized references to view elements.  Used by main PAME UI.
+        """
+        out = {'perm':self.mview}
+        
+        if prefix:
+            out = dict( ('%s.%s' %(prefix, k), v) for k,v in out.items() )
+        
+        return out
 
 
 if __name__ == '__main__':

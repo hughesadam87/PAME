@@ -85,8 +85,21 @@ class NanoSphere(SphericalInclusions_Disk):
         out['material_core'] = self.CoreMaterial.simulation_requested()
         out['material_medium'] = self.CoreMaterial.simulation_requested()       
         out['mie_full'] = self.FullMie.simulation_requested()
-        out['r_core'] = self.r_core
-            
+        out['r_core'] = self.r_core            
+        return out
+
+    def allview_requested(self, prefix=None):
+        """Dielectric for self, core, medium, and MIE plots
+        """
+        # Don't call super, don't want composite material's M1, M2 ...
+        out = {'perm': self.mview}              
+
+        out.update(self.FullMie.allview_requested(prefix='mie_full'))
+        out.update(self.CoreMaterial.allview_requested(prefix='core'))
+        out.update(self.MediumMaterial.allview_requested(prefix='medium'))
+
+        if prefix:
+            out = dict( ('%s.%s' %(prefix, k), v) for k,v in out.items() )
         return out
 
 
@@ -366,6 +379,22 @@ class NanoSphereShell(NanoSphere):
         out['mix'] = self.TotalMix.simulation_requested()
         
         return out
+    
+    def allview_requested(self, prefix=None):
+        """Dielectric for self, core, medium, shell, full and composite MIE
+        """
+        # Don't call super, don't want composite material's M1, M2 ...
+        out = super(NanoSphereShell, self).allview_requested() #<-- no prefix          
+
+        out.update(self.CompositeMie.allview_requested(prefix='mie_equiv'))
+        out['mie_double.cross_sec'] = self.np_plots
+        out.update(self.ShellMaterial.allview_requested(prefix='shell'))
+        out.update(self.CoreShellComposite.allview_requested(prefix='core_shell'))
+
+        if prefix:
+            out = dict( ('%s.%s' %(prefix, k), v) for k,v in out.items() )
+        return out
+    
 
 
 if __name__ == '__main__':

@@ -21,28 +21,28 @@ class LayerEditor(HasTraits):
     specparms = Instance(HasTraits, SHARED_SPECPARMS)
     selectedtree = Instance(HasTraits, SHARED_TREE) 
 
-    sync_rad_selection=Any
+    sync_rad_selection = Any
 
-    stack = List(ILayer)  ##Tables of layer and data
+    stack = List(ILayer)  #Tables of layer and data
     solvent = Instance(ILayer) #Set when _stack_default returns
     substrate = Instance(ILayer)  
 
-    sync_solvent=Bool(False)      #Syncs solvent of composite materials with stack; changes with selected_layer
-    sync_d_radius=Bool(False)     #Syncs interface spacing, d, with properties of NP's
+    sync_solvent = Bool(False)      #Syncs solvent of composite materials with stack; changes with selected_layer
+    sync_d_radius = Bool(False)     #Syncs interface spacing, d, with properties of NP's
 
-    selected_layer=Instance(ILayer)
+    selected_layer = Instance(ILayer)
 
     selected_d=Any  #Property/delgatesto messed up for this, perhaps because a table is involved.  Leave this way
-    selected_material=Instance(IMaterial)
+    selected_material = Instance(IMaterial)
 
-    tablesize=Property(Int, depends_on='stack')
-    selected_index=Int(1)
+    tablesize = Property(Int, depends_on='stack')
+    selected_index = Int(1)
 
     add_basic=Button
     remove=Button
     changematerial=Button 
 
-    layereditor =\
+    layereditor = \
         TableEditor(
             columns=[
                 ObjectColumn(name='name', label='Layer Name'),         #CAN SET AN INDIVIDUAL COLUMN TO EDITABLE, BUT OBJECTCOLUMN VS EXPRESSION COLUMN IS ALSO WAY TO GO

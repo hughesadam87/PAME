@@ -147,6 +147,18 @@ class Mie(HasTraits):
             'scattering':self.Cscatt
             }
 
+
+    def allview_requested(self, prefix=None):
+        """Organized references to view elements.  Used by main PAME UI.
+        """
+        out = {'cross_sec':self.sview} 
+        
+        if prefix:
+            out = dict( ('%s.%s' %(prefix, k), v) for k,v in out.items() )
+        
+        return out
+
+
 class ABCsphere(Mie):
     """Scattering functions for a plain sphere"""
     r_core=Float(12)
