@@ -207,21 +207,10 @@ class ABCMetalModel(ABCMaterialModel):
     #SET FREQENCY/WAVELENGTH TO BE RECIPROCAL OF EACH OTHER LIKE N/E WITH FREQUENCY BEING CANONICAL REPRESENTATION
 
 class DrudeBulk(ABCMetalModel):
-    """Taken from another gupta paper to test form.  I think this is valid for a metal sheet, not np's"""
-
-    valid_metals=Enum('gold','silver','aluminum','copper')  #Currently only 
-
-    traits_view=View(
-        Item('valid_metals'), 
-        Item('mat_name', label='Custom Name'),
-        Item('lam_plasma', style='readonly'),
-        Item('lam_collis', style='readonly'),
-        Item('mviewbutton'), 
-        Item('x_unit')
-    )
-
-    def __init__(self, *args, **kwargs):
-        super(DrudeBulk, self).__init__(*args, **kwargs)
+    """Taken from another gupta paper to test form.  I think this is valid for
+    a metal sheet, not np's
+    """
+    valid_metals = Enum('gold','silver','aluminum','copper')  #Currently only 
 
     def _valid_metals_default(self): 
         return 'gold'      #NEED TO MAKE METALS DIC THEN DEFAULT TO THAT 
@@ -252,9 +241,21 @@ class DrudeBulk(ABCMetalModel):
 
 
     def update_data(self):   #THIS DOES FIRE AT INSTANTIATION
-        m_xarray=self.specparms.conv.specific_array('Meters')
-        unity = np.array([complex(0.0,1.0)], dtype=complex)  #Gupta requries i * lambda, so this gets complex value of the xarray
+        m_xarray = self.specparms.conv.specific_array('Meters')
+        unity = 0+1j#np.array([complex(0.0,1.0)], dtype=complex)  #Gupta requries i * lambda, so this gets complex value of the xarray
         self.earray = 1.0 - ( (m_xarray**2 * self.lam_collis) / (self.lam_plasma**2 * ( self.lam_collis + m_xarray*unity)  ) )
 
+    traits_view=View(
+        VGroup(
+            HGroup(
+            Include('basic_group'),            
+            Item('valid_metals', show_label=False, label='Choose Metal'), 
+            ),
+            Item('lam_plasma', label='plasma wavelength', style='readonly'),
+            Item('lam_collis', label='collision wavelength', style='readonly'),
+              )
+        )
+
+
 if __name__ == '__main__':
-    Constant().configure_traits()
+    DrudeBulk().configure_traits()
