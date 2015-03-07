@@ -31,6 +31,8 @@ import config
 import globalparms
 from main_parms import SHARED_SPECPARMS
 
+def r3(x): return round(x, 3)
+
 class PlotError(Exception):
     """ """
 
@@ -592,13 +594,13 @@ class ScatterView(ABCView):
         value = max(array)
         index = int(where(array==value)[0])  #'where' returns tuple since is can be used on n-dim arrays
         x = self.working_lambdas[index]
-        return (round(x,rounding), round(value,rounding))
+        return r3(x), r3(value)
 
     def compute_area(self, array):
         """ Get the area under a curve.  If I want to change integration style, 
         should just make the integration style an Enum variable and redo this 
         on a trait change"""
-        return simps(array, self.working_lambdas, even='last')
+        return r3(simps(array, self.working_lambdas, even='last'))
 
     def create_plots(self):
         self.sigplot = ToolbarPlot(self.data)

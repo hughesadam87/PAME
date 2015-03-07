@@ -94,13 +94,14 @@ class CompositeMaterial(BasicMaterial):
         # This should be a property, right?  Or a separate attribute?
         self.mat_name = self.Material1.mat_name + '  IN   ' + self.Material2.mat_name
         self.Mix.solutematerial = self.Material1
+        self.redraw_requested()
 
     def _Material2_changed(self): 
         self.mat_name = self.Material1.mat_name + '  IN   ' + self.Material2.mat_name
         self.Mix.solventmaterial = self.Material2
+        self.redraw_requested()        
 
     def update_Mix(self):
-        print 'in update_MIX'
         kwds = dict(Vfrac=self.Vfrac, #vfrac because don't want it to reset to default
                     solutematerial=self.Material1,
                     solventmaterial=self.Material2
@@ -154,7 +155,7 @@ class CompositeMaterial(BasicMaterial):
         """
         out = super(CompositeMaterial, self).allview_requested() #<-- no prefix
         out.update(self.Material1.allview_requested(prefix='M1'))
-        out.update(self.Material1.allview_requested(prefix='M2'))
+        out.update(self.Material2.allview_requested(prefix='M2'))
         
         if prefix:
             out = dict( ('%s.%s'%(prefix, k), v) for k,v in out.items() )              

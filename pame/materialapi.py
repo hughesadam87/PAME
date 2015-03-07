@@ -8,6 +8,9 @@ from composite_materials_v2 import \
 from advanced_objects_v2 import NanoSphere, NanoSphereShell
 
 
+# DOES NOT INCLUDE FILE ADAPTERS/MATERIALS.  EACH OF THOSE HAS SPECIAL KEYWORD
+# FOR INSTANTIATION DEFINED ON THE ADAPTER.
+
 # DONT CHANGE KEY NAMES WITHOUT UPDATING 'apikey' trait in ADAPTERS
 SIMPLEMATERIALS = dict(basic= BasicMaterial,
                        constant = Constant,

@@ -35,6 +35,12 @@ class BasicMaterial(HasTraits):
     # Used by subclasses, and needs to be here so MaterielView can Delegate
     interpolation = Any
     extrapolation = Bool(False)
+    
+    # Dummy traits used to trigger main-level redraws of plot.  Useful for
+    # example if chaging a material should trigger a global pame material plot
+    # update.  Woudln't implement if we didn't want "instantaneous redraw", which
+    # is why there's no corresponding on for Optical plots
+    _dummydraw = Bool(False)
 
     basic_group=HGroup(Item('mviewbutton', label='Show Material', show_label=False), 
                        Item('mat_name', label='Material Name', style='simple')
@@ -101,6 +107,17 @@ class BasicMaterial(HasTraits):
             out = dict( ('%s.%s' %(prefix, k), v) for k,v in out.items() )
         
         return out
+
+    def redraw_requested(self):
+        """ Changes dummy trait "_dummydraw" to cause a trigger that top-level
+        plot_selector listens for.  For example, if user were to change a
+        material in plot, should redraw the entire main GUI.  
+        """
+        if self._dummydraw:
+            self._dummydraw = False
+        else:
+            self._dummydraw = True
+        
 
 
 if __name__ == '__main__':

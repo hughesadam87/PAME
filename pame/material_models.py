@@ -207,8 +207,9 @@ class ABCMetalModel(ABCMaterialModel):
     #SET FREQENCY/WAVELENGTH TO BE RECIPROCAL OF EACH OTHER LIKE N/E WITH FREQUENCY BEING CANONICAL REPRESENTATION
 
 class DrudeBulk(ABCMetalModel):
-    """Taken from another gupta paper to test form.  I think this is valid for
-    a metal sheet, not np's
+    """ Sharma Gupta 2007 On the performance of different bimetallic combinations\
+    in surface plasmon resonance based fiber optic sensors.  Journ. of app. physics.
+    101 093111 (2007)
     """
     valid_metals = Enum('gold','silver','aluminum','copper')  #Currently only 
 
@@ -251,8 +252,8 @@ class DrudeBulk(ABCMetalModel):
             Include('basic_group'),            
             Item('valid_metals', show_label=False, label='Choose Metal'), 
             ),
-            Item('lam_plasma', label='plasma wavelength', style='readonly'),
-            Item('lam_collis', label='collision wavelength', style='readonly'),
+            Item('lam_plasma', label='plasma wavelength(m)', style='readonly'),
+            Item('lam_collis', label='collision wavelength(m)', style='readonly'),
               )
         )
 

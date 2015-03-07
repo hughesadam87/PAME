@@ -35,7 +35,7 @@ class BasicAdapter(HasTraits):
         # if composite materials needs to set materia1 to a composite material,
         # this will lead to recursive imports.
         from materialapi import ALLMATERIALS
-        self.matobject=ALLMATERIALS[self.apikey]()
+        self.matobject = ALLMATERIALS[self.apikey]()
 
     def destory_object(self):
         """Method used to destroy an object; not sure if ever will be useful
@@ -84,9 +84,13 @@ class CauchyAdapter(BasicAdapter):
     apikey='cauchy'
 
 class DrudeBulkAdapter(BasicAdapter):
-    name="Drude Bulk"
-    source="One of the gupta papers"
-    notes="Uses lamplasma and lamcollision to predict dielectric function based on Drude model"
+    name="Drude"
+    source="Gupta and Sharma.  Journ. of App. Phys. On the performance of " \
+           "different bimetallic combinations in surface plasmon resonance " \
+           "based ofiber optic sensors. 101, 093111 (2007)"
+    notes="Computes dielectric funcion from plasma and collision wavelengths of "\
+           "gold, silver, aluminum and copper.  Does not take into account size"\
+           " corrections for small nanomaterials."
     apikey='drudebulk'
 
         
@@ -123,6 +127,7 @@ class ABCFileAdapter(BasicAdapter):
         self._set_matobject()
         self._set_matname() 
         
+    # Let's me change keywords for file-to-file instantiation/populate_object?
     def _set_matobject(self):
         """ Create material.  THIS IS WHAT SUBCLASSES SHOULD OVERLOAD"""
         self.matobject = self.ABCFile(file_path=self.file_path)
@@ -137,9 +142,10 @@ class ABCFileAdapter(BasicAdapter):
         self.name = newname
 
 
-class SopraFileAdapter(ABCFileAdapter):    
-    source="Sopra"
-    notes="http://www.sspectra.com/sopra.html"
+class SopraFileAdapter(ABCFileAdapter):   
+    from material_files import SopraFile
+    source="Sopra: http://www.sspectra.com/sopra.html"
+    notes=""
     apikey='sopra'
 
     def _set_matobject(self): 

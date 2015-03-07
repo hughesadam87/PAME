@@ -213,6 +213,9 @@ class NanoSphereShell(NanoSphere):
     from composite_materials_v2 import CompositeMaterial_Equiv, SphericalInclusions_Shell
     from composite_plots import DoubleSview
     from material_models import Constant
+    
+    # bug in composite material name or something preventing this...
+    mat_name = 'Nanosphere + shell'
 
     #Note: CoreMaterial refers to the core/shell composite object that is the "NanoSphere" for this instance #
 
