@@ -26,7 +26,7 @@ MATDELIM = '\t'
    
 # Material databases to use by default
 USESOPRA = True
-USERIINFO = False#True #slows performance it's so large
+USERIINFO = True#True #slows performance it's so large
 
 # Spectral parameters IN NANOMETERS (MUST BE IN NANOMETERS, CAN CONVERT
 # IN PROGRAM)
