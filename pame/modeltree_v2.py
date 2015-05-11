@@ -13,7 +13,8 @@ from interfaces import IAdapter
 from File_Finder import LiveSearch
 
 from simple_materials_adapter import BasicAdapter, SellmeirAdapter, ConstantAdapter, \
-    DrudeBulkAdapter, SopraFileAdapter, DispwaterAdapter, XNKFileAdapter, CauchyAdapter
+    DrudeBulkAdapter, SopraFileAdapter, DispwaterAdapter, XNKFileAdapter, CauchyAdapter, \
+    AirAdapter
 
 # Adapters
 from yamlmaterials import YamlAdapter
@@ -220,12 +221,12 @@ class Model( HasTraits ):
     # Non-Metals Models ------
     def _nonmetals_default(self): 
         return [
-            BasicAdapter(),
+            AirAdapter(),            
+            BasicAdapter(),            
             ConstantAdapter(),            
             DispwaterAdapter(),
             CauchyAdapter(),
-            SellmeirAdapter(),
-            ]
+            SellmeirAdapter()            ]
 
     # Metal Models Models ------
     def _metals_default(self):
@@ -286,6 +287,7 @@ class Model( HasTraits ):
             CompMaterials = [
                         cma.CompositeAdapter(),
                         cma.CompositeMaterial_EquivAdapter(),
+                        cma.SphericalInclusions_ShellAdapter(),
                         cma.SphericalInclusions_DiskAdapter()
                         ],
 

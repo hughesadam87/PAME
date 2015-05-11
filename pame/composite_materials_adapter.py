@@ -15,8 +15,14 @@ class CompositeMaterial_EquivAdapter(ABCCompAdapter):
         notes='This is the basis for several other objects such as nanoparticles'
         apikey = 'composite_equiv'
 
+class SphericalInclusions_ShellAdapter(ABCCompAdapter):
+        name='Spherical inclusions in a concentric spherical shell'
+        source='http://ieeexplore.ieee.org/lpdocs/epic03/wrapper.htm?arnumber=5582133'
+        notes='Use to model inclusions in on the surface of a nanoparticle'
+        apikey = 'sphere_inc_shell'
+
 class SphericalInclusions_DiskAdapter(ABCCompAdapter):
-        name='Class for mixing spherical objects on a flat disk surface'
+        name='Spherical objects on a flat disk surface'
         source='None: Uses basic counting'
         notes='This is the base class for NanoSpheres on a disk or other surface'
         apikey = 'sphere_inc_disk'

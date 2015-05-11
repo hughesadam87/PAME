@@ -6,7 +6,7 @@ from utils import complex_e_to_n
 
 class ABCMaterialModel(BasicMaterial):	
     source='Model'
-    
+        
 class Constant(ABCMaterialModel):
     """ Interpolated array from scalaer complex value N or E """
     constant_dielectric = Complex() 
@@ -49,12 +49,36 @@ class Constant(ABCMaterialModel):
         earray.fill(self.constant_dielectric)
         self.earray = earray
                
-        
     def simulation_requested(self):
         out = super(Constant, self).simulation_requested()
         out['e_constant'] = self.constant_dielectric
         out['n_constant'] = self.constant_index
         return out
+
+
+class Air(Constant):
+    """ Constant material of n=1.0; no dipsersion
+    """
+    def _constant_dielectric_default(self):
+        return complex(1.0, 0)
+    
+    def _mat_name_default(self): 
+        return  'Air (n=1.0)'    
+    
+    traits_view=View (
+        VGroup(
+            Include('basic_group'),
+            HGroup(
+                Item('constant_dielectric', 
+                     label='Dielectric Constant',
+                     style='readonly'),
+                Item('constant_index', 
+                     label='Index of Refraction',
+                     style='readonly'),
+                ),
+            ),
+        resizable=True, width=.5, height=.2,
+    )   
 
 class Cauchy(ABCMaterialModel):
     """ """

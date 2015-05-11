@@ -1,9 +1,10 @@
 from basic_material import BasicMaterial
-from material_models import Constant, Sellmeir, Cauchy, DrudeBulk, Dispwater
+from material_models import Constant, Sellmeir, Cauchy, DrudeBulk, Dispwater, Air
 from material_files import SopraFile, XNKFile, XNKFileCSV
 
 from composite_materials_v2 import \
-     CompositeMaterial, CompositeMaterial_Equiv,SphericalInclusions_Disk
+     CompositeMaterial, CompositeMaterial_Equiv,SphericalInclusions_Disk, \
+     SphericalInclusions_Shell
 
 from advanced_objects_v2 import NanoSphere, NanoSphereShell
 
@@ -12,7 +13,8 @@ from advanced_objects_v2 import NanoSphere, NanoSphereShell
 # FOR INSTANTIATION DEFINED ON THE ADAPTER.
 
 # DONT CHANGE KEY NAMES WITHOUT UPDATING 'apikey' trait in ADAPTERS
-SIMPLEMATERIALS = dict(basic= BasicMaterial,
+SIMPLEMATERIALS = dict(air=Air,
+                       basic= BasicMaterial,
                        constant = Constant,
                        sellmeir = Sellmeir,
                        cauchy = Cauchy,
@@ -24,7 +26,8 @@ SIMPLEMATERIALS = dict(basic= BasicMaterial,
                        )
 
 COMPOSITEMATERIALS = dict(composite = CompositeMaterial,
-                          composite_equiv = CompositeMaterial_Equiv,
+                          composite_equiv = CompositeMaterial_Equiv, #<-- General, not sphere in shell
+                          sphere_inc_shell = SphericalInclusions_Shell,
                           sphere_inc_disk = SphericalInclusions_Disk
                           )
 

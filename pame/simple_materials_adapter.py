@@ -57,6 +57,11 @@ class BasicAdapter(HasTraits):
     traitsview= View(Include('basicgroup'),              
                      resizable=True, width=400, height=200)
 
+class AirAdapter(BasicAdapter):
+    name="Air"
+    source="n=1.0 commonly used for air"
+    notes="Shortcut for constant index of n=1.0 with no dispersion"        
+    apikey = 'air'
 
 class ConstantAdapter(BasicAdapter):
     name="Constant"
