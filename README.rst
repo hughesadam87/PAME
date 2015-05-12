@@ -1,4 +1,4 @@
-.. image:: pyuvvis/screenshots/gui.png
+.. image:: PAME/screenshots/gui.png
     :height: 100px
     :width: 200 px
     :scale: 50 %
