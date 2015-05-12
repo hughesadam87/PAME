@@ -1,4 +1,4 @@
-.. image:: PAME/screenshots/gui.png
+.. image:: https://github.com/hugadams/PAME/blob/master/screenshots/gui.png
    :height: 100px
    :width: 200 px
    :scale: 50 %
