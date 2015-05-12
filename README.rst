@@ -74,6 +74,10 @@ This installs several required scientific packages including `numpy`, `pandas` a
 
      conda install traits traitsui mayavi chaco mpmath PIL
 
+To deactivate the virtual environment
+
+     source deactivate
+
 
 
 

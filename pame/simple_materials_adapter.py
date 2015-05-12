@@ -59,7 +59,7 @@ class BasicAdapter(HasTraits):
              editor=InstanceEditor(),
              style='custom',
              )       
-    )
+        )
 
     traitsview= View(Include('basicgroup'),              
                      resizable=True, 
