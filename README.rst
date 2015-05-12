@@ -1,3 +1,5 @@
+![alt tag](https://github.com/hugadams/PAME/blob/master/screenshots/gui.png)
+
 ==========================================
 PAME: Plasmonic Assay Modeling Environment
 ==========================================
