@@ -73,6 +73,8 @@ Install the dependencies from pip
 
    pip install -r requirements.txt
 
+You also may need to `install the QT backend <http://pyqt.sourceforge.net/Docs/PyQt4/installation.html>` if it's not already configured.
+
 
 
 Conda
@@ -106,10 +108,7 @@ This installs several required scientific packages including `numpy`, `pandas` a
 Dependencies
 ------------
 
-The full list of PAME's dependencies is in the `requirements.txt <https://github.com/hugadams/PAME/blob/master/requirements.txt>`_ file.  
-
-
-
+The full list of PAME's dependencies is in the `requirements.txt <https://github.com/hugadams/PAME/blob/master/requirements.txt>`_ file.  You also may need to `install the QT backend <http://pyqt.sourceforge.net/Docs/PyQt4/installation.html>`.
 
 
 Support
