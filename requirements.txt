@@ -1,13 +1,13 @@
--e git+https://github.com/hugadams/PAME#egg=pame
+numpy
+scipy
+pandas
+matplotlib
 ipython
 mayavi
 chaco
-matplotlib
-pandas
-numpy
-scipy
 traits
 traitsui
 pyyaml
 mpmath
 PIL
+#pyqt??

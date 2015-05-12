@@ -65,6 +65,7 @@ class BasicAdapter(HasTraits):
                      resizable=True, 
                      )
 
+
 class AirAdapter(BasicAdapter):
     name="Air"
     source="n=1.0 commonly used for air"

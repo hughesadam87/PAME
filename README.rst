@@ -45,10 +45,20 @@ PAME's tutorials are a series of screencasts.
 Installation
 ============
 
-Binaries installers are `under development <https://bitbucket.org/anthony_tuininga/cx_freeze/issue/127/collectionssys-error#comment-15016355>`_, but for now, PAME must be installed as a python library and launched through the command line.  Anyone interested in helping to develop binaries, please contact.
+Binaries (ie .exe one-click use files) are `under development <https://bitbucket.org/anthony_tuininga/cx_freeze/issue/127/collectionssys-error#comment-15016355>`_, but for now, PAME must be installed as a python library and launched through the command line.  Anyone interested in helping to develop binaries, please contact.  
+
+PAME makes heavy use of the `SciPy Stack (numpy, ipython etc...) <http://www.scipy.org/install.html>`_, and so it has a lot of dependencies.  If you are new to Python, or want to install PAME into a clean environment (this is suggested), see the `Conda` installation directions.  Otherwise, you can use `pip install` as usual.
+
 
 PyPI
 ----
+
+To install from pip
+
+    pip install PAME
+
+Since PAME requires many dependencies, this may upgrade numpy, scipy, ipython and other core scipy libraries.
+
 
 Conda
 -----
@@ -77,6 +87,11 @@ This installs several required scientific packages including `numpy`, `pandas` a
 To deactivate the virtual environment
 
      source deactivate
+
+Dependencies
+------------
+
+The full list of PAME's dependencies is in the `requirements.txt <https://github.com/hugadams/PAME/blob/master/requirements.txt>`_ file.  
 
 
 
