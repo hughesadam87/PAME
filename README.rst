@@ -11,9 +11,14 @@ Check out the `PAME publication`_.
 Tutorials
 =========
 
-PAME's tutorials are a series of screencasts that illustrate a series of simulations.  The resulting simulations are analyzed in IPython notebook tutorials.
-    - Screencast 1: `Introduction to PAME- Anti-reflective coatings`_
-    - Notebook 1: ``
+IPython Notebooks
+-----------------
+
+
+Screencasts
+-----------
+PAME's tutorials are a series of screencasts.  
+    - Screencast 1: `Introduction to PAME- Anti-reflective coatings <www.youtube.com/watch?v=Na3vK8WsBHI>`_
     - Screencast 2: `Introduction to Nanoparticles and Organosilanes`
     - Screencast 3: `Simulating Gold Nanoparticle Self-Assembly on a Dip Biosenor`
     - Notebook 2:
