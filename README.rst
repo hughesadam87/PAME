@@ -1,5 +1,4 @@
-.. image:: http://2.bp.blogspot.com/-ZVxEkrY04Fs/U15D5uCL-xI/AAAAAAAAOdQ/pJ-Wc99LmPY/s1600/logo_col_874x288.png
-   :height: 100px
+.. image:: http://postimg.org/image/wy8w1bhu1/
    :width: 200 px
    :scale: 50 %
 
