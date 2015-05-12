@@ -1,4 +1,7 @@
-![alt tag](https://github.com/hugadams/PAME/blob/master/screenshots/gui.png)
++.. image:: pyuvvis/screenshots/gui.png
+    :height: 100px
+    :width: 200 px
+    :scale: 50 %
 
 ==========================================
 PAME: Plasmonic Assay Modeling Environment
