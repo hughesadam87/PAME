@@ -9,16 +9,24 @@ PAME: Plasmonic Assay Modeling Environment
 
 Graphical Python application for simulating plasmonic biosensors, particularly fiberoptic biosensors with nanoparticles.
 
-Check out the `PAME publication`_.
+Check out the `PAME preprint`_.
 
-    .. _PAME publication : https://linktonowhere
+    .. _PAME preprint : https://linktonowhere
 
 Tutorials
 =========
 
 IPython Notebooks
 -----------------
+Some of these are traditional tutorials, others are examples of analyzed data from our lab.
 
+    - `Simultation Parsing Tutorial <https://github.com/hugadams/PAME/blob/master/Simulations/simtutorial.ipynb>`_
+    - `Gold Nanoparticle Self-Assembly Compared to Experimental Data <https://github.com/hugadams/PAME/blob/master/Notebooks/SAM_pametest.ipynb>`_
+        - Experimental datasets are preloaded in `scikit-spectra library <http://hugadams.github.io/scikit-spectra/>`_
+    - `Simulating a Refractometer <https://github.com/hugadams/PAME/blob/master/Notebooks/glycerin_simulation.ipynb>`_
+    - `Protein binding to gold nanoparticle film <https://github.com/hugadams/PAME/blob/master/Notebooks/bsa_shell_sim.ipynb>`_
+    - `Gold and Silver Nanoparticle Combined Layer 1 <https://github.com/hugadams/PAME/blob/master/Notebooks/AuAg_protein.ipynb>`_
+    - `Gold and Silver Nanoparticle Combined Layer 2 <https://github.com/hugadams/PAME/blob/master/Notebooks/AuAg_sameheight_protein.ipynb>`
 
 Screencasts
 -----------
