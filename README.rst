@@ -26,7 +26,7 @@ Some of these are traditional tutorials, others are examples of analyzed data fr
     - `Simulating a Refractometer <https://github.com/hugadams/PAME/blob/master/Notebooks/glycerin_simulation.ipynb>`_
     - `Protein binding to gold nanoparticle film <https://github.com/hugadams/PAME/blob/master/Notebooks/bsa_shell_sim.ipynb>`_
     - `Gold and Silver Nanoparticle Combined Layer 1 <https://github.com/hugadams/PAME/blob/master/Notebooks/AuAg_protein.ipynb>`_
-    - `Gold and Silver Nanoparticle Combined Layer 2 <https://github.com/hugadams/PAME/blob/master/Notebooks/AuAg_sameheight_protein.ipynb>`
+    - `Gold and Silver Nanoparticle Combined Layer 2 <https://github.com/hugadams/PAME/blob/master/Notebooks/AuAg_sameheight_protein.ipynb>`_
 
 Screencasts
 -----------
