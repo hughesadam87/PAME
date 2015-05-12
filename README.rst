@@ -47,17 +47,32 @@ Installation
 
 Binaries (ie .exe one-click use files) are `under development <https://bitbucket.org/anthony_tuininga/cx_freeze/issue/127/collectionssys-error#comment-15016355>`_, but for now, PAME must be installed as a python library and launched through the command line.  Anyone interested in helping to develop binaries, please contact.  
 
-PAME makes heavy use of the `SciPy Stack (numpy, ipython etc...) <http://www.scipy.org/install.html>`_, and so it has a lot of dependencies.  If you are new to Python, or want to install PAME into a clean environment (this is suggested), see the `Conda` installation directions.  Otherwise, you can use `pip install` as usual.
+PAME makes heavy use of the `SciPy Stack (numpy, ipython etc...) <http://www.scipy.org/install.html>`_, and so it has a lot of dependencies.  Instead of using a bare python distribution, I'd recommend using a scientific python distribution that comes pre-loaded with the SciPy Stack (eg `canopy <https://store.enthought.com/>`_ or `conda <https://store.continuum.io/cshop/anaconda/>`_) or want to install PAME into a clean environment (this is suggested), see the `Conda` installation directions.  Otherwise, you can use `pip install` as usual.
 
 
 PyPI
 ----
 
+Since PAME requires many dependencies, this may upgrade numpy, scipy, ipython and other core scipy libraries.
+
 To install from pip
 
     pip install PAME
 
-Since PAME requires many dependencies, this may upgrade numpy, scipy, ipython and other core scipy libraries.
+If this gives you an error `(maybe for this reason) <http://stackoverflow.com/questions/30202110/pip-install-error-with-requirements>`_, do the following.
+
+Download the `PAME sourcecode <https://github.com/hugadams/PAME>`_ as a zipfile and unzip.  `cd` into the unzipped directory
+
+   cd /path/to/PAME
+
+Install from source
+
+   python setup.py install
+
+Install the dependencies from pip
+
+   pip install -r requirements.txt
+
 
 
 Conda

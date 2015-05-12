@@ -48,7 +48,7 @@ IMAGES =  [ (d, [os.path.join(d, f) for f in files])
 
 setup(
     name = NAME,
-    version = '0.1',
+    version = '0.3',
     author = 'Adam Hughes',
     maintainer = 'Adam Hughes',
     maintainer_email = 'hughesadam87@gmail.com',
