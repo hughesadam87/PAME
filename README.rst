@@ -1,7 +1,7 @@
 .. image:: PAME/screenshots/gui.png
-    :height: 100px
-    :width: 200 px
-    :scale: 50 %
+   :height: 100px
+   :width: 200 px
+   :scale: 50 %
 
 ==========================================
 PAME: Plasmonic Assay Modeling Environment
