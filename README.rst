@@ -19,17 +19,13 @@ Screencasts
 -----------
 PAME's tutorials are a series of screencasts.  
     - Screencast 1: `Introduction to PAME- Anti-reflective coatings <https://youtube.com/watch?v=Na3vK8WsBHI>`_
-    - Screencast 2: `Introduction to Nanoparticles and Organosilanes`
-    - Screencast 3: `Simulating Gold Nanoparticle Self-Assembly on a Dip Biosenor`
-    - Notebook 2:
-    - Screencast 4: `Modeling protein binding to Gold Nanoparticles on Dip Biosensor`
-    - Notebook 3:
-    - Screencast 5: `Modeling a Refractometer`
-    - Notebook 4
-    - Screencast 6: `Multiplexed Dip Sensor with Gold and Silver Nanoparticles` 
-    - Notebook 5:
-
-    .. _Introduction to PAME- Anti-reflective coatings : https://deadlink
+    - Screencast 2: `Introduction to Nanoparticles <https://www.youtube.com/watch?v=ykF67bfCSlc>`_
+    - Screencast 3: `Nanoparticle film with silica shell <https://www.youtube.com/watch?v=58y53AiB1GQ>`_
+    - Screencast 4: `Nanoparticle film with protein shell <https://www.youtube.com/watch?v=EZzoOMxI3ss>`_
+    - Screencast 5: `Intro to Fiberoptic Dip Sesnosr <https://www.youtube.com/watch?v=1xOxBkiCICs>`_
+    - Screencast 6: `Multiplexed Dip Sensor with Gold and Silver Nanoparticles <https://www.youtube.com/watch?v=r0k9215ctfw>`_
+    - Screencast 7: `Gold Nanoparticle Fiber Dip Sensor Simulation <https://www.youtube.com/watch?v=Q6H_f46dZZc>`_ 
+    - Screencast 8: `Dip Sensor with Organosilane Layer <www.youtube.com/watch?v=FzMon52iHQo>`_  
 
 Installation
 ============
