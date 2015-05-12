@@ -1,7 +1,7 @@
 
 from traits.api import Str, HasTraits, Instance, Button, implements, File, \
      Property, Bool, Any
-from traitsui.api import View, Item, Group, Include, InstanceEditor
+from traitsui.api import View, Item, Group, Include, InstanceEditor, VGroup
 from interfaces import IMaterial, IAdapter
 import os.path as op 
 
@@ -17,6 +17,7 @@ class BasicAdapter(HasTraits):
     notes=Str('Not Found')
     matobject = Instance(IMaterial)
     preview = Button
+    hide_preview = Button
     testview = Any # SHows material after preview fired
     apikey = 'basic' #<-- Materials API identifier
      
@@ -26,7 +27,7 @@ class BasicAdapter(HasTraits):
             self.populate_object()
         self.testview = self.matobject.mview
     #    self.matobject.edit_traits(kind='livemodal')      #Modal screws up objects for some reason
-    #    self.destory_object()
+    #    self.destroy_object()
 
     def populate_object(self): 
         """Instantiate selected object."""
@@ -37,27 +38,32 @@ class BasicAdapter(HasTraits):
         from materialapi import ALLMATERIALS
         self.matobject = ALLMATERIALS[self.apikey]()
 
-    def destory_object(self):
+    def destroy_object(self):
         """Method used to destroy an object; not sure if ever will be useful
         or if it even destroys the object..."""
-        self.matobject=None
+        self.matobject = None
+        self.testview = None
+        
+    def _hide_preview_fired(self):
+        self.destroy_object()
 
     basicgroup=Group(
         Item('name', style='readonly'),   #THESE ARENT READ ONLY!
         Item('source', style='readonly'),
         Item('notes'),
         Item('preview', show_label=False, visible_when='testview is None'), 
+        Item('hide_preview', show_label=False, visible_when='testview is not None'),
         Item('testview', 
              visible_when='testview is not None',
+             show_label=False,
              editor=InstanceEditor(),
              style='custom',
-             show_label=False),
-        Item('openfile', visible_when="contents == ''", label='Show File Contents'),
-        Item('contents', style='readonly', visible_when="contents != ''")        
+             )       
     )
 
     traitsview= View(Include('basicgroup'),              
-                     resizable=True, width=400, height=200)
+                     resizable=True, 
+                     )
 
 class AirAdapter(BasicAdapter):
     name="Air"
@@ -117,11 +123,44 @@ class ABCFileAdapter(BasicAdapter):
     matobject = Instance(ABCExternal)
     name=Property(Str, depends_on='file_path')
 
+    # File Trai
     openfile = Button
-    contents = Str #Only for opening file
+    hidecontents = Button
+    contents = Str 
+
+    filegroup = Group(
+                      Item('openfile', 
+                           show_label=False, 
+                           visible_when="contents == ''",
+                           label='Show File Contents'
+                           ),
+                      Item('hidecontents', 
+                           show_label=False,
+                           label='Hide File Contents',
+                           visible_when="contents != ''"
+                           ),
+                      Item('contents', 
+                           style='readonly',
+                           show_label=False, 
+                           visible_when="contents != ''"
+                           )
+                     )
+    
+    traitsview= View(VGroup(
+                       Include('basicgroup'),              
+                       Include('filegroup'),
+                       ),
+                     resizable=True, 
+                  
+                  #   width=400,
+                  #   height=200
+                     )    
     
     def _openfile_fired(self):
         self.contents = open(self.file_path, 'r').read()
+        
+    def _hidecontents_fired(self):
+        self.contents = ''
         
     def _get_name(self): 
         return op.splitext(op.basename(self.file_path))[0]        

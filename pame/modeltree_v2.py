@@ -46,7 +46,7 @@ no_view = View()
 # Show's name in view panel for nodes (ie if use clicks model node)
 # Why isn't working for some of them?
 nodeview =  View( ['name'], 
-                  style='readonly'
+                  style='readonly',
                   )
 
 # Define the TreeEditor VIEW used to display the hierarchy:

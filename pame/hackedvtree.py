@@ -16,7 +16,7 @@ from pame.interfaces import IView
 ORIGINALTRAITNODE = TraitsNode.tno_get_children
 
 def newformat(self, value):
-     return repr('fuck it%s' % value)
+     return repr('MESSED UP%s' % value)
 
 IntNode.format_value = newformat
 

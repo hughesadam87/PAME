@@ -1,6 +1,6 @@
 from traits.api import Str, HasTraits, Instance, Button, implements,\
      File, Property, Bool, Any, Enum
-from traitsui.api import View, Item, Group, Include, InstanceEditor
+from traitsui.api import View, Item, Group, Include, InstanceEditor, VGroup
 from interfaces import IMaterial, IAdapter
 from simple_materials_adapter import ABCFileAdapter
 from material_files import ABCExternal
@@ -125,32 +125,25 @@ class YamlAdapter(ABCFileAdapter):
             self.matobject = YamlMaterial(datastring=data, datatype=datatype)
 
 
-    # VIEW
-    basicgroup=Group(
+    # VIEW (modify basicgroup from BasicAdapter and use filegroup unchanged)
+    yamlgroup = Group(
         Item('name', style='readonly'),   #THESE ARENT READ ONLY!
         Item('_is_model', style='readonly', label='Model Material'),
         Item('source', style='readonly'),
         Item('REFERENCES', style='readonly'),
         Item('FORMULA', style='readonly'),
-        Item('preview'), 
+        Item('preview', show_label=False, visible_when='testview is None'), 
+        Item('hide_preview', show_label=False, visible_when='testview is not None'),
         Item('testview', 
              visible_when='testview is not None',
              editor=InstanceEditor(),
              style='custom',
              show_label=False),        
-        Item('openfile', visible_when="contents == ''", label='Show File Contents'),
-        Item('contents', style='readonly', visible_when="contents != ''")
+        )
 
-    )
-
-    traitsview= View(Include('basicgroup'),              
-                     resizable=True, width=400, height=200)
-
-
-if __name__ == '__main__':
-    f = YamlAdapter(file_path = '/home/glue/Desktop/fibersim/pame/data/RI_INFO/main/Ag/Johnson.yml')
-#    f = YamlAdapter(file_path = '/home/glue/Desktop/fibersim/pame/data/RI_INFO/glass/schott/N-BASF2.yml')
-#    f = YamlAdapter(file_path = '/home/glue/Desktop/fibersim/pame/data/RI_INFO/glass/schott/F2.yml')
-    f.parse_file()
-    f.populate_object()
-    f.configure_traits()
+    traitsview= View(VGroup(
+                         Include('yamlgroup'),              
+                         Include('filegroup'),                     
+                         ),                     
+                     resizable=True, 
+                     )
