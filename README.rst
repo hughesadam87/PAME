@@ -1,4 +1,4 @@
-.. image:: https://github.com/hugadams/PAME/blob/master/screenshots/gui.png
+.. image:: http://2.bp.blogspot.com/-ZVxEkrY04Fs/U15D5uCL-xI/AAAAAAAAOdQ/pJ-Wc99LmPY/s1600/logo_col_874x288.png
    :height: 100px
    :width: 200 px
    :scale: 50 %
