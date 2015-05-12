@@ -30,7 +30,7 @@ Some of these are traditional tutorials, others are examples of analyzed data fr
 
 Screencasts
 -----------
-Tutorials are cumulative (eg screencast 2 picks up where 1 ended).
+Tutorials are cumulative (eg screencast 2 picks up where 1 ends).
 
 PAME's tutorials are a series of screencasts.  
     - Screencast 1: `Introduction to PAME- Anti-reflective coatings <https://youtube.com/watch?v=Na3vK8WsBHI>`_
@@ -46,6 +46,35 @@ Installation
 ============
 
 Binaries installers are `under development <https://bitbucket.org/anthony_tuininga/cx_freeze/issue/127/collectionssys-error#comment-15016355>`_, but for now, PAME must be installed as a python library and launched through the command line.  Anyone interested in helping to develop binaries, please contact.
+
+PyPI
+----
+
+Conda
+-----
+I use `anaconda` because it has an excellent virtual environment manager.  The advantage is here you can installed a clean working environment only for PAME without altering any of your other packages.  For a tutorial on conda virtual environments, `check this out <http://www.continuum.io/blog/conda>`_.  To configure a PAME environment in anaconda, first install anaconda and then do the following:
+
+
+1. Create a clean virtual environment (mine is named PAMEvenv)
+
+     conda create -n PAMEvenv anaconda
+
+This installs several required scientific packages including `numpy`, `pandas` and `ipython`.
+
+2. Activate the environment
+
+     source activate PAMEvenv
+
+3. Install pame (download pame source code and unzip, then navigate into directory)
+
+     cd /path/to/PAMEdirectory
+     python setup.py install
+
+4. Conda install/upgrade dependencies
+
+     conda install traits traitsui mayavi chaco mpmath PIL
+
+
 
 
 

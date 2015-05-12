@@ -1,6 +1,6 @@
 from traits.api import Str, HasTraits, Instance, Button, implements,\
      File, Property, Bool, Any, Enum
-from traitsui.api import View, Item, Group, Include
+from traitsui.api import View, Item, Group, Include, InstanceEditor
 from interfaces import IMaterial, IAdapter
 from simple_materials_adapter import ABCFileAdapter
 from material_files import ABCExternal
@@ -133,7 +133,13 @@ class YamlAdapter(ABCFileAdapter):
         Item('REFERENCES', style='readonly'),
         Item('FORMULA', style='readonly'),
         Item('preview'), 
-        Item('openfile')
+        Item('testview', 
+             visible_when='testview is not None',
+             editor=InstanceEditor(),
+             style='custom',
+             show_label=False),        
+        Item('openfile', visible_when="contents == ''", label='Show File Contents'),
+        Item('contents', style='readonly', visible_when="contents != ''")
 
     )
 

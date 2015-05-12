@@ -51,7 +51,9 @@ class BasicAdapter(HasTraits):
              visible_when='testview is not None',
              editor=InstanceEditor(),
              style='custom',
-             show_label=False)
+             show_label=False),
+        Item('openfile', visible_when="contents == ''", label='Show File Contents'),
+        Item('contents', style='readonly', visible_when="contents != ''")        
     )
 
     traitsview= View(Include('basicgroup'),              
@@ -120,7 +122,6 @@ class ABCFileAdapter(BasicAdapter):
     
     def _openfile_fired(self):
         self.contents = open(self.file_path, 'r').read()
-        self.contents.edit_traits(kind='livemodal')      #Modal screws up objects for some reason
         
     def _get_name(self): 
         return op.splitext(op.basename(self.file_path))[0]        
