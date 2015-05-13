@@ -181,8 +181,9 @@ class ABCFileAdapter(BasicAdapter):
     def _set_matname(self):
         """ Sets material name after populating object.  This name is:
         Source : filename  instead of just filename.  Need to separate or
-        Source will end up in table when looking through DB"""    
-        self.matobject.mat_name = '%s: %s' % (self.source, self.name)
+        Source will end up in table when looking through DB
+        """    
+        self.matobject.mat_name = self.name
     
     def _set_name(self, newname): 
         self.name = newname

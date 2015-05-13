@@ -21,7 +21,7 @@ class NanoSphere(SphericalInclusions_Disk):
     '''Technically a nanosphere always needs a medium anyway, so make it composite object'''
     from material_models import Dispwater
 
-    mat_name = Str('Bare Nanosphere')
+    mat_name = Str('Bare Nanosphere') #<-- Only used if auto name disabled
     FullMie = Instance(IMie)  #Used to compute scattering properties	
 
     MediumMaterial = Instance(IMaterial)
@@ -74,7 +74,7 @@ class NanoSphere(SphericalInclusions_Disk):
 
     def _CoreMaterial_default(self):  # Overwrite as package data eventually
         return XNKFile(file_path = op.join(XNK_dir, 'JC_Gold.nk'),
-                       )
+                       mat_name='JCGold') #<-- No adapter, so have to set name manually
 
     def _MediumMaterial_default(self): 
         return self.Dispwater()
