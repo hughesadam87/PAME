@@ -15,8 +15,7 @@ class CompositeMaterial(BasicMaterial):
     selectedtree = Instance(HasTraits, SHARED_TREE)  
 
     Material1=Instance(IMaterial)
-    Material2=Instance(IMaterial)   #Make these classes later
-
+    Material2=Instance(IMaterial)   #Make these classes later    
 
     Mix=Instance(IMixer)
     MixingStyle=Enum('MG Garcia', 
@@ -499,15 +498,6 @@ class TriangularInclusions_Shell_case2(TriangularInclusions):
 
 
 
-# http://stackoverflow.com/questions/28403356/dynamic-initialization-of-traits-range-object?rq=1
-class DRange(HasTraits):
-    """ Dynamic range with settable upper limit """
-    _vmin = Float(value=0.0)
-    _vmax = Float(1.0)
-    Vfrac = Range(low='_vmin', high='_vmax')
-    
-    traits_view = View(Item('Vfrac'))
-
 
 class DoubleComposite(CompositeMaterial):
     """ Represents two non-interactiong composite materials in a shared medium.  
@@ -529,6 +519,11 @@ class DoubleComposite(CompositeMaterial):
     from pame.handlers import WarningDialog, BasicDialog
     
     Medium=Instance(IMaterial)
+    
+    # Store names for summary in output
+    m1name = DelegatesTo('Material1', prefix='mat_name')
+    m2name = DelegatesTo('Material2', prefix='mat_name')
+    m3name = DelegatesTo('Medium', prefix='mat_name')    
     
     alpha = Range(0.0, 1.0, value=0.5)
     beta = Property(Range(0.0, 1.0, value=0.5), depends_on='alpha')
@@ -657,28 +652,31 @@ class DoubleComposite(CompositeMaterial):
                            Item('Material2', editor=InstanceEditor(),
                                 style='custom', show_label=False),
                            Item('Medium', editor=InstanceEditor(),
-                                style='custom', show_label=False)
-                           ),
-    
-                       label='Materials')
-    
-    mixgroup=VGroup(
-           HGroup(
-                  Item('MixingStyle', label='Mixing Method', style='readonly'),
-                  Item('Vfrac'),
-                  ),
-           HGroup(
-                  Item('alpha', label='% Mat1'),
-                  Item('beta', label='% Mat2'),
-                  ),
-        label='Mixing'
-        )
-        
+                                style='custom', show_label=False),
+                           
+                       VGroup(
+                               VGroup(Item('m1name', style='readonly', label='Material 1'), 
+                                      Item('m2name', style='readonly', label='Material 2'), 
+                                      Item('m3name', style='readonly', label='Medium  ')
+                                      ),        
+                                  HGroup(
+                                         Item('MixingStyle', label='Mixing Method', style='readonly'),
+                                         Item('Vfrac'),
+                                         ),
+                                  HGroup(
+                                         Item('alpha', label='% Mat1'),
+                                         Item('beta', label='% Mat2'),
+                                         ),
+                               label='Mixing'
+                               ),                       
+                          )
+                       )
+               
     
     traits_view=View(
                      Include('compmatgroup' ),
-                     Include('mixgroup'),
-                     resizable=True, buttons=OKCancelButtons)
+                     resizable=True,
+                     buttons=OKCancelButtons)
     
     # FORCE LINEAR SUM AS DEFAULT MIX AND TAKE MIXING STYLE OFF OF VIEW SO
     # ALSO HAVE TO MIX MATERIALS ONE AND TWO USING LINEAR SUM
