@@ -281,7 +281,8 @@ class Model( HasTraits ):
             #------------
             NanoMaterials = [
                 nma.NanoSphereAdapter(),
-                nma.NanoSphereShellAdapter()
+                nma.NanoSphereShellAdapter(),
+                nma.DoubleNanoAdapter()
                 ],
             
             CompMaterials = [

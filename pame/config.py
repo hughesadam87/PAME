@@ -4,6 +4,9 @@ import matplotlib.cm as cm
 from pame import image_dir
 import os.path as op
 
+# Material names assigned dynamically 
+AUTONAME = True
+
 # Scikit-Spectra compatibility
 SKSPEC_INSTALLED = True
 try:

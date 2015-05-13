@@ -6,7 +6,8 @@ from numpy import empty, array
 import os.path as op
 import math, cmath
 from mie_traits_v2 import bare_sphere, effective_sphere
-from composite_materials_v2 import SphericalInclusions_Disk #For inheritance
+from material_models import Dispwater #<--- Used by double nanoparticle
+from composite_materials_v2 import SphericalInclusions_Disk, DoubleComposite #For inheritance
 
 from pame import XNK_dir
 from material_files import XNKFile
@@ -215,7 +216,7 @@ class NanoSphereShell(NanoSphere):
     from material_models import Constant
     
     # bug in composite material name or something preventing this...
-    mat_name = 'Nanosphere + shell'
+    mat_name = Str('AuNP & Shell')
 
     #Note: CoreMaterial refers to the core/shell composite object that is the "NanoSphere" for this instance #
 
@@ -292,8 +293,7 @@ class NanoSphereShell(NanoSphere):
     def __init__(self, *args, **kwds):
         super(NanoSphereShell, self).__init__(*args, **kwds)
         # sync syntx ('Trait name here', Object to sync with, 'trait name there'##
-
-        
+       
         self.sync_trait('CoreMaterial', self.CoreShellComposite, 'Material1')
         self.sync_trait('ShellMaterial', self.CoreShellComposite, 'Material2')  
         
@@ -356,9 +356,6 @@ class NanoSphereShell(NanoSphere):
     def r_eff(self):
         self.CompositeMie.r_core = self.r_core + self.shell_width
 
-    def _mat_name_default(self): 
-        return str('Composite NP:  ')+str(self.Material1.mat_name)+' IN '+str(self.Material2.mat_name)
-
     def _np_plots_default(self): 
         return self.DoubleSview(scatt1=self.FullMie.sview, 
                                 scatt2=self.CompositeMie.sview)
@@ -397,9 +394,26 @@ class NanoSphereShell(NanoSphere):
         if prefix:
             out = dict( ('%s.%s' %(prefix, k), v) for k,v in out.items() )
         return out
+
+
+class DoubleNanoparticle(DoubleComposite):
+    """ Double material, but default values are gold and silver nanospheres.
+    """
+
+    mat_name = Str('Small & Big AuNPs')
+        
+    # Might want to eventually explicitly sync medium in __init__ of doublecomposite
+    def _Material1_default(self): 
+        return NanoSphereShell(r_core = 12, MediumMaterial=self.Medium)
+
+    def _Material2_default(self): 	
+        return NanoSphereShell(r_core = 100, MediumMaterial=self.Medium)
+    
+    def _Medium_default(self):
+        return Dispwater()  
     
 
 
 if __name__ == '__main__':
 #	NanoSphereShell().configure_traits()
-    NanoSphere().configure_traits()
+    DoubleNanoparticle().configure_traits()

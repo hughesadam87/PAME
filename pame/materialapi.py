@@ -6,7 +6,7 @@ from composite_materials_v2 import \
      CompositeMaterial, CompositeMaterial_Equiv,SphericalInclusions_Disk, \
      SphericalInclusions_Shell
 
-from advanced_objects_v2 import NanoSphere, NanoSphereShell
+from advanced_objects_v2 import NanoSphere, NanoSphereShell, DoubleNanoparticle
 
 
 # DOES NOT INCLUDE FILE ADAPTERS/MATERIALS.  EACH OF THOSE HAS SPECIAL KEYWORD
@@ -32,7 +32,8 @@ COMPOSITEMATERIALS = dict(composite = CompositeMaterial,
                           )
 
 NANOMATERIALS = dict(nanosphere = NanoSphere,
-                     nanospherehshell = NanoSphereShell)
+                     nanospherehshell = NanoSphereShell,
+                     doublenanoshell = DoubleNanoparticle)
 
 # This is proper way to merge dictionares 
 ALLMATERIALS = dict(SIMPLEMATERIALS.items() +

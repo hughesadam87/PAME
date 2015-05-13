@@ -16,4 +16,9 @@ class NanoSphereShellAdapter(ABCNanoAdapter):
 	apikey = 'nanospherehshell'
 
 
+class DoubleNanoAdapter(ABCNanoAdapter):
+	name = 'Double Nanosphere'
+	source = 'Absorption and Scattering of Light by Small Particles.  Huffman Bohren.  1983'
+	notes = 'Mixed layer of two nanoparticles with shells'
+	apikey = 'doublenanoshell'	
 

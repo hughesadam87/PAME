@@ -17,7 +17,11 @@ from mpmath import findroot
 
 from functools import partial
 
+from traits.api import HasTraits, Int, Range
+from traitsui.api import View, Item
+
 class DoubleMixer(HasTraits):
+    
     solutematerial=Instance(IMaterial)
     solventmaterial=Instance(IMaterial)
 
@@ -26,8 +30,19 @@ class DoubleMixer(HasTraits):
 
     mixedarray=CArray   
     mix_name=Str('')
-    Vfrac=Range(low=0.0, high=1.0, value=.1)   #Mixing percent
+        
+    # http://stackoverflow.com/questions/28403356/dynamic-initialization-of-traits-range-object?rq=1
+    # Leave these dynamic so Vfrac range can be controlled dynamically
+    # for example in triple material that needs to maintain rainges
+    # WHY DOESNT THIS WORK!?  ALso tried putting in its own class and delegating
 
+    ## This is correct syntax i'ms ure
+    #_vmin = Float(value=0.0)
+    #_vmax = Float(1.0)
+    #Vfrac = Range(low='_vmin', high='_vmax')
+    
+    Vfrac = Range(low=0.0, high=1.0, value=0.1)
+    
     implements(IMixer)   #Inherited by subclasses
     
     # LEAVE AS IS, NECESSARY
@@ -36,6 +51,7 @@ class DoubleMixer(HasTraits):
         # Yes, neccesary to listen to materials and earrays
         self.on_trait_change(self.update_mix, 'solutematerial, solventmaterial, \
                                                esolvent, esolute, Vfrac') 
+
         # Let composite_material call this; for some reason, isn't triggering 
         # when used with composite_material anyway
         #self.update_mix() 
@@ -43,7 +59,8 @@ class DoubleMixer(HasTraits):
     def update_mix(self): 
         if self.esolute.shape != self.esolvent.shape:
             return
-        
+                           
+    
 class LinearSum(DoubleMixer):
     """ Linear mixing: V(e1) + (1-V)e2 for e1=solute, e2=solvent"""
 
@@ -338,4 +355,4 @@ class CustomEquiv(EquivMethod):
 
 
 if __name__ == '__main__':
-    MG_Mod().configure_traits()
+    DynamicRNG().configure_traits()

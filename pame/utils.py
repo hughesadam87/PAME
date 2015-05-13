@@ -148,3 +148,6 @@ class AttrDict(dict):
 
     __setattr__ = __setitem__
 
+
+if __name__ == '__main__':
+    DynamicRange().configure_traits()

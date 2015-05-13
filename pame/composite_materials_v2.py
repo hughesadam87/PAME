@@ -1,11 +1,12 @@
 from basic_material import BasicMaterial
-from material_models import Sellmeir, Dispwater
+from material_models import Sellmeir, Dispwater, Air
 from traits.api import *
 from traitsui.api import *	
 from interfaces import IMixer, IStorage, IMaterial
 import math
 from material_mixer_v2 import MG_Mod, Bruggeman, QCACP, MG, LinearSum
 from pame.modeltree_v2 import SHARED_TREE
+import pame.config as pconfig
 
 class CompositeMaterial(BasicMaterial):
     """Still inherits basic traits like earray, narray and how they are 
@@ -85,19 +86,23 @@ class CompositeMaterial(BasicMaterial):
                       solventmaterial=self.Material2)
 
     def _mat_name_default(self): 
-        return self.Material1.mat_name + '  IN   ' + self.Material2.mat_name
+        return self.Material1.mat_name + '  IN  ' + self.Material2.mat_name
+
+    def update_matname(self):
+        if pconfig.AUTONAME:
+            self.mat_name = '%s  IN  %s' % (self.Material1.mat_name, self.Material2.mat_name)
 
     def _MixingStyle_changed(self): 
         self.update_Mix() 
 
     def _Material1_changed(self): 
         # This should be a property, right?  Or a separate attribute?
-        self.mat_name = self.Material1.mat_name + '  IN   ' + self.Material2.mat_name
+        self.update_matname()
         self.Mix.solutematerial = self.Material1
         self.redraw_requested()
 
     def _Material2_changed(self): 
-        self.mat_name = self.Material1.mat_name + '  IN   ' + self.Material2.mat_name
+        self.update_matname()
         self.Mix.solventmaterial = self.Material2
         self.redraw_requested()        
 
@@ -494,9 +499,219 @@ class TriangularInclusions_Shell_case2(TriangularInclusions):
 
 
 
+# http://stackoverflow.com/questions/28403356/dynamic-initialization-of-traits-range-object?rq=1
+class DRange(HasTraits):
+    """ Dynamic range with settable upper limit """
+    _vmin = Float(value=0.0)
+    _vmax = Float(1.0)
+    Vfrac = Range(low='_vmin', high='_vmax')
+    
+    traits_view = View(Item('Vfrac'))
+
+
+class DoubleComposite(CompositeMaterial):
+    """ Represents two non-interactiong composite materials in a shared medium.  
+    Could be gold and silver nanoparticles, or just generic alloys (eg gold in water 
+    and silver in water).   These are NON-interacting, meaning that the total
+    dielectric function of the composite is treated as e3 = Ae1 + Be2 (linear
+    sum) where A and B are proportions.  So if use sets vfrac to 0.4%, and A and
+    B to 50/50, then this will set vfrac A to .2 and vfrac B to .2.  It doesn't
+    care what A and B are, nor the mixing models used infividually in A or B.  
+    This should be removed when triple or N includion materials are finally
+    supoorted down the road.
+    
+    MADE DESIGN CHOICE that medium overwrites materials 1 and 2.  EG if medium
+    is set to air and then set material 1 to nanoparticle in water, it becomes
+    nanoparticle in air.  Alternative would have been to make medium into water.
+    Figured medium material should take precedence.
+    """
+    
+    from pame.handlers import WarningDialog, BasicDialog
+    
+    Medium=Instance(IMaterial)
+    
+    alpha = Range(0.0, 1.0, value=0.5)
+    beta = Property(Range(0.0, 1.0, value=0.5), depends_on='alpha')
+    # For certain values of alpha/beta, want to cap the upper limit that 
+    # volume frac can have
+    v_max = Float(1.0)
+    v_min = Float(0.0)
+    
+    selectmedium=Button
+        
+    
+    def _alpha_changed(self):
+        self.update_vfrac()
+        
+    def _get_beta(self):
+        return 1.0 - self.alpha
+    
+    def _set_beta(self, beta):
+        self.alpha = 1.0 - beta    
+        
+    def _Vfrac_changed(self):
+        self.update_vfrac()
+        
+    def update_vfrac(self):       
+        self.Material1.Vfrac = self.alpha * self.Vfrac
+        self.Material2.Vfrac = self.beta * self.Vfrac        
+        
+
+    # If user explicitly changes Vfrac at the material, update alpha beta
+    @on_trait_change('Material1.Vfrac')
+    def _valid_vfrac1(self):
+        """ Tried all the smart ways to do dynamic changes on vfrac change,
+        but all fail; either break delegation or listeners, so this will
+        just lock plot value from user; probably best case.
+        """
+        
+        if self.Material1.Vfrac != self.alpha * self.Vfrac:
+            self.WarningDialog(message='Vfrac is Fixed!').edit_traits(kind='modal')
+            self.Material1.Vfrac = self.alpha * self.Vfrac
+            return 
+        
+    # These work better if not merged into a single call
+    @on_trait_change('Material2.Vfrac')
+    def _valid_vfrac2(self):
+        """ Tried all the smart ways to do dynamic changes on vfrac change,
+        but all fail; either break delegation or listeners, so this will
+        just lock plot value from user; probably best case.
+        """
+        
+        if self.Material2.Vfrac != self.beta * self.Vfrac:
+            self.WarningDialog(message='Vfrac is Fixed!').edit_traits(kind='modal')
+            self.Material2.Vfrac = self.beta * self.Vfrac
+            return 
+        
+        
+    
+    @on_trait_change('Material1.Material2', 'Material2.Material2')
+    def _valid_medium1(self):
+        if self.Material1.Material2 != self.Medium:
+            self.WarningDialog(message='Medium Material is Fixed!').edit_traits(kind='modal')
+            self.Material1.Material2 = self.Medium
+            return     
+
+    @on_trait_change('Material2.Material2')
+    def _valid_medium2(self):
+        if self.Material2.Material2 != self.Medium:
+            self.WarningDialog(message='Medium Material is Fixed!').edit_traits(kind='modal')
+            self.Material2.Material2 = self.Medium
+            return  
+
+                
+    def _Medium_changed(self):
+        self.Material1.Material2 = self.Medium
+        self.Material2.Material2 = self.Medium
+        self.update_matname()
+
+
+    def update_matname(self):
+        if pconfig.AUTONAME:
+            self.mat_name = '%s AND %s IN %s' % (self.Material1.mat_name, 
+                                                 self.Material2.mat_name,
+                                                 self.Medium.mat_name)
+        
+    def _iscomposite(self, material):
+        """ Test if material is compositematerial (as opposed to simple material)
+        by dynamically inspecting material.material2.  Dunno why isinstance 
+        or issubclass failed but did"""
+        try:
+            material.Material2
+        except AttributeError:
+            return False
+        return True
+
+    # FORCE OUR MEDIUM ONTO MATERAL 1 AND 2!! KEY POINT
+    def _Material1_changed(self): 
+        if not self._iscomposite(self.Material1):
+            raise Exception('MATERIAL1 MUST BE A COMPOSITE MATERIAL (eg glass in water)')
+        self.Material1.Material2 = self.Medium
+        self.Mix.solutematerial = self.Material1
+        self.update_matname()
+        self.redraw_requested()
+
+    def _Material2_changed(self): 
+        if not self._iscomposite(self.Material1):
+            raise Exception('MATERIAL2 MUST BE A COMPOSITE MATERIAL (eg glass in water)')        
+        self.Material2.Material2 = self.Medium
+        self.Mix.solventmaterial = self.Material2
+        self.update_matname()        
+        self.redraw_requested()  
+    
+    MixingStyle = Enum('LinearSum')
+        
+    compmatgroup=Group(
+                    HGroup(
+                           Item('mviewbutton', label='Show Composite Material', show_label=False),
+                           Item('selectmat1', label='Change Material1', show_label=False), 
+                           Item('selectmat2', label='Change Material2', show_label=False),
+                           Item('selectmedium', label='Change Medium', show_label=False),
+                           
+                          #SELECT MEDIUM MATERIAL Item('')
+                           Item('mat_name')
+                           ),
+                       Tabbed( 
+                           Item('Material1', editor=InstanceEditor(), 
+                                style='custom', show_label=False),
+                           Item('Material2', editor=InstanceEditor(),
+                                style='custom', show_label=False),
+                           Item('Medium', editor=InstanceEditor(),
+                                style='custom', show_label=False)
+                           ),
+    
+                       label='Materials')
+    
+    mixgroup=VGroup(
+           HGroup(
+                  Item('MixingStyle', label='Mixing Method', style='readonly'),
+                  Item('Vfrac'),
+                  ),
+           HGroup(
+                  Item('alpha', label='% Mat1'),
+                  Item('beta', label='% Mat2'),
+                  ),
+        label='Mixing'
+        )
+        
+    
+    traits_view=View(
+                     Include('compmatgroup' ),
+                     Include('mixgroup'),
+                     resizable=True, buttons=OKCancelButtons)
+    
+    # FORCE LINEAR SUM AS DEFAULT MIX AND TAKE MIXING STYLE OFF OF VIEW SO
+    # ALSO HAVE TO MIX MATERIALS ONE AND TWO USING LINEAR SUM
+    def _Mix_default(self): 
+        return LinearSum(solutematerial=self.Material1,
+                      solventmaterial=self.Material2)    
+    
+
+    # Might want to eventually explicitly sync medium in __init__ of doublecomposite
+    def _Material1_default(self): 
+        return CompositeMaterial(Material1=Dispwater(), Material2=self.Medium)
+
+    def _Material2_default(self): 	
+        return CompositeMaterial(Material1=Sellmeir(), Material2=self.Medium)
+    
+    def _Medium_default(self):
+        return Air()
+
+    def _selectmedium_fired(self): 
+        """Used to select material.  The exceptions are if the user returns nothing or selects a folder rather than an object for example"""
+        self.selectedtree.configure_traits(kind='modal')
+        try:
+            selected_adapter=self.selectedtree.current_selection
+            selected_adapter.populate_object()
+            self.Medium = selected_adapter.matobject
+        except (TypeError, AttributeError):  
+            pass       
+ 
+
+
 if __name__ == '__main__':
 #	f=CompositeMaterial_Equiv()
     from main_parms import SpecParms
-    f = CompositeMaterial(specparms = SpecParms())
+    f = DoubleComposite(specparms = SpecParms())
 #	f=SphericalInclusions_Disk()
     f.configure_traits()
