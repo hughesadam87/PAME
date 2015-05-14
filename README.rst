@@ -41,6 +41,7 @@ PAME's tutorials are a series of screencasts.
     - Screencast 6: `Multiplexed Dip Sensor with Gold and Silver Nanoparticles <https://www.youtube.com/watch?v=r0k9215ctfw>`_
     - Screencast 7: `Gold Nanoparticle Fiber Dip Sensor Simulation <https://www.youtube.com/watch?v=Q6H_f46dZZc>`_ 
     - Screencast 8: `Dip Sensor with Organosilane Layer <https://www.youtube.com/watch?v=FzMon52iHQo>`_  
+    - Screencast 9: `Double layer of gold and silver nanoparticles <https://www.youtube.com/watch?v=vHQ_JYgHHSw>`_
 
 Installation
 ============
