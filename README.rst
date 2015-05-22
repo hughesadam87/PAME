@@ -11,7 +11,7 @@ Graphical Python application for simulating plasmonic biosensors, particularly f
 
 Check out the `PAME preprint`_.
 
-    .. _PAME preprint : https://linktonowhere
+    .. _PAME preprint : https://peerj.com/preprints/1085/
 
 Tutorials
 =========
